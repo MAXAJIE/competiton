@@ -42,6 +42,7 @@ export const FALLBACK_TAXONOMY: Taxonomy = {
     { key: "other_expense", label: "Other", group: "Everyday", description: "Anything else" },
   ],
   income: [
+    { key: "ar", label: "AR", group: "AR", description: "A customer paying back an invoice you already listed — settles that receivable" },
     { key: "salary", label: "Salary", group: "Work", description: "Regular wages from an employer" },
     { key: "business_income", label: "Business Income", group: "Work", description: "Sales from your own business" },
     { key: "freelance", label: "Freelance & Side Work", group: "Work", description: "Gigs, consulting" },

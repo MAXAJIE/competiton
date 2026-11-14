@@ -11,7 +11,7 @@ from typing import Optional
 
 from supabase import Client, create_client
 
-from . import categories, config
+from . import categories, config, settlement
 from .models import RiskSettings, Transaction
 
 
@@ -32,13 +32,59 @@ def list_transactions(user_id: str) -> list[dict]:
     return r.data or []
 
 
+def _settle_receivables(user_id: str, payment: Transaction) -> list[dict]:
+    """Close the receivables a recorded payment clears (app/settlement.py).
+
+    The schema has no settlement-timestamp column, so this flips status to
+    'paid' on the matching invoice rows and leaves their original date intact;
+    the income row the user just recorded is the record of when money arrived.
+    """
+    rows = [Transaction(**r) for r in list_transactions(user_id)]
+    to_close = settlement.settleable(rows, payment)
+    sb = _user_client(user_id)
+    closed: list[dict] = []
+    for row in to_close:
+        if not row.id:
+            continue
+        sb.table("transactions").update({"status": "paid"}) \
+            .eq("id", row.id).eq("user_id", user_id).execute()
+        closed.append({"id": row.id,
+                       "vendor_or_customer": row.vendor_or_customer,
+                       "amount": float(row.amount)})
+    return closed
+
+
+def _apply_arap_status(row: dict) -> dict:
+    """Status is structural, not a choice the user makes.
+
+    * AR/AP cannot be born 'paid': a receivable means money is still owed, and
+      paid is only reachable through settlement.settleable() when the customer's
+      payment is recorded.
+    * Income/expense are things that already happened, so they are always 'paid'.
+      Money that has not arrived yet belongs on the AR/AP side of the ledger.
+
+    Both are enforced here so no client (form, OCR confirm, or a hand-rolled
+    request) can produce a row whose status contradicts what it represents.
+    """
+    if row.get("type") in ("ar", "ap"):
+        row["status"] = settlement.initial_status(row["type"], row.get("due_date"))
+    else:
+        row["status"] = "paid"
+    return row
+
+
 def save_manual_transaction(user_id: str, t: Transaction) -> dict:
     row = t.model_dump(exclude={"id"})
     row["user_id"] = user_id
     # Every write path lands on the shared taxonomy (categories.py).
     row["category"] = categories.coerce(row.get("category", ""), row["type"],
                                         row.get("vendor_or_customer", ""))
-    return _user_client(user_id).table("transactions").insert(row).execute().data[0]
+    _apply_arap_status(row)
+    saved = _user_client(user_id).table("transactions").insert(row).execute().data[0]
+    # A payment from a customer who owes you closes that invoice automatically,
+    # instead of leaving a receivable that is already paid.
+    settled = _settle_receivables(user_id, Transaction(**saved))
+    return {**saved, "settled_ar": settled}
 
 
 def get_document(user_id: str, document_id: str) -> Optional[dict]:
@@ -79,10 +125,14 @@ def confirm_document_and_save(user_id: str, document_id: str,
         "source": "ocr",
         "document_id": document_id,
     })
+    row = _apply_arap_status({**t.model_dump(exclude={"id"}), "user_id": user_id})
     sb = _user_client(user_id)
-    tx_row = sb.table("transactions").insert({**t.model_dump(exclude={"id"}), "user_id": user_id}).execute().data[0]
+    tx_row = sb.table("transactions").insert(row).execute().data[0]
     sb.table("documents").update({"reviewed": True}).eq("id", document_id).eq("user_id", user_id).execute()
-    return tx_row
+    # Same settlement rule as manual entry — a scanned "paid" receipt for a
+    # customer who owes you closes that receivable too.
+    settled = _settle_receivables(user_id, Transaction(**tx_row))
+    return {**tx_row, "settled_ar": settled}
 
 
 def get_risk_settings(user_id: str) -> RiskSettings:

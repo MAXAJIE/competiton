@@ -1,0 +1,118 @@
+{
+  "generated_at": "2026-11-14T15:52:00.076626+00:00",
+  "data_files": [
+    "data/ar_training.csv",
+    "data/revenue_training.csv",
+    "data/fusion_training.csv"
+  ],
+  "ar_risk": {
+    "task": "ar_late_payment_risk",
+    "model": "LogisticRegression + StandardScaler (calibrated probabilities)",
+    "rows": {
+      "total": 1400,
+      "train": 1120,
+      "test": 280
+    },
+    "baseline": {
+      "name": "always_on_time",
+      "accuracy": 0.7179,
+      "late_caught": 0,
+      "late_actual": 79,
+      "note": "high accuracy, zero recall \u2014 why ratios alone are misleading here"
+    },
+    "model_metrics": {
+      "accuracy": 0.575,
+      "precision": 0.3765,
+      "recall": 0.7722,
+      "f1": 0.5062
+    },
+    "confusion_matrix": {
+      "labels": [
+        "on_time",
+        "late"
+      ],
+      "matrix": [
+        [
+          100,
+          101
+        ],
+        [
+          18,
+          61
+        ]
+      ],
+      "true_negative": 100,
+      "false_positive": 101,
+      "false_negative": 18,
+      "true_positive": 61,
+      "late_actual": 79,
+      "late_caught": 61
+    },
+    "threshold": 0.18,
+    "threshold_tuned_on": "last 20% of the training window (test rows never seen)",
+    "features": [
+      "log_amount",
+      "days_until_due",
+      "customer_historical_late_rate",
+      "customer_prior_count",
+      "cat_Customer Invoice",
+      "cat_Money Lent Out",
+      "cat_Other Receivable"
+    ],
+    "failure_case": {
+      "kind": "false_safe",
+      "vendor_or_customer": "Bluefin Co.",
+      "amount": 114.39,
+      "category": "Other Receivable",
+      "days_until_due": 15,
+      "actual_late": 1,
+      "predicted_late": 0,
+      "p_late": 0.093,
+      "hypothesis": "a customer with a reliable history went late anyway \u2014 a one-off cash-flow shock no feature at creation time can see"
+    },
+    "ceiling_check": {
+      "expected_f1_ceiling": 0.85,
+      "observed_f1": 0.5062,
+      "status": "ok"
+    }
+  },
+  "revenue": {
+    "task": "next_month_revenue",
+    "model": "LinearRegression",
+    "rows": {
+      "total": 47,
+      "train": 37,
+      "test": 10
+    },
+    "features": [
+      "prev_month",
+      "trailing_3mo_avg",
+      "ar_overdue_ratio_prev",
+      "sin",
+      "cos"
+    ],
+    "baseline": {
+      "name": "persistence (next month = this month)",
+      "mae": 1498.08
+    },
+    "model_metrics": {
+      "mae": 1068.98
+    },
+    "improvement_pct": 28.6,
+    "coefficients": {
+      "prev_month": 0.0915,
+      "trailing_3mo_avg": 0.7884,
+      "ar_overdue_ratio_prev": -3566.9136,
+      "sin": 1089.1223,
+      "cos": 221.5586
+    },
+    "intercept": 2284.51,
+    "failure_case": {
+      "month": "2026-12",
+      "actual": 14965.05,
+      "predicted": 11930.33,
+      "error": 3034.72,
+      "hypothesis": "the month moved against the trend and the model only sees prior months \u2014 a one-off collection or expense shift it could not anticipate"
+    }
+  }
+}

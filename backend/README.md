@@ -91,8 +91,9 @@ vocabulary):
   Subscriptions, Travel, Personal Care, Family & Childcare, Pets, Home & Repairs,
   Debt & Loans, Bank Fees, Taxes, Gifts & Donations, Work & Business,
   Savings & Investments, Other
-- **Income** (8): Salary, Business Income, Freelance & Side Work, Interest & Dividends,
-  Refunds & Reimbursements, Gifts Received, Benefits & Allowances, Other Income
+- **Income** (9): **AR** (customer paying back a listed invoice), Salary, Business
+  Income, Freelance & Side Work, Interest & Dividends, Refunds & Reimbursements,
+  Gifts Received, Benefits & Allowances, Other Income
 - **Receivable** (3) and **Payable** (4) equivalents for AR/AP rows
 
 Each category carries keywords, and `classify()` scores vendor + description text
@@ -128,6 +129,136 @@ a single total with a review note. Nothing reaches `transactions` until a human
 confirms (`reviewed = true`, SKILL.md §4).
 
 `backend/demo_assets/sample_receipt.png` is a ready-made test image.
+
+## Receivables settle themselves (payments close invoices)
+
+Recording money in from a customer who owes you closes that invoice: the AR row
+flips to `paid` and drops out of open/overdue totals, so the same money is never
+counted as both a receivable and a receipt.
+
+A receivable is unpaid by definition, so an AR/AP row is never created as `paid`:
+
+- The form derives the status instead of offering it: `pending`, or `overdue` once
+  the due date has passed (`settlement.initial_status`).
+- The same rule is enforced server-side for manual entry and the OCR confirm gate
+  (`db._apply_arap_status`), so a client cannot mark an invoice settled by typing
+  `status: "paid"` — `paid` is reachable only through settlement.
+- Income and expense rows carry no status choice at all: they are money that has
+  already moved, so they are saved as `paid`. Money not yet received belongs on the
+  AR side of the ledger.
+- Customer paybacks are their own income section, **AR**, described as "a customer
+  paying back an invoice you already listed". It sits apart from Salary/Business
+  Income so a repayment is not counted as new revenue, and the classifier routes
+  payback language ("paid back", "repayment", "arrears", "balance owing") to it.
+
+Rules live in `app/settlement.py` (pure, tested in `tests/test_settlement.py`):
+
+- Only a **paid income** row settles anything — a pending income row is a promise.
+- Customer names match after normalising case, punctuation, spacing and company
+  suffixes (`Oak & Pine` matches `Oak & Pine Co.`); different customers never match.
+- Oldest due date first, and only while the payment still covers the invoice. A
+  3,200 payment against a 6,400 invoice settles **nothing** — partial payments are
+  not modelled, because the schema has no settled-amount column and pretending
+  otherwise would corrupt the receivables total.
+- One payment can close several invoices when it covers them.
+
+The backend applies this inside the same request that saves the payment and
+returns the closed rows as `settled_ar`, for both manual entry and the OCR
+confirm gate; the UI reports it ("Saved, and marked 1 invoice from Mesa Retail as
+paid"). Guest mode never calls the server, so `src/lib/settlement.ts` mirrors the
+same rules on the in-memory ledger.
+
+The schema has no settlement timestamp (it belongs to the Lovable-managed
+database), so the income row carries the date of the money and the invoice simply
+becomes `paid`.
+
+## Advisor: scope, live search, and a fixed reply shape
+
+Three behaviours are enforced in `app/advisor.py`, not left to prompting alone:
+
+- **Scope.** Answers only cover (1) the owner's own ledger via tools, (2)
+  small-business finance and bookkeeping, (3) tax/company-law questions as general
+  information, (4) markets and rates that affect planning. Unrelated asks are
+  refused *deterministically* by `out_of_scope()` before any model call — no
+  search, no cost, no drift into chit-chat.
+- **Live search.** Ledger questions run on `ADVISOR_MODELS`; questions about
+  rates, markets, tax rules or filing deadlines route to the `:online` chain
+  (`ADVISOR_WEB_MODELS`) so OpenRouter runs a web search and returns url
+  citations. Those citations are returned in `sources` and rendered under the
+  reply. An external answer may quote a searched number with its date and source;
+  a ledger number still may not appear without a tool result, and "will rates rise
+  tomorrow" is answered as unknowable, with the latest recorded value instead.
+- **Reply shape.** Every reply is `Answer` / `Figures` / `Next step` / `Caveat`,
+  plain text. `tidy()` strips the asterisks, hashes, backticks and inline
+  `[label](url)` links models add anyway, so nothing renders as raw markdown.
+
+`needs_web()`, `out_of_scope()` and `tidy()` are unit-tested in
+`tests/test_advisor.py`; the no-API-key fallback answers through the same
+template and refuses external questions rather than reciting remembered figures.
+
+## Models: revenue forecast + AR late-payment risk (SKILL.md §11)
+
+Two trained models, both graded against a declared baseline.
+
+| | Model | Baseline | Result |
+|---|---|---|---|
+| §11.1 Revenue forecast | `LinearRegression` on prior month, 3-month momentum, last month's AR-overdue share, month-of-year | "next month = this month" | MAE **$1,069** vs $1,498 (**28.6%** lower) |
+| §11.2 AR late-payment risk | `LogisticRegression` on log amount, days-until-due, the customer's own observed late rate, category | "everyone pays on time" | caught **61/79** late rows vs **0/79**; F1 **0.51**, P 0.38, R 0.77 |
+
+Accuracy is reported but not leaned on: the always-on-time baseline scores 0.72
+accuracy while catching nothing, which is exactly why the confusion matrix and
+recall are the headline numbers.
+
+### The data is a stored file, not an in-memory generator
+
+```bash
+cd backend
+python -m ml.generate_training_data   # writes data/*.csv (git-tracked, inspectable)
+python -m ml.train_models             # reads those CSVs, writes models/*.joblib + metrics.json
+```
+
+`ml/train_models.py` **reads** `data/ar_training.csv`, `data/revenue_training.csv`
+(and `fusion_training.csv` for the fusion rows) — it never regenerates them, so the
+exact dataset a model saw is a file you can open, diff, or commit. The CSVs and the
+fitted artifacts are committed (~145 KB total) so a fresh clone serves real model
+output without a training step.
+
+### Ceiling control and honesty (§11.4)
+
+The labels come from a rule we wrote, so the achievable F1 was fixed **before**
+training: `EXPECTED_F1_CEILING = 0.85` in `ml/train_models.py`. Observed F1 is far
+below it and is reported as-is, with a named failure case for each model in
+`models/metrics.json`:
+
+- AR false-safe: `Bluefin Co.`, p(late) 0.09, went late anyway — a reliable customer
+  with a one-off cash-flow shock no creation-time feature can see.
+- Revenue: 2026-12 actual $14,965 vs predicted $11,930 — a month that moved against
+  the trend, which only prior months can't reveal.
+
+Two deliberate anti-cheating measures:
+
+- `customer_reliability_true` (the generative parameter) is **dropped** from the
+  stored CSV; the model only gets `customer_historical_late_rate` + `customer_prior_count`
+  computed from *prior* rows, so no feature leaks the label.
+- The split is chronological (80/20), and the decision threshold is tuned only on
+  the last 20% of the **training** window, never on test rows.
+
+### Where they surface
+
+- `GET /api/models/info` — artifacts present + the metrics file.
+- `POST /api/forecast` `{transactions}` — next month's revenue, with `baseline_value` beside it.
+- `POST /api/ar/risk` `{transactions}` — open AR rows ranked by p(late), with `severity`
+  bands (`high` / `medium` / `low`) so the UI separates "chase now" from "watch".
+- Dashboard: projection shows the model number *and* the rule-of-thumb baseline; the
+  "AR at risk of late payment" panel lists the worst customers with their probability.
+- Advisor: the `ar_risk_flags` tool, so "who owes me and might pay late?" is answered
+  from the same function the dashboard uses.
+- `notebooks/scored_models.ipynb` — the write-up: data inspection, both baselines,
+  confusion matrix, coefficient interpretation and the failure cases, all calling
+  `ml.train_models` and `app/ml.py` rather than re-implementing anything.
+
+Without artifacts present, `app/ml.py` degrades to a documented rule and says so in
+`source`/`method` — it never silently presents a fallback as a model prediction.
 
 ## Frontend contract (replaces the stubs in `src/lib/api.ts`)
 
@@ -165,9 +296,21 @@ backend/
     market.py      # B3 snapshot job (yfinance + RSS → market_snapshot)
     reports.py     # C3 report generation + Resend email
     main.py        # FastAPI routes (contract above)
+    settlement.py  # payment -> receivable matching rules (pure)
     demo_seed.py   # idempotent demo account (PLAN Hour 30–40)
     config.py      # pinned model IDs + env
     models.py      # pydantic models mirroring src/lib/types.ts
   schema.sql       # apply once in Supabase (not via this repo's migrations)
-  tests/test_calc.py  # B1 unit tests vs hand-built fixture with known answers
+  ml/
+    generate_training_data.py  # §11 synthetic dataset -> data/*.csv (run once)
+    train_models.py            # reads data/*.csv, fits, evaluates, writes models/*
+  data/            # generated training CSVs (committed so training is reproducible)
+  models/          # fitted artifacts + metrics.json (what the app loads)
+  tests/test_calc.py    # B1 unit tests vs hand-built fixture with known answers
+  tests/test_ml.py      # §11 leakage guard, ranking, fallbacks, ceiling check
+  tests/test_settlement.py  # payment/invoice matching rules
+  tests/test_advisor.py     # scope guard, reply shape, no markdown in replies
+
 ```
+
+`notebooks/scored_models.ipynb` (repo root) is the graded write-up for §11.

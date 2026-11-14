@@ -86,3 +86,26 @@ def test_resolve_keeps_model_answer_when_keywords_are_weak():
 def test_resolve_repairs_out_of_schema_labels():
     label, changed, _ = c.resolve("Office Supplies", "expense", "Tesco Extra")
     assert label == "Groceries" and changed is True
+
+
+def test_ar_is_an_income_category_for_customer_paybacks():
+    from app import categories
+    labels = categories.labels_for("income")
+    assert "AR" in labels
+    # It sits in its own UI section so it reads as a distinct thing to record.
+    assert categories.taxonomy()["income"][0] == {
+        "key": "ar", "label": "AR", "group": "AR",
+        "description": "A customer paying back an invoice you already listed — "
+                       "this settles that receivable",
+    }
+
+
+def test_payback_language_classifies_as_ar_but_new_sales_do_not():
+    from app.categories import classify
+    for text in ["customer paid back outstanding invoice",
+                 "Mesa Retail repayment of arrears",
+                 "balance owing settled invoice"]:
+        assert classify(text, tx_type="income")[0] == "AR", text
+    for text in ["monthly sales takings", "client payment for a new project",
+                 "salary from employer"]:
+        assert classify(text, tx_type="income")[0] != "AR", text

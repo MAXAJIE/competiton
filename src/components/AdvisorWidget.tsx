@@ -13,9 +13,15 @@ type Msg = {
   text: string;
   tool?: string | undefined;
   figures?: AdvisorReply["figures"] | undefined;
+  sources?: AdvisorReply["sources"] | undefined;
 };
 
-const SUGGESTIONS = ["Analyze my cash flow", "Summarize AR/AP", "Predict next month's revenue"];
+const SUGGESTIONS = [
+  "Analyze my cash flow",
+  "Summarize AR/AP",
+  "Who might pay late?",
+  "What is the 10-year yield right now?",
+];
 
 function RobotIcon({ className = "" }: { className?: string }) {
   return (
@@ -36,7 +42,12 @@ export function AdvisorWidget() {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([{
     role: "bot",
-    text: "I'm your cash advisor. I answer only from your recorded numbers, and I'll say so when I can't.",
+    text: [
+      "Answer",
+      "I'm your cash advisor. Your own figures come only from your recorded ledger; questions about rates, markets, tax or company law I look up live and cite. Ask me anything unrelated and I'll decline.",
+      "Next step",
+      "- Try one of the suggestions below, or ask who owes you money.",
+    ].join("\n"),
   }]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -54,7 +65,7 @@ export function AdvisorWidget() {
     setSending(true);
     try {
       const a = await askAdvisor(q, tx);
-      setMsgs(m => [...m, { role: "bot", text: a.text, tool: a.tool, figures: a.figures }]);
+      setMsgs(m => [...m, { role: "bot", text: a.text, tool: a.tool, figures: a.figures, sources: a.sources }]);
     } catch (e) {
       setMsgs(m => [...m, { role: "bot", text: e instanceof Error ? e.message : "The advisor is unavailable right now." }]);
     } finally {
@@ -107,6 +118,22 @@ export function AdvisorWidget() {
                           <span className="eyebrow">{f.label}</span>
                           <span className="num text-sm">{f.value}</span>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                  {m.sources && m.sources.length > 0 && (
+                    <div className="mt-2 space-y-1 border-t pt-2">
+                      <p className="eyebrow">sources</p>
+                      {m.sources.map(s => (
+                        <a
+                          key={s.url}
+                          href={s.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="block truncate text-xs underline decoration-dotted hover:text-accent"
+                        >
+                          {s.title}
+                        </a>
                       ))}
                     </div>
                   )}

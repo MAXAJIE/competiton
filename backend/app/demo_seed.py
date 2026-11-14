@@ -59,6 +59,26 @@ def build_transactions(user_id: str, today: date | None = None) -> list[dict]:
                 "due_date": None, "status": "paid", "source": "manual", "document_id": None,
             })
 
+    # Settled AR history per customer, so the §11.2 model's "observed late rate"
+    # feature is informative instead of every customer looking identical.
+    # A settled row counts as late when it settled after its due date.
+    for vendor, amount, late_count in [
+        ("Mesa Retail", 1800, 2),
+        ("Linden Studio", 1400, 2),
+        ("Harbor Cafe", 900, 0),
+        ("Oak & Pine Co.", 1600, 1),
+    ]:
+        for k in range(3):
+            due = today - timedelta(days=150 - k * 40)
+            settled = due + (timedelta(days=22) if k < late_count else timedelta(days=0))
+            rows.append({
+                "user_id": user_id, "type": "ar", "category": "Customer Invoice",
+                "vendor_or_customer": vendor, "amount": amount,
+                "currency": "USD", "transaction_date": settled.isoformat(),
+                "due_date": due.isoformat(), "status": "paid",
+                "source": "manual", "document_id": None,
+            })
+
     # AR: three overdue, one pending (prediction + risk vault need this history)
     for vendor, amount, due_offset_days, status in [
         ("Mesa Retail", 6400, -60, "overdue"),

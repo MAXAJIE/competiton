@@ -2,12 +2,19 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { RiskSettings, Transaction } from "./types";
 import { defaultRisk, makeSeed } from "./demo-data";
 import { fetchTransactions, fetchMarketSnapshot } from "./api";
+import { settleable } from "./settlement";
 import { supabase } from "./supabase";
 
 type Mode = "guest" | "user" | null;
 interface S {
   tx: Transaction[];
-  addTx: (t: Transaction) => void;
+  /**
+   * Record a transaction. A paid income row from a customer who owes you money
+   * closes that receivable: the backend returns the ids it settled for a
+   * signed-in user, and guest mode runs the same rules locally (settlement.ts).
+   * Returns the receivables that were closed, so the caller can say so.
+   */
+  addTx: (t: Transaction, settledIds?: string[]) => Transaction[];
   setTx: (tx: Transaction[]) => void;
   risk: RiskSettings;
   setRisk: (r: RiskSettings) => void;
@@ -53,7 +60,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (mode === "guest" && tx.length === 0) setTx(makeSeed());
   }, [mode, tx.length]);
 
-  return <Ctx.Provider value={{ tx, addTx: t => setTx(p => [...p, t]), setTx, risk, setRisk, mode, setMode, loaded }}>{children}</Ctx.Provider>;
+  const addTx = (t: Transaction, settledIds?: string[]): Transaction[] => {
+    // Signed-in: the backend already settled inside the save request and sends
+    // the ids back (possibly an empty list). Undefined means no server call
+    // happened — guest mode, or a signed-out tab — so apply the mirrored rule.
+    const ids = settledIds ?? settleable(tx, t).map(r => r.id ?? "");
+    const closed = tx.filter(r => r.id && ids.includes(r.id));
+    setTx(prev => [
+      ...prev.map(r => (r.id && ids.includes(r.id) ? { ...r, status: "paid" as const } : r)),
+      t,
+    ]);
+    return closed;
+  };
+
+  return <Ctx.Provider value={{ tx, addTx, setTx, risk, setRisk, mode, setMode, loaded }}>{children}</Ctx.Provider>;
 }
 export const useStore = () => { const c = useContext(Ctx); if (!c) throw new Error("no store"); return c; };
 

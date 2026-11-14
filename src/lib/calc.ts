@@ -37,9 +37,29 @@ export function getArApSummary(tx: Transaction[]) {
   };
   return { ar: sum(open("ar")), ap: sum(open("ap")), arOverdue: sum(open("ar").filter(t => t.status === "overdue")), arAging: aging("ar"), apAging: aging("ap") };
 }
-/** Method: trailing 3-month average of income. Stated in output per SKILL.md §3. */
+/** Trailing 3-month average of income — also the fallback the scored model uses
+ *  when its trained artifact is missing. Kept in sync with backend/app/ml.py. */
 export function predictNextMonthRevenue(tx: Transaction[]) {
   const m = getMonthly(tx).slice(-3);
   return { value: m.length ? m.reduce((a, x) => a + x.income, 0) / m.length : 0, method: "Trailing 3-month average of recorded income" };
 }
 export const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+/** AR rows flagged at risk of late payment — served by the §11.2 model through
+ *  POST /api/ar/risk (never recomputed in the browser). */
+export interface ArRiskFlag {
+  id?: string | null;
+  vendor_or_customer: string;
+  amount: number;
+  category: string;
+  due_date: string | null;
+  status: string;
+  days_until_due: number;
+  customer_historical_late_rate?: number;
+  p_late: number;
+  at_risk: boolean;
+  /** "high" | "medium" | "low" — from the model's calibrated probability. */
+  severity?: string;
+  threshold?: number;
+  source: string;
+}

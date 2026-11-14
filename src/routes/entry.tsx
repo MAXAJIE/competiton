@@ -25,8 +25,13 @@ function Entry() {
     setBusy(true);
     try {
       const saved = await saveTransaction({ ...t, source: "manual" });
-      addTx({ ...t, id: saved.id ?? t.id });
-      toast.success("Saved to ledger");
+      const closed = addTx({ ...t, id: saved.id ?? t.id }, saved.settled_ar?.map(r => r.id));
+      if (closed.length > 0) {
+        const who = [...new Set(closed.map(r => r.vendor_or_customer))].join(", ");
+        toast.success(`Saved, and marked ${closed.length} invoice${closed.length > 1 ? "s" : ""} from ${who} as paid`);
+      } else {
+        toast.success("Saved to ledger");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -56,7 +61,7 @@ function Entry() {
           </div>
         )}
       </div>
-      <DocScanDialog open={scanOpen} onOpenChange={setScanOpen} onSaved={t => addTx(t)} />
+      <DocScanDialog open={scanOpen} onOpenChange={setScanOpen} onSaved={(t, ids) => addTx(t, ids)} />
     </Page>
   );
 }

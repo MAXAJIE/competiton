@@ -10,14 +10,30 @@ export function TxForm({ initial, onSubmit, submitLabel }: { initial?: Partial<T
   const [touchedCategory, setTouchedCategory] = useState(Boolean(initial?.category));
   const set = (k: keyof Transaction, v: string | number) => setF(p => ({ ...p, [k]: v }));
   const arap = f.type === "ar" || f.type === "ap";
+  const today = new Date().toISOString().slice(0, 10);
+  // A receivable/payable is money still outstanding by definition, so the status
+  // is derived, never chosen: recording the payment is what closes it.
+  const derivedStatus: "pending" | "overdue" = f.due_date && f.due_date < today ? "overdue" : "pending";
+  // The taxonomy's own description explains the pick — especially for "AR",
+  // which is the only income category that settles an invoice instead of
+  // adding revenue.
+  const categoryDescription = categoriesFor(tax, (f.type ?? "expense") as TxType)
+    .flatMap(g => g.items)
+    .find(c => c.label === f.category)?.description;
 
   // Switching type replaces the category with that type's default, so a
   // "Groceries" expense can never linger on an income row.
   const changeType = (t: TxType) => {
     const first = tax[t][0]?.label ?? "Other";
+    const isArap = t === "ar" || t === "ap";
     setF(p => ({
       ...p,
       type: t,
+      // AR/AP derive their status. Income and expense are things that already
+      // happened, so they are always 'paid' — there is no pending to carry over.
+      status: isArap
+        ? (p.due_date && p.due_date < today ? "overdue" : "pending")
+        : "paid",
       category: touchedCategory && tax[t].some(c => c.label === p.category) ? (p.category as string) : first,
     }));
   };
@@ -35,7 +51,7 @@ export function TxForm({ initial, onSubmit, submitLabel }: { initial?: Partial<T
   }, [f.vendor_or_customer, f.type, touchedCategory]);
 
   return (
-    <form className="grid gap-6 md:grid-cols-2" onSubmit={e => { e.preventDefault(); onSubmit({ id: `n${Date.now()}`, currency: "USD", source: "manual", due_date: arap ? f.due_date ?? null : null, category: f.category ?? tax[(f.type ?? "expense") as TxType][0]?.label ?? "Other", vendor_or_customer: "", amount: 0, ...f } as Transaction); }}>
+    <form className="grid gap-6 md:grid-cols-2" onSubmit={e => { e.preventDefault(); onSubmit({ id: `n${Date.now()}`, currency: "USD", source: "manual", due_date: arap ? f.due_date ?? null : null, category: f.category ?? tax[(f.type ?? "expense") as TxType][0]?.label ?? "Other", vendor_or_customer: "", amount: 0, ...f, status: arap ? derivedStatus : "paid" } as Transaction); }}>
       <div className="md:col-span-2 flex flex-wrap gap-2">
         {(["income", "expense", "ar", "ap"] as TxType[]).map(t => <button type="button" key={t} onClick={() => changeType(t)} className={`btn uppercase ${f.type === t ? "btn-solid" : ""}`}>{t}</button>)}
       </div>
@@ -60,9 +76,20 @@ export function TxForm({ initial, onSubmit, submitLabel }: { initial?: Partial<T
         {suggested && suggested === f.category && (
           <span className="mt-1 block text-xs text-muted-foreground">Auto-picked for “{f.vendor_or_customer}” — change it if that's wrong.</span>
         )}
+        {categoryDescription && (
+          <span className="mt-1 block text-xs text-muted-foreground">{categoryDescription}</span>
+        )}
       </label>
-      {arap && <><L t="Due date"><input required type="date" className="field num" value={f.due_date ?? ""} onChange={e => set("due_date", e.target.value)} /></L>
-        <L t="Status"><select className="field" value={f.status} onChange={e => set("status", e.target.value)}><option>pending</option><option>paid</option><option>overdue</option></select></L></>}
+      {arap && (
+        <>
+          <L t="Due date">
+            <input required type="date" className="field num" value={f.due_date ?? ""} onChange={e => set("due_date", e.target.value)} />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Recorded as {derivedStatus} — unpaid until you record the customer's payment.
+            </span>
+          </L>
+        </>
+      )}
       <div className="md:col-span-2"><button className="btn btn-solid">{submitLabel} →</button></div>
     </form>
   );

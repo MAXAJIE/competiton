@@ -46,7 +46,14 @@ class Figure(BaseModel):
     value: str
 
 
+class Source(BaseModel):
+    """A web citation, so an external figure can be traced to where it came from."""
+    title: str
+    url: str
+
+
 class AdvisorReply(BaseModel):
     text: str
     tool: Optional[str] = None
     figures: Optional[list[Figure]] = None
+    sources: Optional[list[Source]] = None

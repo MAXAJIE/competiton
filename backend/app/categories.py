@@ -115,6 +115,14 @@ EXPENSE: tuple[Category, ...] = (
 
 # --- Income ----------------------------------------------------------------
 INCOME: tuple[Category, ...] = (
+    # A customer paying an invoice you had already listed as owed. Kept as its own
+    # section so a repayment is not confused with new sales: it settles a
+    # receivable instead of creating fresh revenue (see app/settlement.py).
+    Category("ar", "AR", "AR",
+             "A customer paying back an invoice you already listed — this settles that receivable",
+             ("paid back", "pay back", "payback", "repayment", "repay",
+              "settled invoice", "invoice settled", "receivable", "arrears",
+              "debt recovery", "part payment", "owes me", "balance owing")),
     Category("salary", "Salary", "Work", "Regular wages from an employer",
              ("salary", "payroll", "wages", "payslip", "employer", "monthly pay", "bonus")),
     Category("business_income", "Business Income", "Work", "Sales or takings from your own business",
