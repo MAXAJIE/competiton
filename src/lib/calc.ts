@@ -1,7 +1,6 @@
 // Compartment B calc layer (SKILL.md §2). UI must call these, never recompute.
-// CONNECTION POINT: replace bodies with calls to the real Python/B functions or a Supabase view.
+// Mirrors backend/app/calc.py — keep the two in sync.
 import type { Transaction } from "./types";
-import { OPENING_BALANCE } from "./demo-data";
 const TODAY = "2026-11-14";
 const sum = (r: Transaction[]) => r.reduce((a, t) => a + t.amount, 0);
 
@@ -15,12 +14,18 @@ export function getMonthly(tx: Transaction[]) {
   return [...map.values()].sort((a, b) => a.month.localeCompare(b.month));
 }
 export function getCashBalance(tx: Transaction[]) {
-  return OPENING_BALANCE + sum(tx.filter(t => t.type === "income" && t.status === "paid")) - sum(tx.filter(t => t.type === "expense" && t.status === "paid"));
+  // Cash on hand = paid income − paid expense. No opening balance is assumed:
+  // the schema has no opening-balance column, so an empty ledger reads 0.
+  return sum(tx.filter(t => t.type === "income" && t.status === "paid")) - sum(tx.filter(t => t.type === "expense" && t.status === "paid"));
 }
 export function getAvgMonthlyBurn(tx: Transaction[]) {
   const m = getMonthly(tx).slice(-3); return m.reduce((a, x) => a + x.expense, 0) / Math.max(m.length, 1);
 }
-export function getRunwayMonths(tx: Transaction[]) { return getCashBalance(tx) / getAvgMonthlyBurn(tx); }
+/** Months of runway at current burn; null until there is any recorded burn. */
+export function getRunwayMonths(tx: Transaction[]): number | null {
+  const burn = getAvgMonthlyBurn(tx);
+  return burn > 0 ? getCashBalance(tx) / burn : null;
+}
 export function getArApSummary(tx: Transaction[]) {
   const open = (k: "ar" | "ap") => tx.filter(t => t.type === k && t.status !== "paid");
   const aging = (k: "ar" | "ap") => {
@@ -35,6 +40,6 @@ export function getArApSummary(tx: Transaction[]) {
 /** Method: trailing 3-month average of income. Stated in output per SKILL.md §3. */
 export function predictNextMonthRevenue(tx: Transaction[]) {
   const m = getMonthly(tx).slice(-3);
-  return { value: m.reduce((a, x) => a + x.income, 0) / m.length, method: "Trailing 3-month average of recorded income" };
+  return { value: m.length ? m.reduce((a, x) => a + x.income, 0) / m.length : 0, method: "Trailing 3-month average of recorded income" };
 }
 export const usd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });

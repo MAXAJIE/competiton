@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { Nav } from "../components/Nav";
 import { StoreProvider } from "../lib/store";
+import { AdvisorWidget } from "../components/AdvisorWidget";
 import { Toaster } from "../components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -128,6 +129,8 @@ function RootComponent() {
       <StoreProvider>
         <Nav />
         <Outlet />
+        {/* Persistent bottom-right robot button → advisor chat panel (all pages). */}
+        <AdvisorWidget />
         <Toaster />
       </StoreProvider>
     </QueryClientProvider>

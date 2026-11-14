@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
+import { signOut } from "@/lib/api";
 const links = [["/", "Dashboard"], ["/advisor", "Advisor"], ["/entry", "Entry"], ["/settings", "Settings"]] as const;
 export function Nav() {
   const { mode } = useStore();
@@ -9,6 +10,7 @@ export function Nav() {
         <Link to="/" className="font-display text-2xl">Cash<span className="italic text-accent">Monitoring</span></Link>
         <div className="flex items-center gap-6 text-sm">
           {links.map(([to, l]) => <Link key={to} to={to} activeOptions={{ exact: true }} className="text-muted-foreground hover:text-foreground [&.active]:text-foreground [&.active]:underline underline-offset-8">{l}</Link>)}
+          {mode === "user" && <button className="eyebrow border px-2 py-1 hover:bg-secondary" onClick={async () => { await signOut(); location.assign("/login"); }}>Sign out</button>}
           <Link to="/login" className="eyebrow border px-2 py-1">{mode === "guest" ? "Guest" : mode === "user" ? "Signed in" : "Sign in"}</Link>
         </div>
       </div>

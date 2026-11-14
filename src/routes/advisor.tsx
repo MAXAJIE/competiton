@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Page, Headline } from "@/components/Reveal";
 import { askAdvisor } from "@/lib/api";
@@ -23,11 +23,21 @@ function Advisor() {
   }, { dependencies: [msgs], scope: list });
   const ask = async (text: string) => {
     if (!text.trim()) return; setQ(""); setMsgs(m => [...m, { q: text }]);
-    const a = await askAdvisor(text, tx); setMsgs(m => m.map((x, i) => i === m.length - 1 ? { ...x, a } : x));
+    try {
+      const a = await askAdvisor(text, tx);
+      setMsgs(m => m.map((x, i) => i === m.length - 1 ? { ...x, a } : x));
+    } catch (e) {
+      const a: AdvisorReply = { text: e instanceof Error ? e.message : "The advisor is unavailable right now." };
+      setMsgs(m => m.map((x, i) => i === m.length - 1 ? { ...x, a } : x));
+    }
   };
   return (
     <Page>
       <Headline eyebrow="Advisor · tool-calling only" lines={["Ask anything.", "It won't guess."]} />
+      {tx.length === 0 && <div data-reveal className="mb-8 border-l-4 border-foreground/30 bg-secondary px-5 py-4">
+        <p className="eyebrow">No data yet</p>
+        <p className="mt-1">The advisor answers only from your recorded transactions. <Link to="/entry" className="italic text-accent underline underline-offset-4">Add an entry</Link> and it will have something to work with.</p>
+      </div>}
       <div className="flex flex-wrap gap-2" data-reveal>{prompts.map(p => <button key={p} onClick={() => ask(p)} className="btn">{p}</button>)}</div>
       <div ref={list} className="mt-10 space-y-10">
         {msgs.map((m, i) => (

@@ -7,5 +7,13 @@ export interface Transaction {
   due_date: string | null; status: TxStatus; source: "manual" | "ocr";
 }
 export interface RiskSettings { low_cash_threshold_months: number; warning_email: string; enabled: boolean; ar_overdue_spike_pct: number; }
-export interface OcrDraft { doc_type: "receipt" | "invoice" | "bank_statement"; fields: Partial<Transaction>; }
+export interface OcrDraft {
+  doc_type: "receipt" | "invoice" | "bank_statement";
+  fields: Partial<Transaction>;
+  /** Human-readable warnings from normalization (e.g. "date not readable"). */
+  notes?: string[];
+  /** Which pinned vision model produced this extraction. */
+  model?: string;
+  document_id?: string;
+}
 export interface AdvisorReply { text: string; tool?: string; figures?: { label: string; value: string }[]; }

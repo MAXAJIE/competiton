@@ -16,7 +16,6 @@ export function makeSeed(): Transaction[] {
   ap.forEach(([c, a, d, s]) => rows.push({ id: `t${i++}`, type: "ap", category: "Bill", vendor_or_customer: c, amount: a, currency: "USD", transaction_date: "2026-10-01", due_date: d, status: s, source: "manual" }));
   return rows;
 }
-export const OPENING_BALANCE = 8000;
 export const defaultRisk: RiskSettings = { low_cash_threshold_months: 3, warning_email: "owner@example.com", enabled: true, ar_overdue_spike_pct: 25 };
 export const demoMarket = {
   fetched_at: "2026-11-14T06:00:00Z",

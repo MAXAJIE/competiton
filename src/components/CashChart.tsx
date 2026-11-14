@@ -5,12 +5,23 @@ type M = { month: string; income: number; expense: number };
 export function CashChart({ data }: { data: M[] }) {
   const ref = useRef<SVGSVGElement>(null);
   const W = 720, H = 260, P = 30;
-  const max = Math.max(...data.map(d => Math.max(d.income, d.expense))) * 1.1;
+  // Nothing recorded yet: an empty frame, never an invented line.
+  if (data.length < 2) {
+    return (
+      <div className="mt-6 flex h-[260px] items-center justify-center border border-dashed">
+        <p className="text-sm text-muted-foreground">
+          {data.length === 0 ? "No monthly flow yet — add entries to see the trend." : "One month recorded — add another to see the trend."}
+        </p>
+      </div>
+    );
+  }
+  const max = Math.max(...data.map(d => Math.max(d.income, d.expense))) * 1.1 || 1;
   const x = (i: number) => P + (i * (W - 2 * P)) / (data.length - 1);
   const y = (v: number) => H - P - (v / max) * (H - 2 * P);
   const line = (k: "income" | "expense") => data.map((d, i) => `${i ? "L" : "M"}${x(i)},${y(d[k])}`).join(" ");
   useGSAP(() => {
-    ref.current!.querySelectorAll<SVGPathElement>("[data-draw]").forEach(p => {
+    if (!ref.current) return;
+    ref.current.querySelectorAll<SVGPathElement>("[data-draw]").forEach(p => {
       const L = p.getTotalLength(); gsap.fromTo(p, { strokeDasharray: L, strokeDashoffset: L }, { strokeDashoffset: 0, duration: 2, ease: "power2.inOut", scrollTrigger: { trigger: ref.current, start: "top 85%" } });
     });
     gsap.from("[data-dot]", { scale: 0, transformOrigin: "center", stagger: 0.08, delay: 1.2, duration: 0.5, ease: "back.out(3)", scrollTrigger: { trigger: ref.current, start: "top 85%" } });
