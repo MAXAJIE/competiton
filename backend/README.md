@@ -80,6 +80,33 @@ The snapshot is a job, never fetched per-request (`SKILL.md` §6):
 Run it on a timer (cron/Task Scheduler) during the build; `POST /api/market/refresh`
 (authenticated) covers on-demand refreshes.
 
+## Category schema
+
+`backend/app/categories.py` is the single source of truth, sized for a normal
+person or sole trader rather than company accounting (no Payroll/COGS/AP-department
+vocabulary):
+
+- **Expense** (25): Housing, Utilities, Phone & Internet, Groceries, Dining & Cafés,
+  Transport, Vehicle, Health, Insurance, Education, Shopping, Entertainment,
+  Subscriptions, Travel, Personal Care, Family & Childcare, Pets, Home & Repairs,
+  Debt & Loans, Bank Fees, Taxes, Gifts & Donations, Work & Business,
+  Savings & Investments, Other
+- **Income** (8): Salary, Business Income, Freelance & Side Work, Interest & Dividends,
+  Refunds & Reimbursements, Gifts Received, Benefits & Allowances, Other Income
+- **Receivable** (3) and **Payable** (4) equivalents for AR/AP rows
+
+Each category carries keywords, and `classify()` scores vendor + description text
+to pick the best fit. It is used in three places:
+
+1. **OCR** — the prompt lists the live taxonomy, then `resolve()` lets the
+   classifier overrule a vague model answer when keyword evidence is strong
+   (e.g. model says "Work & Business" for `NORTHGATE SUPPLIES` → `Shopping`, with
+   a note shown in the review dialog). Labels outside the taxonomy are repaired.
+2. **Manual entry** — the category field is a grouped select fed by
+   `GET /api/categories`, and typing a vendor auto-suggests the classifier's pick.
+3. **Write paths** — `save_manual_transaction` and the OCR confirm gate both coerce
+   to the taxonomy, so no out-of-schema category can reach `transactions`.
+
 ## OCR troubleshooting
 
 The scan flow is `File[] → POST /api/documents/ocr → detail dialog → POST /api/documents/{id}/confirm`.
@@ -112,6 +139,7 @@ confirms (`reviewed = true`, SKILL.md §4).
 | confirm form save | `POST /api/documents/{document_id}/confirm` `{fields}` → flips `reviewed=true` and writes the transaction in the same server-side call (`SKILL.md` §4 gate) |
 | `askAdvisor(q, tx)` | `POST /api/advisor` `{question, transactions}` → `{text, tool, figures:[{label,value}]}`; authenticated users may omit `transactions` (server reads their rows) |
 | `sendTestReport(email)` | `POST /api/reports/test` `{email}` → `{sentTo}` |
+| categories | `GET /api/categories` → `{expense: [...], income: [...], ar: [...], ap: [...]}`; `POST /api/categories/classify` `{vendor, text, type}` → best-fit category |
 | settings | `GET/PUT /api/settings` |
 | ledger load | `GET /api/transactions` → `{transactions: [...]}` |
 | market color | `GET /api/market/snapshot` → `{fetched_at, indicators, headlines}` |

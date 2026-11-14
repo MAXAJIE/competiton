@@ -11,7 +11,7 @@ from typing import Optional
 
 from supabase import Client, create_client
 
-from . import config
+from . import categories, config
 from .models import RiskSettings, Transaction
 
 
@@ -35,6 +35,9 @@ def list_transactions(user_id: str) -> list[dict]:
 def save_manual_transaction(user_id: str, t: Transaction) -> dict:
     row = t.model_dump(exclude={"id"})
     row["user_id"] = user_id
+    # Every write path lands on the shared taxonomy (categories.py).
+    row["category"] = categories.coerce(row.get("category", ""), row["type"],
+                                        row.get("vendor_or_customer", ""))
     return _user_client(user_id).table("transactions").insert(row).execute().data[0]
 
 
@@ -65,7 +68,9 @@ def confirm_document_and_save(user_id: str, document_id: str,
 
     t = Transaction(**{
         "type": fields.get("type") or "expense",
-        "category": fields.get("category") or "",
+        "category": categories.coerce(fields.get("category", ""),
+                                      fields.get("type") or "expense",
+                                      fields.get("vendor_or_customer") or ""),
         "vendor_or_customer": fields.get("vendor_or_customer") or "",
         "amount": fields.get("amount"),
         "transaction_date": fields.get("transaction_date"),

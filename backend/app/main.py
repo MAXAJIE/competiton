@@ -24,7 +24,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 
-from . import advisor, config, db, market, ocr, reports
+from . import advisor, categories, config, db, market, ocr, reports
 from .models import AdvisorQuestion, RiskSettings, Transaction
 
 app = FastAPI(title="CashMonitoring backend", version="0.1.0")
@@ -48,6 +48,31 @@ def require_user(user_id: str | None) -> str:
 
 def get_tx(user_id: str) -> list[Transaction]:
     return [Transaction(**row) for row in db.list_transactions(user_id)]
+
+
+# --- categories (single source of truth for the UI) --------------------------
+
+class ClassifyBody(BaseModel):
+    vendor: str = ""
+    text: str = ""
+    type: str = "expense"
+    amount: float | None = None
+
+
+@app.get("/api/categories")
+def get_categories() -> dict:
+    """The full category schema, grouped by transaction type."""
+    return categories.taxonomy()
+
+
+@app.post("/api/categories/classify")
+def classify_category(body: ClassifyBody) -> dict:
+    """Best-fit category for a vendor/description — used by the entry form to
+    auto-suggest, and by OCR to repair out-of-schema answers."""
+    label, confidence, hits = categories.classify(
+        body.vendor, body.text, body.type if body.type in categories.BY_TYPE else "expense",
+        body.amount)
+    return {"category": label, "confidence": confidence, "matched": hits}
 
 
 @app.get("/api/health")

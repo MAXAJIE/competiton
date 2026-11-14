@@ -20,40 +20,50 @@ from typing import Optional
 
 import httpx
 
-from . import config, db
+from . import categories, config, db
 
 # Valid transaction vocabulary (SKILL.md §9).
 _TYPES = {"income", "expense", "ar", "ap"}
 _STATUSES = {"paid", "pending", "overdue"}
 _DOC_TYPES = {"receipt", "invoice", "bank_statement"}
 
-EXTRACTION_PROMPTS: dict[str, str] = {
-    "receipt": (
-        "Read this receipt image and return ONE JSON object (never an array) with exactly "
-        "these keys: transaction_date (YYYY-MM-DD), vendor_or_customer (the shop name), "
-        "amount (the FINAL TOTAL paid as a number, not a line item), category (one of: "
-        "Rent, Payroll, Supplies, Software, Utilities, Sales, Invoice, Bill, Other), "
-        'type (always "expense"), status (always "paid"). Return only the JSON object.'
-    ),
-    "invoice": (
-        "Read this invoice image and return ONE JSON object (never an array) with exactly "
-        "these keys: transaction_date (issue date, YYYY-MM-DD), vendor_or_customer, "
-        "amount (the FINAL INVOICE TOTAL as a number, not a line item), category "
-        '("Invoice" if this business issued it, "Bill" if received), type ("ar" if the '
-        'business is owed money, "ap" if it owes), due_date (YYYY-MM-DD or null), status '
-        '("pending" unless the document shows it was already settled, then "paid"). '
-        "Return only the JSON object."
-    ),
-    "bank_statement": (
-        "Read this bank statement image and return ONE JSON object (never an array) with "
-        "exactly these keys: transaction_date (YYYY-MM-DD), vendor_or_customer "
-        "(counterparty), amount (the transaction amount as a positive number), category "
-        "(one of: Rent, Payroll, Supplies, Software, Utilities, Sales, Invoice, Bill, "
-        'Other), type ("income" for money in, "expense" for money out), status (always '
-        '"paid"). If several lines are visible, use the first line only. Return only the '
-        "JSON object."
-    ),
-}
+def _prompt(doc_type: str) -> str:
+    """Fixed extraction prompt per doc_type, with the live category taxonomy.
+
+    The category list is injected from categories.py so the model picks from the
+    same schema the UI and classifier use, and normalize_fields still coerces
+    whatever it answers back into that schema.
+    """
+    kinds = {"receipt": ["expense"],
+             "invoice": ["ar", "ap"],
+             "bank_statement": ["income", "expense"]}[doc_type]
+    cat_lines = "\n".join(f"- {k}: {categories.prompt_list(k)}" for k in kinds)
+    common = (
+        "Return ONE JSON object (never an array) and nothing else. Keys: "
+        "transaction_date (YYYY-MM-DD), vendor_or_customer, amount (a number), "
+        "category, type, status."
+    )
+    if doc_type == "receipt":
+        return (
+            f"Read this receipt/shop bill image. {common} amount must be the FINAL "
+            'TOTAL paid (not a line item). type is always "expense", status is '
+            'always "paid".\nChoose category from this list ONLY:\n' + cat_lines
+        )
+    if doc_type == "invoice":
+        return (
+            f"Read this invoice image. {common} amount must be the INVOICE TOTAL. "
+            'Use type "ar" if this business is owed the money, "ap" if the business '
+            'owes it; include due_date (YYYY-MM-DD or null); status "pending" unless '
+            'the document shows it was settled.\n'
+            "Choose category from this list ONLY:\n" + cat_lines
+        )
+    return (
+        f"Read this bank statement image. {common} Use type \"income\" for money in "
+        'and "expense" for money out, status "paid", vendor_or_customer = the '
+        "counterparty, amount = a positive number.\n"
+        "Choose category from this list ONLY:\n" + cat_lines
+    )
+
 
 _DATE_FORMATS = (
     "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y",
@@ -191,7 +201,16 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
     fields["status"] = status if status in _STATUSES else ("paid" if doc_type != "invoice" else "pending")
 
     category = str(obj.get("category") or "").strip()
-    fields["category"] = category or ("Invoice" if tx_type == "ar" else "Bill" if tx_type == "ap" else "Other")
+    # The keyword classifier arbitrates: when the vendor strongly matches a
+    # category, it overrules a vague model answer (and repairs labels that are
+    # not in the taxonomy at all).
+    resolved, changed, hits = categories.resolve(
+        category, tx_type, fields["vendor_or_customer"],
+        str(obj.get("description") or ""))
+    if changed:
+        matched = f" (matched: {', '.join(hits[:3])})" if hits else ""
+        notes.append(f"Category '{category or 'none'}' set to '{resolved}'{matched}.")
+    fields["category"] = resolved
 
     if tx_type in ("ar", "ap"):
         fields["due_date"] = _date(obj.get("due_date")) or fields["transaction_date"]
@@ -206,7 +225,7 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
 def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
                 max_tokens: int) -> object:
     """One extraction request. Returns parsed JSON or raises with a clear reason."""
-    content: list[dict] = [{"type": "text", "text": EXTRACTION_PROMPTS[doc_type]}]
+    content: list[dict] = [{"type": "text", "text": _prompt(doc_type)}]
     for filename, content_type, data in images:
         content.append({"type": "image_url",
                         "image_url": {"url": _image_data_url(filename, content_type, data)}})
