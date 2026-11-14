@@ -231,7 +231,7 @@ def send_test_report(body: EmailBody,
         raise HTTPException(503, str(e))
     except Exception as e:
         raise HTTPException(502, f"Email send failed: {e}")
-    return {"sentTo": email}
+    return {"sentTo": body.email}
 
 
 # --- market snapshot (B3) ----------------------------------------------------
