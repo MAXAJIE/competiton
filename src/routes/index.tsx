@@ -1,91 +1,647 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  CircleDollarSign,
+  Clock3,
+  CreditCard,
+  Landmark,
+  Plus,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Page, Headline } from "@/components/Reveal";
 import { CountUp } from "@/components/CountUp";
-import { CashChart } from "@/components/CashChart";
+import { InteractiveCard } from "@/components/InteractiveCard";
+import { MovingWave } from "@/components/MovingWave";
 import { useStore } from "@/lib/store";
-import { getArApSummary, getCashBalance, getMonthly, getRunwayMonths, predictNextMonthRevenue, usd } from "@/lib/calc";
+import {
+  getArApSummary,
+  getCashBalance,
+  getMonthly,
+  getRunwayMonths,
+  predictNextMonthRevenue,
+  usd,
+} from "@/lib/calc";
 import { fetchMarketSnapshot } from "@/lib/api";
-import { gsap, useGSAP } from "@/lib/motion";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Dashboard — CashMonitoring" }, { name: "description", content: "Cash position, runway, AR/AP aging and trend for your business." }, { property: "og:title", content: "CashMonitoring Dashboard" }, { property: "og:description", content: "Cash position, runway and AR/AP at a glance." }] }),
+  head: () => ({
+    meta: [
+      { title: "Overview — Cashflow" },
+      {
+        name: "description",
+        content: "A clear view of your cash position, runway and receivables.",
+      },
+    ],
+  }),
   component: Dashboard,
 });
 
+type MarketSnapshot = Awaited<ReturnType<typeof fetchMarketSnapshot>>;
+
 function Dashboard() {
   const { tx, risk, mode, loaded } = useStore();
-  // Cached snapshot from the backend job; with none, say so rather than
-  // showing invented indicator values.
-  const [market, setMarket] = useState<{ indicators: { k: string; v: string; d: string }[]; headlines: string[] }>({ indicators: [], headlines: [] });
+  const [market, setMarket] = useState<MarketSnapshot | undefined>();
+  const [reduceMotion, setReduceMotion] = useState(false);
+
   useEffect(() => {
-    fetchMarketSnapshot().then(s => s && setMarket({ indicators: s.indicators, headlines: s.headlines }));
+    let active = true;
+    fetchMarketSnapshot().then((snapshot) => {
+      if (active) setMarket(snapshot);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
-  const cash = getCashBalance(tx), runway = getRunwayMonths(tx), arap = getArApSummary(tx), pred = predictNextMonthRevenue(tx);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduceMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  const monthly = useMemo(() => getMonthly(tx).slice(-6), [tx]);
+  const cash = getCashBalance(tx);
+  const runway = getRunwayMonths(tx);
+  const arap = getArApSummary(tx);
+  const projection = predictNextMonthRevenue(tx);
   const empty = loaded && mode !== null && tx.length === 0;
-  const warn = risk.enabled && runway !== null && runway < risk.low_cash_threshold_months;
-  const banner = useRef<HTMLDivElement>(null);
-  useGSAP(() => { if (warn) gsap.from(banner.current, { height: 0, opacity: 0, duration: 0.8, delay: 1, ease: "expo.out" }); }, { dependencies: [warn] });
-  const maxAging = Math.max(...Object.values(arap.arAging), 1);
+  const needsWorkspace = loaded && mode === null;
+  const warning = risk.enabled && runway !== null && runway < risk.low_cash_threshold_months;
+  const runwayProgress =
+    runway === null
+      ? 0
+      : Math.min(100, Math.max(0, (runway / Math.max(risk.low_cash_threshold_months, 1)) * 100));
+  const today = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(new Date());
+
   return (
     <Page>
-      <Headline eyebrow="Saturday · 14 November 2026" lines={["The ledger,", "read plainly."]} />
-      {warn && <div ref={banner} className="mb-10 overflow-hidden border-l-4 border-warning bg-warning-soft px-5 py-4">
-        <p className="eyebrow text-warning">Risk vault</p>
-        <p className="mt-1 font-display text-2xl">Runway is {runway!.toFixed(1)} months — under your {risk.low_cash_threshold_months}-month threshold.</p>
-      </div>}
-      {empty && <div className="mb-10 border-l-4 border-foreground/30 bg-secondary px-5 py-4">
-        <p className="eyebrow">Nothing recorded yet</p>
-        <p className="mt-1 font-display text-2xl">Your ledger is empty. <Link to="/entry" className="italic text-accent underline underline-offset-4">Add your first entry →</Link></p>
-        <p className="mt-1 text-sm text-muted-foreground">Every figure below stays at zero until you enter a transaction — nothing is assumed.</p>
-      </div>}
-      <section className="grid gap-px bg-border md:grid-cols-4">
-        {[["Cash on hand", cash, usd], ["Runway", runway, (n: number) => `${n.toFixed(1)} mo`], ["Open receivables", arap.ar, usd], ["Open payables", arap.ap, usd]].map(([l, v, f], i) => (
-          <div key={l as string} data-reveal className="bg-background p-6">
-            <p className="eyebrow">{l as string}</p>
-            <p className={`mt-3 text-3xl ${i === 1 && warn ? "text-warning" : ""}`}>
-              {v === null ? <span className="text-muted-foreground">—</span> : <CountUp value={v as number} format={f as (n: number) => string} delay={0.4 + i * 0.1} />}
+      <div className="relative isolate mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="relative z-10">
+          <p className="eyebrow mb-2">
+            {today} <span className="mx-1.5 text-slate-300">/</span> Financial overview
+          </p>
+          <h1 className="text-[2.65rem] leading-none sm:text-5xl">
+            Good to see you<span className="text-accent">.</span>
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+            Your cash position, without the guesswork.
+          </p>
+        </div>
+        <Link to="/entry" className="btn btn-solid relative z-10" data-reveal>
+          <Plus aria-hidden className="h-4 w-4" /> Add transaction
+        </Link>
+      </div>
+
+      {warning && (
+        <div
+          data-reveal
+          className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-950 sm:items-center sm:px-5"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <ShieldAlert aria-hidden className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Runway is below your safety threshold</p>
+            <p className="mt-0.5 text-sm text-amber-800">
+              You have {runway!.toFixed(1)} months of runway against your{" "}
+              {risk.low_cash_threshold_months}-month target.
             </p>
-          </div>))}
-      </section>
-      <section data-scroll className="mt-16 grid gap-10 md:grid-cols-3">
-        <div className="md:col-span-2">
-          <div className="flex items-baseline justify-between"><h2 className="text-3xl">Six months of flow</h2><p className="eyebrow"><span className="text-accent">━</span> income &nbsp; ┅ expense &nbsp; ▮ net</p></div>
-          <CashChart data={getMonthly(tx)} />
+          </div>
+          <Link
+            to="/settings"
+            className="hidden items-center gap-1 text-sm font-semibold text-amber-900 hover:underline sm:inline-flex"
+          >
+            Review settings <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-        <aside className="border-l pl-6">
-          <p className="eyebrow">Projection · next month</p>
-          <p className="mt-2 text-4xl">{pred.value ? <CountUp value={pred.value} format={usd} /> : <span className="text-muted-foreground">—</span>}</p>
-          <p className="mt-2 text-sm text-muted-foreground">{pred.value ? `${pred.method}.` : "Needs recorded income before a projection can be made."}</p>
-          <div className="rule my-6" />
-          <p className="eyebrow">Overdue AR</p>
-          <p className="mt-2 text-2xl text-destructive">{arap.arOverdue ? <CountUp value={arap.arOverdue} format={usd} /> : <span className="text-muted-foreground">—</span>}</p>
-        </aside>
-      </section>
-      <section data-scroll className="mt-16 grid gap-10 md:grid-cols-2">
-        <div>
-          <h2 className="text-3xl">Receivables aging</h2>
-          {arap.ar === 0 && <p className="mt-4 text-sm text-muted-foreground">No open invoices yet.</p>}
-          <div className="mt-6 space-y-4">{Object.entries(arap.arAging).map(([k, v]) => (
-            <div key={k}><div className="flex justify-between text-sm"><span className="num">{k === "current" ? "Not yet due" : `${k} days`}</span><span className="num">{usd(v)}</span></div>
-              <div className="mt-1 h-2 bg-secondary"><AgingBar pct={v / maxAging} /></div></div>))}</div>
+      )}
+
+      {needsWorkspace && (
+        <div
+          data-reveal
+          className="mb-6 flex flex-col gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        >
+          <div>
+            <p className="eyebrow text-indigo-700">Choose your workspace</p>
+            <h2 className="mt-1 text-2xl text-slate-900">
+              Start with your own ledger or explore the demo.
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-600">
+              Your dashboard is empty until you sign in or choose guest mode. No figures have been
+              assumed.
+            </p>
+          </div>
+          <Link to="/login" className="btn btn-accent shrink-0">
+            Continue <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-        <div>
-          <h2 className="text-3xl">Market colour</h2>
-          <p className="text-sm text-muted-foreground">Qualitative context only — never used in calculations.</p>
-          {market.indicators.length === 0 && market.headlines.length === 0
-            ? <p className="mt-6 text-sm text-muted-foreground">No market snapshot yet — run the snapshot job (see backend/README.md).</p>
-            : <>
-              <div className="mt-6 grid grid-cols-2 gap-4">{market.indicators.map(m => <div key={m.k} className="border-t pt-2"><p className="eyebrow">{m.k}</p><p className="num text-lg">{m.v} <span className="text-xs text-muted-foreground">{m.d}</span></p></div>)}</div>
-              <ul className="mt-6 space-y-2 font-display text-lg italic">{market.headlines.map(h => <li key={h}>“{h}”</li>)}</ul>
-            </>}
+      )}
+
+      {empty && (
+        <div
+          data-reveal
+          className="mb-6 flex flex-col gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        >
+          <div>
+            <p className="eyebrow text-indigo-700">A fresh start</p>
+            <h2 className="mt-1 text-2xl text-slate-900">
+              Your ledger is ready for its first entry.
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-600">
+              Add a transaction to see your cash position, runway and trends. Nothing is assumed.
+            </p>
+          </div>
+          <Link to="/entry" className="btn btn-accent shrink-0">
+            Add your first entry <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-      </section>
+      )}
+
+      {!loaded ? (
+        <div
+          className="grid gap-4 lg:grid-cols-12"
+          aria-label="Loading financial overview"
+          aria-busy="true"
+        >
+          <div className="h-64 animate-pulse rounded-3xl bg-slate-200/70 lg:col-span-5" />
+          <div className="grid gap-4 sm:grid-cols-3 lg:col-span-7">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-64 animate-pulse rounded-3xl bg-slate-200/70" />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <section aria-label="Cash position" className="grid gap-4 lg:grid-cols-12">
+            <InteractiveCard
+              ribbon={false}
+              animateOnMount
+              entranceIndex={0}
+              data-reveal
+              className={`relative overflow-hidden rounded-3xl bg-[#172641] p-6 text-white shadow-[0_16px_40px_rgba(23,38,65,0.14)] sm:p-8 lg:col-span-5 ${warning ? "ring-2 ring-amber-300/70" : ""}`}
+            >
+              <MovingWave variant="cash" />
+              <div
+                aria-hidden
+                className="absolute -right-10 -top-14 h-52 w-52 rounded-full border border-white/10"
+              />
+              <div
+                aria-hidden
+                className="absolute -right-1 -top-5 h-36 w-36 rounded-full border border-white/10"
+              />
+              <div className="relative flex items-center justify-between">
+                <p className="eyebrow text-slate-300">Cash on hand</p>
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-indigo-200">
+                  <Landmark aria-hidden className="h-[18px] w-[18px]" />
+                </span>
+              </div>
+              <p className="relative mt-8 text-4xl font-medium tracking-tight sm:text-5xl">
+                <CountUp value={cash} format={usd} delay={0.15} />
+              </p>
+              <div className="relative mt-8 border-t border-white/15 pt-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="eyebrow text-slate-400">Estimated runway</p>
+                    <p className={`num mt-1 text-2xl ${warning ? "text-amber-300" : "text-white"}`}>
+                      {runway === null ? (
+                        "—"
+                      ) : (
+                        <CountUp
+                          value={runway}
+                          format={(value) => `${value.toFixed(1)} mo`}
+                          delay={0.3}
+                        />
+                      )}
+                    </p>
+                  </div>
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-full ${warning ? "bg-amber-400/15 text-amber-300" : "bg-emerald-400/15 text-emerald-300"}`}
+                  >
+                    {warning ? (
+                      <ArrowDownRight aria-hidden className="h-5 w-5" />
+                    ) : (
+                      <ArrowUpRight aria-hidden className="h-5 w-5" />
+                    )}
+                  </span>
+                </div>
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15">
+                  <div
+                    className={`h-full rounded-full transition-[width] duration-700 ${warning ? "bg-amber-300" : "bg-emerald-300"}`}
+                    style={{ width: `${runwayProgress}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  {runway === null
+                    ? "Add expense activity to estimate runway"
+                    : `Safety target: ${risk.low_cash_threshold_months} months`}
+                </p>
+              </div>
+            </InteractiveCard>
+
+            <div className="relative isolate h-full lg:col-span-7">
+              <MovingWave variant="shared" />
+              <div className="relative z-10 grid h-full auto-rows-fr gap-4 sm:grid-cols-3">
+                <MetricCard
+                  label="Open receivables"
+                  value={arap.ar}
+                  icon={CircleDollarSign}
+                  hint={
+                    arap.arOverdue > 0 ? `${usd(arap.arOverdue)} overdue` : "No overdue invoices"
+                  }
+                  tone={arap.arOverdue > 0 ? "warning" : "default"}
+                  delay={0.25}
+                  entranceIndex={1}
+                />
+                <MetricCard
+                  label="Open payables"
+                  value={arap.ap}
+                  icon={CreditCard}
+                  hint="Bills not yet paid"
+                  delay={0.35}
+                  entranceIndex={2}
+                />
+                <InteractiveCard
+                  ribbon={false}
+                  animateOnMount
+                  entranceIndex={3}
+                  data-reveal
+                  className="surface dashboard-metric-card flex min-h-48 flex-col overflow-hidden p-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="eyebrow">Next month forecast</p>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                      <Sparkles aria-hidden className="h-[18px] w-[18px]" />
+                    </span>
+                  </div>
+                  <p className="num mt-5 text-2xl font-medium text-slate-900">
+                    {projection.value > 0 ? (
+                      <CountUp value={projection.value} format={usd} delay={0.45} />
+                    ) : (
+                      "—"
+                    )}
+                  </p>
+                  <p className="mt-auto pt-3 text-xs leading-relaxed text-muted-foreground">
+                    {projection.value > 0
+                      ? projection.method
+                      : "Record income to build a projection."}
+                  </p>
+                </InteractiveCard>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-5 grid gap-5 xl:grid-cols-12">
+            <InteractiveCard
+              ribbon={false}
+              data-scroll
+              tilt={0}
+              className="surface min-w-0 p-5 sm:p-7 xl:col-span-8"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="eyebrow">Cash movement</p>
+                  <h2 className="mt-1 text-3xl">Income &amp; expenses</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Monthly totals from your recorded transactions
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 pt-1 text-xs text-slate-600">
+                  <span className="inline-flex items-center gap-2">
+                    <i className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+                    Income
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <i className="h-2.5 w-2.5 rounded-full bg-teal-500" />
+                    Expenses
+                  </span>
+                </div>
+              </div>
+              {monthly.length < 2 ? (
+                <div className="mt-6 flex h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 text-center">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
+                    <Clock3 className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 font-semibold text-slate-800">
+                    {monthly.length === 0 ? "Your cash story starts here" : "One month recorded"}
+                  </p>
+                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                    {monthly.length === 0
+                      ? "Once you record transactions, monthly cash movement will appear here."
+                      : "Add another month of activity to reveal the trend."}
+                  </p>
+                  <Link
+                    to="/entry"
+                    className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
+                  >
+                    Add a transaction <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              ) : (
+                <div
+                  className="mt-6 h-[280px] w-full"
+                  aria-label="Monthly income and expense chart"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthly} margin={{ top: 8, right: 6, left: -16, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#4968e8" stopOpacity={0.18} />
+                          <stop offset="95%" stopColor="#4968e8" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#22a58b" stopOpacity={0.14} />
+                          <stop offset="95%" stopColor="#22a58b" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} stroke="#edf0f5" strokeDasharray="4 5" />
+                      <XAxis
+                        dataKey="month"
+                        tickFormatter={(value) =>
+                          new Date(`${value}-01T12:00:00`).toLocaleDateString("en-US", {
+                            month: "short",
+                          })
+                        }
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748b", fontSize: 11 }}
+                        dy={10}
+                      />
+                      <YAxis
+                        tickFormatter={(value) =>
+                          value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${value}`
+                        }
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748b", fontSize: 11 }}
+                        width={52}
+                      />
+                      <Tooltip
+                        cursor={{ stroke: "#d9dfeb", strokeDasharray: "4 4" }}
+                        contentStyle={{
+                          border: "1px solid #e3e8f0",
+                          borderRadius: 14,
+                          boxShadow: "0 10px 24px rgba(22,37,63,.10)",
+                          fontSize: 12,
+                        }}
+                        labelFormatter={(value) =>
+                          new Date(`${value}-01T12:00:00`).toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })
+                        }
+                        formatter={(value, name) => [
+                          usd(Number(value)),
+                          name === "income" ? "Income" : "Expenses",
+                        ]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="income"
+                        stroke="#4968e8"
+                        strokeWidth={2.5}
+                        fill="url(#incomeFill)"
+                        activeDot={{ r: 5, strokeWidth: 0 }}
+                        isAnimationActive={!reduceMotion}
+                        animationDuration={800}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="expense"
+                        stroke="#22a58b"
+                        strokeWidth={2}
+                        fill="url(#expenseFill)"
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        isAnimationActive={!reduceMotion}
+                        animationDuration={800}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </InteractiveCard>
+
+            <InteractiveCard
+              ribbon={false}
+              data-scroll
+              tilt={0}
+              className="surface p-5 sm:p-7 xl:col-span-4"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="eyebrow">Receivables</p>
+                  <h2 className="mt-1 text-3xl">Aging</h2>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                  {usd(arap.ar)} open
+                </span>
+              </div>
+              <div className="mt-7 space-y-5">
+                {Object.entries(arap.arAging).map(([bucket, amount], index) => {
+                  const labels: Record<string, string> = {
+                    current: "Not yet due",
+                    "1-30": "1–30 days",
+                    "31-60": "31–60 days",
+                    "60+": "60+ days",
+                  };
+                  const percentage = arap.ar > 0 ? (amount / arap.ar) * 100 : 0;
+                  return (
+                    <div key={bucket}>
+                      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="text-slate-600">{labels[bucket] ?? bucket}</span>
+                        <span className="num text-xs font-medium text-slate-800">
+                          {usd(amount)}
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full transition-[width] duration-700 ${index >= 2 ? "bg-amber-400" : "bg-indigo-500"}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {arap.ar === 0 && (
+                <p className="mt-5 rounded-xl bg-slate-50 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
+                  No open invoices. When you add receivables, their due-date distribution will show
+                  here.
+                </p>
+              )}
+              <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                <span className="text-xs text-muted-foreground">Overdue receivables</span>
+                <span
+                  className={`num text-sm font-semibold ${arap.arOverdue > 0 ? "text-rose-600" : "text-slate-700"}`}
+                >
+                  {usd(arap.arOverdue)}
+                </span>
+              </div>
+            </InteractiveCard>
+          </section>
+
+          <section data-scroll className="mt-5 grid gap-5 lg:grid-cols-12">
+            <InteractiveCard ribbon={false} tilt={0} className="surface p-5 sm:p-7 lg:col-span-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="eyebrow">Cash planning</p>
+                  <h2 className="mt-1 text-3xl">A useful next step</h2>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {arap.arOverdue > 0
+                  ? `You have ${usd(arap.arOverdue)} in overdue receivables. A quick follow-up could help bring cash in sooner.`
+                  : runway !== null && warning
+                    ? "Your runway is under the threshold you set. Review upcoming expenses and your risk settings."
+                    : "Keep your ledger current to make your runway and monthly trends more useful."}
+              </p>
+              <Link
+                to={arap.arOverdue > 0 ? "/advisor" : "/entry"}
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent hover:gap-3"
+              >
+                {arap.arOverdue > 0 ? "Ask the advisor about AR" : "Keep your ledger up to date"}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </InteractiveCard>
+
+            <InteractiveCard ribbon={false} tilt={0} className="surface p-5 sm:p-7 lg:col-span-7">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="eyebrow">External context</p>
+                  <h2 className="mt-1 text-3xl">Market snapshot</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Qualitative context only — never used in cash calculations.
+                  </p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600">
+                  Informational
+                </span>
+              </div>
+              {market === undefined ? (
+                <div
+                  className="mt-5 grid gap-3 sm:grid-cols-2"
+                  aria-label="Loading market snapshot"
+                  aria-busy="true"
+                >
+                  {[0, 1, 2, 3].map((item) => (
+                    <div key={item} className="h-[68px] animate-pulse rounded-xl bg-slate-100" />
+                  ))}
+                </div>
+              ) : market === null || (!market.indicators.length && !market.headlines.length) ? (
+                <div className="mt-5 flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500">
+                    <Clock3 className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">No snapshot available</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      The cached snapshot could not be loaded from the backend.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {market.indicators.map((indicator) => (
+                      <div
+                        key={indicator.k}
+                        className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3"
+                      >
+                        <p className="eyebrow">{indicator.k}</p>
+                        <p className="num mt-1 text-base font-semibold text-slate-900">
+                          {indicator.v}
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            {indicator.d}
+                          </span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  {market.headlines.length > 0 && (
+                    <ul className="mt-4 space-y-2 border-t border-slate-100 pt-4">
+                      {market.headlines.slice(0, 3).map((headline) => (
+                        <li
+                          key={headline}
+                          className="flex gap-2 text-sm leading-relaxed text-slate-600"
+                        >
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                          {headline}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </InteractiveCard>
+          </section>
+        </>
+      )}
     </Page>
   );
 }
-function AgingBar({ pct }: { pct: number }) {
-  const r = useRef<HTMLDivElement>(null);
-  useGSAP(() => { gsap.fromTo(r.current, { scaleX: 0 }, { scaleX: pct, transformOrigin: "left", duration: 1.4, ease: "expo.out", scrollTrigger: { trigger: r.current, start: "top 90%" } }); });
-  return <div ref={r} className="h-full w-full bg-accent" />;
+
+function MetricCard({
+  label,
+  value,
+  icon: Icon,
+  hint,
+  tone = "default",
+  delay,
+  entranceIndex,
+}: {
+  label: string;
+  value: number;
+  icon: typeof CircleDollarSign;
+  hint: string;
+  tone?: "default" | "warning";
+  delay: number;
+  entranceIndex: number;
+}) {
+  return (
+    <InteractiveCard
+      ribbon={false}
+      animateOnMount
+      entranceIndex={entranceIndex}
+      data-reveal
+      className="surface dashboard-metric-card flex min-h-48 flex-col overflow-hidden p-5"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className="eyebrow">{label}</p>
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-xl ${tone === "warning" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+        >
+          <Icon aria-hidden className="h-[18px] w-[18px]" />
+        </span>
+      </div>
+      <p className="num mt-5 text-2xl font-medium text-slate-900">
+        <CountUp value={value} format={usd} delay={delay} />
+      </p>
+      <p
+        className={`mt-auto pt-3 text-xs ${tone === "warning" ? "font-medium text-amber-700" : "text-muted-foreground"}`}
+      >
+        {hint}
+      </p>
+    </InteractiveCard>
+  );
 }

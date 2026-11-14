@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as EntryRouteImport } from './routes/entry'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 
@@ -30,6 +31,11 @@ const EntryRoute = EntryRouteImport.update({
   path: '/entry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/advisor': typeof AdvisorRoute
   '/entry': typeof EntryRoute
+  '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/advisor': typeof AdvisorRoute
   '/entry': typeof EntryRoute
+  '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
 }
@@ -60,21 +68,30 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/advisor': typeof AdvisorRoute
   '/entry': typeof EntryRoute
+  '/history': typeof HistoryRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/advisor' | '/entry' | '/login' | '/settings'
+  fullPaths: '/' | '/advisor' | '/entry' | '/history' | '/login' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/advisor' | '/entry' | '/login' | '/settings'
-  id: '__root__' | '/' | '/advisor' | '/entry' | '/login' | '/settings'
+  to: '/' | '/advisor' | '/entry' | '/history' | '/login' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/advisor'
+    | '/entry'
+    | '/history'
+    | '/login'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdvisorRoute: typeof AdvisorRoute
   EntryRoute: typeof EntryRoute
+  HistoryRoute: typeof HistoryRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -102,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -123,6 +147,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdvisorRoute: AdvisorRoute,
   EntryRoute: EntryRoute,
+  HistoryRoute: HistoryRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
 }

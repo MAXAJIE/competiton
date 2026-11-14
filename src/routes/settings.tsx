@@ -1,72 +1,289 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { BellRing, CircleGauge, Mail, Save, ShieldCheck } from "lucide-react";
 import { Page, Headline } from "@/components/Reveal";
+import { InteractiveCard } from "@/components/InteractiveCard";
 import { useStore } from "@/lib/store";
 import { getRiskSettings, saveRiskSettings, sendTestReport } from "@/lib/api";
 import { getRunwayMonths } from "@/lib/calc";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Risk vault — CashMonitoring" }, { name: "description", content: "Set your low-cash threshold and report email." }, { property: "og:title", content: "Risk vault — CashMonitoring" }, { property: "og:description", content: "Your own rules for when to worry." }] }),
+  head: () => ({
+    meta: [
+      { title: "Risk settings — Cashflow" },
+      {
+        name: "description",
+        content: "Set your runway threshold, overdue receivables warning and report email.",
+      },
+    ],
+  }),
   component: Settings,
 });
+
 function Settings() {
   const { risk, setRisk, mode, tx } = useStore();
-  const [r, setR] = useState(risk);
+  const [values, setValues] = useState(risk);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
   const runway = getRunwayMonths(tx);
 
-  // Signed-in users: hydrate from the backend on load.
   useEffect(() => {
-    if (mode !== "user") return;
-    getRiskSettings().then(s => { if (s) setR(s); }).catch(e => console.warn("settings load:", e));
-  }, [mode]);
+    if (mode !== "user") {
+      setValues(risk);
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    getRiskSettings()
+      .then((settings) => {
+        if (active && settings) setValues(settings);
+      })
+      .catch((error) => {
+        if (active)
+          toast.error(
+            error instanceof Error
+              ? `Could not load settings: ${error.message}`
+              : "Could not load settings.",
+          );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mode, risk]);
+
+  const update = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => {
+    setValues((current) => ({ ...current, [key]: value }));
+  };
 
   const save = async () => {
     setBusy(true);
     try {
-      if (mode === "user") setRisk(await saveRiskSettings(r));
-      else setRisk(r); // guest: session state only, nothing persisted (SKILL.md §8)
-      toast.success(mode === "user" ? "Settings saved" : "Saved for this session (guest)");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      if (mode === "user") setRisk(await saveRiskSettings(values));
+      else setRisk(values);
+      toast.success(mode === "user" ? "Risk settings saved" : "Saved for this guest session");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save your settings.");
     } finally {
       setBusy(false);
     }
   };
+
   const sendTest = async () => {
-    if (mode !== "user") { toast.error("Sign in to send reports — guest mode never sends email."); return; }
+    if (mode !== "user") {
+      toast.error("Sign in to send reports. Guest mode never sends email.");
+      return;
+    }
     setBusy(true);
     try {
-      await saveRiskSettings(r); // report reflects exactly what you see on screen
-      const s = await sendTestReport(r.warning_email);
-      toast(`Test report queued to ${s.sentTo}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Send failed");
+      await saveRiskSettings(values);
+      setRisk(values);
+      const result = await sendTestReport(values.warning_email);
+      toast.success(`Test report sent to ${result.sentTo}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send the test report.");
     } finally {
       setBusy(false);
     }
   };
+
   return (
     <Page>
-      <Headline eyebrow="Settings · risk vault" lines={["Your rules", "for when to worry."]} />
-      <div className="grid gap-12 md:grid-cols-2">
-        <div data-reveal>
-          <p className="eyebrow">Warn me when runway falls below</p>
-          <p className="mt-2 font-display text-7xl">{r.low_cash_threshold_months}<span className="text-2xl italic text-muted-foreground"> months</span></p>
-          <input type="range" min={1} max={12} value={r.low_cash_threshold_months} onChange={e => setR({ ...r, low_cash_threshold_months: +e.target.value })} className="mt-4 w-full accent-[var(--accent)]" />
-          <p className="mt-2 text-sm text-muted-foreground">Current runway: <span className="num">{runway?.toFixed(1) ?? "—"}</span> months — banner {runway !== null && runway < r.low_cash_threshold_months ? "will show" : "hidden"}.</p>
+      <Headline eyebrow="Preferences" lines={["Set your own", "safety margins."]} />
+
+      <div data-reveal className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl">Risk settings</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Choose when you want a nudge about your cash position.
+          </p>
         </div>
-        <div data-reveal className="space-y-6">
-          <label className="block"><span className="eyebrow">Overdue AR spike warning (%)</span><input type="number" className="field num" value={r.ar_overdue_spike_pct} onChange={e => setR({ ...r, ar_overdue_spike_pct: +e.target.value })} /></label>
-          <label className="block"><span className="eyebrow">Report email</span><input type="email" className="field" value={r.warning_email} onChange={e => setR({ ...r, warning_email: e.target.value })} /></label>
-          <label className="flex items-center gap-3"><input type="checkbox" checked={r.enabled} onChange={e => setR({ ...r, enabled: e.target.checked })} /> Warnings enabled</label>
-          <div className="flex gap-3">
-            <button className="btn btn-solid" disabled={busy} onClick={save}>Save</button>
-            <button className="btn" disabled={busy} onClick={sendTest}>Send test report now</button>
+        <span
+          className={`hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium sm:inline-flex ${mode === "user" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${mode === "user" ? "bg-emerald-500" : "bg-slate-400"}`}
+          />
+          {mode === "user" ? "Synced to your account" : "Guest session"}
+        </span>
+      </div>
+
+      {loading ? (
+        <div
+          className="grid gap-5 lg:grid-cols-2"
+          aria-label="Loading risk settings"
+          aria-busy="true"
+        >
+          {[0, 1].map((item) => (
+            <div key={item} className="h-[380px] animate-pulse rounded-3xl bg-slate-200/70" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid items-start gap-5 lg:grid-cols-12">
+          <InteractiveCard ribbon={false} className="surface p-5 sm:p-7 lg:col-span-7">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <CircleGauge className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="eyebrow">Runway threshold</p>
+                <h3 className="mt-1 text-2xl">When should we raise a flag?</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your dashboard will highlight runway below this level.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-10 rounded-2xl bg-slate-50 p-5 sm:p-6">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <p className="text-sm font-medium text-slate-600">Alert me below</p>
+                <p className="font-display text-5xl text-slate-900">
+                  {values.low_cash_threshold_months}
+                  <span className="ml-2 text-lg italic text-slate-500">months</span>
+                </p>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={12}
+                step={1}
+                value={values.low_cash_threshold_months}
+                aria-label="Runway warning threshold in months"
+                onChange={(event) => update("low_cash_threshold_months", +event.target.value)}
+                className="mt-6 w-full cursor-pointer accent-indigo-600"
+              />
+              <div className="mt-2 flex justify-between text-[0.65rem] text-slate-400">
+                <span>1 month</span>
+                <span>6 months</span>
+                <span>12 months</span>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-slate-100 px-4 py-3.5">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Current runway</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Based on your latest recorded activity
+                </p>
+              </div>
+              <span
+                className={`num text-lg font-semibold ${runway !== null && runway < values.low_cash_threshold_months ? "text-amber-700" : "text-slate-800"}`}
+              >
+                {runway === null ? "—" : `${runway.toFixed(1)} mo`}
+              </span>
+            </div>
+          </InteractiveCard>
+
+          <InteractiveCard ribbon={false} className="surface p-5 sm:p-7 lg:col-span-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                <BellRing className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="eyebrow">Alerts &amp; reports</p>
+                <h3 className="mt-1 text-2xl">Stay in the loop</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tune overdue invoice warnings and report delivery.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7 space-y-5">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">
+                  Overdue AR spike threshold
+                </span>
+                <span className="relative block">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    className="field num pr-10"
+                    value={values.ar_overdue_spike_pct}
+                    onChange={(event) => update("ar_overdue_spike_pct", +event.target.value)}
+                  />
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                    %
+                  </span>
+                </span>
+                <span className="mt-1.5 block text-xs text-muted-foreground">
+                  Warn when overdue invoices exceed this share of open receivables.
+                </span>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <Mail className="h-4 w-4 text-slate-400" /> Report email
+                </span>
+                <input
+                  type="email"
+                  className="field"
+                  placeholder="you@company.com"
+                  value={values.warning_email}
+                  onChange={(event) => update("warning_email", event.target.value)}
+                />
+              </label>
+
+              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-100 px-4 py-3.5">
+                <span>
+                  <span className="block text-sm font-medium text-slate-700">
+                    Enable risk warnings
+                  </span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Show alerts when thresholds are crossed.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={values.enabled}
+                  onChange={(event) => update("enabled", event.target.checked)}
+                  className="h-4 w-4 accent-indigo-600"
+                />
+              </label>
+
+              {mode !== "user" && (
+                <p className="flex items-start gap-2 rounded-xl bg-slate-50 px-3.5 py-3 text-xs leading-relaxed text-slate-600">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                  Guest settings last for this session only. Sign in to sync settings and send a
+                  report.
+                </p>
+              )}
+            </div>
+          </InteractiveCard>
+        </div>
+      )}
+
+      {!loading && (
+        <div
+          data-reveal
+          className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-xs text-muted-foreground">
+            Your thresholds shape alerts; they do not change financial calculations.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button type="button" className="btn" disabled={busy} onClick={sendTest}>
+              <Mail className="h-4 w-4" /> Send test report
+            </button>
+            <button type="button" className="btn btn-solid" disabled={busy} onClick={save}>
+              {busy ? (
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  aria-hidden
+                />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {busy ? "Saving…" : "Save settings"}
+            </button>
           </div>
         </div>
-      </div>
+      )}
     </Page>
   );
 }

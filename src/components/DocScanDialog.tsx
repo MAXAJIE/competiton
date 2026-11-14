@@ -6,7 +6,13 @@
 // spinner while scanning, detail panel before saving).
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { TxForm } from "@/components/TxForm";
 import { confirmOcr, runOcr } from "@/lib/api";
 import type { OcrDraft, Transaction } from "@/lib/types";
@@ -28,12 +34,15 @@ async function compressImage(file: File): Promise<File> {
       el.src = url;
     });
     const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
-    if (scale === 1) { URL.revokeObjectURL(url); return file; }
+    if (scale === 1) {
+      URL.revokeObjectURL(url);
+      return file;
+    }
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.width * scale);
     canvas.height = Math.round(img.height * scale);
     canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/jpeg", 0.85));
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
     URL.revokeObjectURL(url);
     if (!blob) return file;
     return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
@@ -65,13 +74,24 @@ export function DocScanDialog({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const reset = () => { setPages([]); setDraft(null); setError(null); setDocType(""); };
-  const close = (v: boolean) => { onOpenChange(v); if (!v) reset(); };
+  const reset = () => {
+    setPages([]);
+    setDraft(null);
+    setError(null);
+    setDocType("");
+  };
+  const close = (v: boolean) => {
+    onOpenChange(v);
+    if (!v) reset();
+  };
 
   const addFiles = async (list: FileList | null) => {
     if (!list?.length) return;
     const room = MAX_PAGES - pages.length;
-    if (room <= 0) { toast.error(`Maximum ${MAX_PAGES} pages.`); return; }
+    if (room <= 0) {
+      toast.error(`Maximum ${MAX_PAGES} pages.`);
+      return;
+    }
     const picked = Array.from(list).slice(0, room);
     const next: Page[] = [];
     for (const f of picked) {
@@ -82,16 +102,20 @@ export function DocScanDialog({
         preview: compressed.type.startsWith("image/") ? URL.createObjectURL(compressed) : null,
       });
     }
-    setPages(p => [...p, ...next]);
+    setPages((p) => [...p, ...next]);
     setDraft(null);
     setError(null);
   };
 
   const scan = async () => {
     if (!pages.length) return;
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
-      const d = await runOcr(pages.map(p => p.file), docType);
+      const d = await runOcr(
+        pages.map((p) => p.file),
+        docType,
+      );
       setDraft(d);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Scan failed";
@@ -119,9 +143,9 @@ export function DocScanDialog({
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto bg-background">
-        <DialogHeader>
-          <DialogTitle className="font-display text-3xl">
+      <DialogContent className="animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] max-w-4xl overflow-y-auto rounded-3xl border-slate-200 bg-white p-5 shadow-2xl sm:p-7">
+        <DialogHeader className="mb-2">
+          <DialogTitle className="font-display text-3xl sm:text-4xl">
             {draft ? "Check the extracted details" : "Scan a document"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -134,29 +158,62 @@ export function DocScanDialog({
         {!draft && (
           <>
             <label
-              className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center border border-dashed border-foreground/40 text-center hover:bg-secondary"
-              onDragOver={e => e.preventDefault()}
-              onDrop={async e => { e.preventDefault(); await addFiles(e.dataTransfer.files); }}
+              className="drop-target mt-2 flex h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={async (e) => {
+                e.preventDefault();
+                await addFiles(e.dataTransfer.files);
+              }}
             >
-              <p className="font-display text-2xl">{pages.length ? "Add another page" : "Drop an image here"}</p>
-              <p className="eyebrow mt-1">or click to choose · images or PDF · up to {MAX_PAGES} pages</p>
-              <input ref={inputRef} type="file" multiple accept="image/*,.pdf" className="hidden"
-                     onChange={async e => { await addFiles(e.target.files); if (inputRef.current) inputRef.current.value = ""; }} />
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+                <FileScanIcon />
+              </span>
+              <p className="mt-3 font-display text-2xl">
+                {pages.length ? "Add another page" : "Drop a document here"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                or click to choose · images or PDF · up to {MAX_PAGES} pages
+              </p>
+              <input
+                ref={inputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={async (e) => {
+                  await addFiles(e.target.files);
+                  if (inputRef.current) inputRef.current.value = "";
+                }}
+              />
             </label>
 
             {pages.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-3">
                 {pages.map((p, i) => (
-                  <div key={i} className="relative border bg-secondary/40 p-1">
-                    {p.preview
-                      ? <img src={p.preview} alt={p.name} className="h-24 w-24 object-cover" />
-                      : <div className="flex h-24 w-24 items-center justify-center px-2 text-center text-[11px] text-muted-foreground">{p.name}</div>}
+                  <div
+                    key={i}
+                    className="list-item-enter relative rounded-xl border border-slate-200 bg-slate-50 p-1"
+                    style={{ animationDelay: `${i * 55}ms` }}
+                  >
+                    {p.preview ? (
+                      <img
+                        src={p.preview}
+                        alt={p.name}
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-24 w-24 items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
+                        {p.name}
+                      </div>
+                    )}
                     <button
                       type="button"
                       aria-label={`Remove ${p.name}`}
                       className="absolute -right-2 -top-2 border bg-background px-1 text-xs"
-                      onClick={() => setPages(prev => prev.filter((_, j) => j !== i))}
-                    >×</button>
+                      onClick={() => setPages((prev) => prev.filter((_, j) => j !== i))}
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
@@ -164,53 +221,105 @@ export function DocScanDialog({
 
             <label className="mt-4 block max-w-xs">
               <span className="eyebrow">Document type</span>
-              <select className="field" value={docType} onChange={e => setDocType(e.target.value)}>
-                {DOC_LABELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              <select
+                className="field"
+                value={docType}
+                onChange={(e) => setDocType(e.target.value)}
+              >
+                {DOC_LABELS.map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
               </select>
             </label>
 
-            {error && <p className="mt-4 border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm">{error}</p>}
+            {error && (
+              <p className="message-enter mt-4 border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm">
+                {error}
+              </p>
+            )}
 
             <div className="mt-6 flex items-center gap-3">
-              <button type="button" className="btn btn-solid" disabled={!pages.length || busy} onClick={scan}>
+              <button
+                type="button"
+                className="btn btn-solid"
+                disabled={!pages.length || busy}
+                onClick={scan}
+              >
                 {busy ? "Reading document…" : "Scan document →"}
               </button>
-              <button type="button" className="btn" onClick={() => close(false)}>Cancel</button>
+              <button type="button" className="btn" onClick={() => close(false)}>
+                Cancel
+              </button>
               {busy && <span className="eyebrow animate-pulse">vision model working…</span>}
             </div>
           </>
         )}
 
         {draft && (
-          <div className="mt-2 grid gap-6 md:grid-cols-[220px_1fr]">
+          <div className="message-enter mt-2 grid gap-6 md:grid-cols-[220px_1fr]">
             <div className="space-y-3">
               {pages.map((p, i) => (
                 <div key={i} className="border p-1">
-                  {p.preview
-                    ? <img src={p.preview} alt={p.name} className="w-full object-contain" />
-                    : <p className="p-2 text-xs text-muted-foreground">{p.name}</p>}
+                  {p.preview ? (
+                    <img src={p.preview} alt={p.name} className="w-full object-contain" />
+                  ) : (
+                    <p className="p-2 text-xs text-muted-foreground">{p.name}</p>
+                  )}
                 </div>
               ))}
-              <div className="border-t pt-2">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                 <p className="eyebrow">Detected</p>
                 <p className="num mt-1 text-sm">{draft.doc_type.replace("_", " ")}</p>
-                {draft.model && <p className="mt-1 text-[11px] text-muted-foreground">{draft.model}</p>}
+                {draft.model && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">{draft.model}</p>
+                )}
               </div>
             </div>
 
             <div>
-              <p className="eyebrow mb-3 text-warning">Review · {draft.doc_type.replace("_", " ")} · unconfirmed</p>
+              <p className="eyebrow mb-3 text-amber-700">
+                Review · {draft.doc_type.replace("_", " ")} · unconfirmed
+              </p>
               {draft.notes && draft.notes.length > 0 && (
                 <ul className="mb-4 space-y-1 border-l-4 border-warning bg-warning-soft px-4 py-3 text-sm">
-                  {draft.notes.map(n => <li key={n}>• {n}</li>)}
+                  {draft.notes.map((n) => (
+                    <li key={n}>• {n}</li>
+                  ))}
                 </ul>
               )}
-              <TxForm initial={draft.fields} onSubmit={confirm} submitLabel={busy ? "Saving…" : "Confirm & save"} />
-              <button type="button" className="btn mt-4" onClick={() => setDraft(null)}>Scan a different document</button>
+              <TxForm
+                initial={draft.fields}
+                onSubmit={confirm}
+                submitLabel={busy ? "Saving…" : "Confirm & save"}
+                disabled={busy}
+              />
+              <button type="button" className="btn mt-4" onClick={() => setDraft(null)}>
+                Scan a different document
+              </button>
             </div>
           </div>
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FileScanIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6M8 13h8M8 17h5" />
+    </svg>
   );
 }
