@@ -79,16 +79,34 @@ def _image_data_url(filename: str, content_type: str, data: bytes) -> str:
     return f"data:{mime};base64,{base64.b64encode(data).decode()}"
 
 
-def _parse_json_reply(text: str) -> object:
-    text = (text or "").strip()
-    fence = re.search(r"```(?:json)?\s*(.+?)```", text, re.S)
+_FENCE = re.compile(r"```(?:json)?\s*(.+?)```", re.S)
+_TRAILING_COMMA = re.compile(r",\s*([}\]])")
+
+
+def _json_from_text(text: str) -> object | None:
+    """Best-effort JSON recovery from a model reply.
+
+    Returns None when there is no JSON at all - callers turn that into a clear
+    error instead of json.loads()'s opaque "Expecting value: line 1 column 1".
+    """
+    if not text or not text.strip():
+        return None
+    raw = text.strip()
+    candidates: list[str] = []
+    fence = _FENCE.search(raw)
     if fence:
-        text = fence.group(1).strip()
-    else:
-        m = re.search(r"[\[{].*[\]}]", text, re.S)
-        if m:
-            text = m.group(0)
-    return json.loads(text)
+        candidates.append(fence.group(1).strip())
+    candidates.append(raw)
+    span = re.search(r"[\[{].*[\]}]", raw, re.S)
+    if span:
+        candidates.append(span.group(0))
+    for candidate in candidates:
+        for attempt in (candidate, _TRAILING_COMMA.sub(r"", candidate)):
+            try:
+                return json.loads(attempt)
+            except Exception:
+                continue
+    return None
 
 
 def _num(value) -> Optional[float]:
@@ -185,7 +203,9 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
     return fields, notes
 
 
-def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]]) -> object:
+def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
+                max_tokens: int) -> object:
+    """One extraction request. Returns parsed JSON or raises with a clear reason."""
     content: list[dict] = [{"type": "text", "text": EXTRACTION_PROMPTS[doc_type]}]
     for filename, content_type, data in images:
         content.append({"type": "image_url",
@@ -195,18 +215,36 @@ def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]])
         headers={"Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
                  "HTTP-Referer": "https://cashmonitoring.app",
                  "X-Title": "CashMonitoring OCR"},
-        json={"model": model, "max_tokens": 700, "temperature": 0,
+        json={"model": model, "max_tokens": max_tokens, "temperature": 0,
               "messages": [{"role": "user", "content": content}]},
-        timeout=120,
+        timeout=180,
     )
     if r.status_code != 200:
-        detail = ""
         try:
             detail = r.json().get("error", {}).get("message", "")
         except Exception:
             detail = r.text[:200]
-        raise RuntimeError(f"{model} → HTTP {r.status_code}: {detail[:180]}")
-    return _parse_json_reply(r.json()["choices"][0]["message"]["content"])
+        raise RuntimeError(f"{model} -> HTTP {r.status_code}: {detail[:180]}")
+
+    choice = r.json()["choices"][0]
+    msg = choice.get("message") or {}
+    text = msg.get("content") or ""
+    finish = choice.get("finish_reason")
+
+    parsed = _json_from_text(text)
+    if parsed is None and msg.get("reasoning"):
+        # Reasoning models sometimes leave `content` empty and put everything in
+        # the reasoning trace; salvage any JSON object found there.
+        parsed = _json_from_text(msg["reasoning"])
+    if parsed is None:
+        if finish == "length":
+            raise RuntimeError(
+                f"{model} -> no answer: hit the {max_tokens}-token budget while reasoning "
+                f"(reasoning_tokens consumed first). Raise OCR_MAX_TOKENS or use a non-reasoning model.")
+        if not text.strip():
+            raise RuntimeError(f"{model} -> empty response (finish_reason={finish})")
+        raise RuntimeError(f"{model} -> reply contained no JSON object: {text[:120]!r}")
+    return parsed
 
 
 def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
@@ -228,12 +266,19 @@ def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
     parsed = None
     used_model = None
     for model in config.OCR_MODELS:
-        try:
-            parsed = _call_model(model, doc_type, files)
-            used_model = model
+        # First try the configured budget; a reasoning model that spent it all on
+        # hidden reasoning (finish_reason=length) gets one retry with double room.
+        for budget in (config.OCR_MAX_TOKENS, config.OCR_MAX_TOKENS * 2):
+            try:
+                parsed = _call_model(model, doc_type, files, budget)
+                used_model = model
+                break
+            except Exception as e:  # rate limits, missing vision support, bad JSON
+                errors.append(str(e))
+                if "hit the" not in str(e):  # only the budget error is worth a retry
+                    break
+        if parsed is not None:
             break
-        except Exception as e:  # rate limits, missing vision support, bad JSON
-            errors.append(str(e))
     if parsed is None:
         raise RuntimeError("All OCR models failed: " + " | ".join(errors))
 

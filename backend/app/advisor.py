@@ -155,8 +155,11 @@ def _complete(messages: list[dict]) -> dict | None:
                 headers={"Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
                          "HTTP-Referer": "https://cashmonitoring.app",
                          "X-Title": "CashMonitoring Advisor"},
+                # Reasoning models spend this budget on hidden reasoning first, so
+                # keep it generous or the tool call never materialises.
                 json={"model": model, "messages": messages, "tools": TOOL_SET,
-                      "tool_choice": "auto", "max_tokens": 700, "temperature": 0.2},
+                      "tool_choice": "auto", "max_tokens": config.ADVISOR_MAX_TOKENS,
+                      "temperature": 0.2},
                 timeout=120,
             )
             if r.status_code != 200:

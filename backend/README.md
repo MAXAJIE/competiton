@@ -32,6 +32,8 @@ Tests (pure calc layer, no network):
 | `OCR_FALLBACK_MODELS` | comma-separated chain tried when a model 429s or rejects images |
 | `ADVISOR_MODEL` (default `google/gemini-2.5-flash`) | pinned advisor model |
 | `ADVISOR_FALLBACK_MODELS` | same fallback idea for the advisor |
+| `OCR_MAX_TOKENS` (default `3000`) | completion budget; reasoning models need a generous one |
+| `ADVISOR_MAX_TOKENS` (default `2500`) | same for the advisor |
 | `RESEND_API_KEY`, `EMAIL_FROM` | "send test report now" (fails loudly with 503 if unset — output is never faked) |
 | `DEMO_EMAIL`, `DEMO_PASSWORD`, `DEMO_REPORT_EMAIL` | seed script |
 
@@ -90,6 +92,8 @@ in the response plus the returned `model` name tell you which:
 | `No endpoints found that support image input` | text-only model (e.g. nemotron) | pick a vision model — check `input_modalities` includes `image` |
 | `All OCR models failed: …` | every model in the chain failed | read the joined errors; verify `OPENROUTER_API_KEY` and credits |
 | Fields wrong (line item instead of total) | model summed badly | the review dialog shows the notes — edit before confirming; swap `OCR_MODEL` |
+| `no answer: hit the N-token budget while reasoning` | **reasoning model** used the whole budget on hidden reasoning, so `content` came back empty | raise `OCR_MAX_TOKENS`, or use a non-reasoning vision model |
+| `this model does not support image input` | text-only model | see the table above |
 
 Extracted fields are normalized defensively (`normalize_fields`): dates like
 `12 November 2026` → `2026-11-12`, `$410.50` → `410.5`, arrays of line items →
