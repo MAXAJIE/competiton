@@ -93,11 +93,28 @@ def get_ar_ap_summary(tx: Iterable, today: date | None = None) -> dict:
 
 
 def predict_next_month_revenue(tx: Iterable) -> dict:
-    """Documented simple method, stated in the output per SKILL.md §3:
-    trailing 3-month average of recorded income."""
-    m = get_monthly(tx)[-3:]
-    value = sum(x["income"] for x in m) / max(len(m), 1)
-    return {"value": value, "method": "Trailing 3-month average of recorded income"}
+    """Next-month revenue, from the scored model (SKILL.md §11.1).
+
+    Delegates to app/ml.py so the advisor, the dashboard and the notebook all
+    report the same number — there is exactly one implementation. When the
+    trained artifact is missing, ml falls back to the documented trailing-average
+    rule and names it in `method`.
+    """
+    from . import ml  # local import: ml imports nothing from calc at module load
+    result = ml.predict_next_month_revenue(tx)
+    return {
+        "value": result["value"],
+        "method": result["method"],
+        "source": result.get("source", "model"),
+        "baseline_value": result.get("baseline_value"),
+        "target_month": result.get("target_month"),
+    }
+
+
+def get_ar_risk_flags(tx: Iterable, limit: int = 6) -> list[dict]:
+    """Open AR rows scored for late-payment risk (SKILL.md §11.2)."""
+    from . import ml
+    return ml.ar_risk_flags(tx, limit=limit)
 
 
 def generate_financial_statement(tx: Iterable, today: date | None = None,

@@ -24,7 +24,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 
-from . import advisor, config, db, market, ocr, reports
+from . import advisor, calc, categories, config, db, market, ml, ocr, reports
 from .models import AdvisorQuestion, RiskSettings, Transaction
 
 app = FastAPI(title="CashMonitoring backend", version="0.1.0")
@@ -48,6 +48,31 @@ def require_user(user_id: str | None) -> str:
 
 def get_tx(user_id: str) -> list[Transaction]:
     return [Transaction(**row) for row in db.list_transactions(user_id)]
+
+
+# --- categories (single source of truth for the UI) --------------------------
+
+class ClassifyBody(BaseModel):
+    vendor: str = ""
+    text: str = ""
+    type: str = "expense"
+    amount: float | None = None
+
+
+@app.get("/api/categories")
+def get_categories() -> dict:
+    """The full category schema, grouped by transaction type."""
+    return categories.taxonomy()
+
+
+@app.post("/api/categories/classify")
+def classify_category(body: ClassifyBody) -> dict:
+    """Best-fit category for a vendor/description — used by the entry form to
+    auto-suggest, and by OCR to repair out-of-schema answers."""
+    label, confidence, hits = categories.classify(
+        body.vendor, body.text, body.type if body.type in categories.BY_TYPE else "expense",
+        body.amount)
+    return {"category": label, "confidence": confidence, "matched": hits}
 
 
 @app.get("/api/health")
@@ -97,7 +122,10 @@ def save_transaction(t: Transaction, user_id: str | None = Depends(current_user_
         # OCR writes only through the document-confirm gate (SKILL.md §4).
         raise HTTPException(400, "OCR-sourced rows must be saved via /api/documents/{id}/confirm")
     row = db.save_manual_transaction(uid, t)
-    return Transaction(**row).model_dump(exclude_none=True)
+    # `settled_ar` rides along so the client can show which invoices this
+    # payment closed; the transaction fields themselves stay typed.
+    return {**Transaction(**row).model_dump(exclude_none=True),
+            "settled_ar": row.get("settled_ar", [])}
 
 
 # --- OCR pipeline (A2) -------------------------------------------------------
@@ -135,10 +163,37 @@ def confirm_document(document_id: str, fields: dict,
         row = ocr.confirm_and_save(uid, document_id, fields)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return Transaction(**row).model_dump(exclude_none=True)
+    return {**Transaction(**row).model_dump(exclude_none=True),
+            "settled_ar": row.get("settled_ar", [])}
 
 
 # --- advisor (B2) ------------------------------------------------------------
+
+# --- scored models (SKILL.md §11) --------------------------------------------
+
+class TxBody(BaseModel):
+    transactions: list[Transaction] | None = None
+
+
+@app.get("/api/models/info")
+def models_info() -> dict:
+    """Which artifacts are loaded + the exact held-out metrics from training."""
+    return ml.models_available()
+
+
+@app.post("/api/forecast")
+def forecast(body: TxBody, user_id: str | None = Depends(current_user_id)) -> dict:
+    """Next-month revenue from the trained regression (auth: the user's own rows)."""
+    tx = list(body.transactions or []) or (get_tx(user_id) if user_id else [])
+    return calc.predict_next_month_revenue(tx)
+
+
+@app.post("/api/ar/risk")
+def ar_risk(body: TxBody, user_id: str | None = Depends(current_user_id)) -> dict:
+    """AR rows flagged at risk of late payment by the trained classifier."""
+    tx = list(body.transactions or []) or (get_tx(user_id) if user_id else [])
+    return ml.ar_risk_summary(tx)
+
 
 @app.post("/api/advisor")
 def ask_advisor(q: AdvisorQuestion, user_id: str | None = Depends(current_user_id)) -> dict:

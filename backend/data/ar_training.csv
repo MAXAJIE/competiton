@@ -1,0 +1,1401 @@
+customer_id,vendor_or_customer,transaction_date,due_date,days_until_due,amount,category,paid_late,customer_historical_late_rate,customer_prior_count
+cust_025,Bluefin Partners,2023-01-01,2023-01-16,15,1940.25,Other Receivable,1,0.2293,0
+cust_029,Sundial Works,2023-01-02,2023-03-03,60,808.14,Other Receivable,1,0.2293,0
+cust_003,Kestrel Design,2023-01-02,2023-02-16,45,1099.66,Customer Invoice,0,0.2293,0
+cust_038,Granite Works,2023-01-04,2023-02-03,30,1797.61,Customer Invoice,1,0.2293,0
+cust_032,Copperfield Design,2023-01-04,2023-01-19,15,965.49,Customer Invoice,1,0.2293,0
+cust_013,Ironwood Trading,2023-01-04,2023-03-05,60,763.94,Other Receivable,0,0.2293,0
+cust_006,Oak & Pine Group,2023-01-05,2023-03-06,60,339.77,Other Receivable,0,0.2293,0
+cust_023,Beacon Design,2023-01-05,2023-01-20,15,526.69,Money Lent Out,0,0.2293,0
+cust_038,Granite Works,2023-01-07,2023-03-08,60,810.29,Money Lent Out,0,1.0,1
+cust_002,Harbor Services,2023-01-08,2023-03-09,60,100.85,Money Lent Out,0,0.2293,0
+cust_019,Kestrel Services,2023-01-09,2023-02-08,30,371.5,Money Lent Out,0,0.2293,0
+cust_015,Granite Partners,2023-01-10,2023-03-11,60,751.2,Money Lent Out,1,0.2293,0
+cust_001,Beacon Studio,2023-01-10,2023-03-11,60,298.86,Customer Invoice,1,0.2293,0
+cust_038,Granite Works,2023-01-10,2023-02-24,45,315.52,Customer Invoice,1,0.5,2
+cust_019,Kestrel Services,2023-01-12,2023-02-26,45,679.47,Other Receivable,0,0.0,1
+cust_002,Harbor Services,2023-01-13,2023-01-28,15,403.76,Money Lent Out,0,0.0,1
+cust_043,Cedar Market,2023-01-13,2023-02-12,30,346.56,Customer Invoice,0,0.2293,0
+cust_002,Harbor Services,2023-01-14,2023-02-13,30,1678.04,Other Receivable,0,0.0,2
+cust_019,Kestrel Services,2023-01-15,2023-02-14,30,403.08,Customer Invoice,0,0.0,2
+cust_027,Granite Trading,2023-01-17,2023-03-18,60,1568.03,Money Lent Out,0,0.2293,0
+cust_020,Granite Co.,2023-01-18,2023-02-17,30,2163.61,Money Lent Out,0,0.2293,0
+cust_009,Bluefin Retail,2023-01-19,2023-03-05,45,2268.07,Money Lent Out,0,0.2293,0
+cust_018,Ironwood Studio,2023-01-20,2023-02-04,15,489.54,Money Lent Out,0,0.2293,0
+cust_020,Granite Co.,2023-01-20,2023-03-21,60,1162.01,Customer Invoice,0,0.0,1
+cust_008,Mesa Logistics,2023-01-21,2023-02-20,30,615.19,Other Receivable,0,0.2293,0
+cust_020,Granite Co.,2023-01-22,2023-02-21,30,212.4,Other Receivable,0,0.0,2
+cust_029,Sundial Works,2023-01-23,2023-02-22,30,647.14,Money Lent Out,1,1.0,1
+cust_020,Granite Co.,2023-01-24,2023-03-10,45,2923.2,Other Receivable,0,0.0,3
+cust_041,Mesa Trading,2023-01-25,2023-03-26,60,278.65,Customer Invoice,0,0.2293,0
+cust_012,Linden Trading,2023-01-27,2023-03-13,45,323.59,Customer Invoice,0,0.2293,0
+cust_041,Mesa Trading,2023-01-27,2023-02-11,15,371.76,Customer Invoice,0,0.0,1
+cust_010,Mesa Co.,2023-01-28,2023-03-14,45,253.4,Customer Invoice,0,0.2293,0
+cust_023,Beacon Design,2023-01-29,2023-03-15,45,374.25,Other Receivable,0,0.0,1
+cust_004,Kestrel Retail,2023-01-31,2023-02-15,15,1497.78,Customer Invoice,0,0.2293,0
+cust_026,Silverline Cafe,2023-02-01,2023-02-16,15,1399.63,Customer Invoice,1,0.2293,0
+cust_010,Mesa Co.,2023-02-02,2023-03-19,45,1691.01,Customer Invoice,0,0.0,1
+cust_035,Beacon Labs,2023-02-07,2023-04-08,60,1112.01,Money Lent Out,1,0.2293,0
+cust_021,Granite Cafe,2023-02-10,2023-03-27,45,1574.06,Customer Invoice,0,0.2293,0
+cust_007,Bluefin Co.,2023-02-10,2023-03-12,30,559.73,Customer Invoice,0,0.2293,0
+cust_017,Harbor Labs,2023-02-10,2023-03-27,45,543.8,Money Lent Out,0,0.2293,0
+cust_025,Bluefin Partners,2023-02-10,2023-03-12,30,1495.15,Money Lent Out,0,1.0,1
+cust_034,Brightwater Group,2023-02-15,2023-04-01,45,437.41,Money Lent Out,0,0.2293,0
+cust_038,Granite Works,2023-02-18,2023-03-05,15,1740.96,Other Receivable,0,0.6667,3
+cust_011,Kestrel Labs,2023-02-20,2023-04-06,45,1057.78,Customer Invoice,0,0.2293,0
+cust_029,Sundial Works,2023-02-21,2023-03-23,30,1111.6,Customer Invoice,0,1.0,2
+cust_018,Ironwood Studio,2023-02-21,2023-04-22,60,229.12,Other Receivable,0,0.0,1
+cust_005,Bluefin Logistics,2023-02-21,2023-04-07,45,269.05,Money Lent Out,0,0.2293,0
+cust_015,Granite Partners,2023-02-21,2023-03-23,30,368.08,Money Lent Out,0,1.0,1
+cust_033,Silverline Retail,2023-02-22,2023-04-08,45,1468.01,Other Receivable,0,0.2293,0
+cust_030,Riverton Market,2023-02-22,2023-04-08,45,267.67,Other Receivable,1,0.2293,0
+cust_025,Bluefin Partners,2023-02-22,2023-04-08,45,2544.42,Money Lent Out,0,0.5,2
+cust_002,Harbor Services,2023-02-24,2023-04-10,45,917.9,Customer Invoice,0,0.0,3
+cust_018,Ironwood Studio,2023-02-26,2023-03-28,30,550.03,Customer Invoice,0,0.0,2
+cust_037,Silverline Group,2023-02-27,2023-04-13,45,297.94,Money Lent Out,0,0.2293,0
+cust_018,Ironwood Studio,2023-02-28,2023-03-15,15,408.24,Money Lent Out,0,0.0,3
+cust_027,Granite Trading,2023-03-01,2023-03-16,15,2100.48,Other Receivable,1,0.0,1
+cust_016,Mesa Group,2023-03-02,2023-04-16,45,845.85,Other Receivable,1,0.2293,0
+cust_031,Copperfield Retail,2023-03-03,2023-04-02,30,772.16,Money Lent Out,0,0.2293,0
+cust_023,Beacon Design,2023-03-03,2023-03-18,15,816.92,Customer Invoice,0,0.0,2
+cust_005,Bluefin Logistics,2023-03-05,2023-04-19,45,300.45,Money Lent Out,1,0.0,1
+cust_034,Brightwater Group,2023-03-06,2023-05-05,60,600.7,Customer Invoice,0,0.0,1
+cust_026,Silverline Cafe,2023-03-07,2023-03-22,15,2857.82,Money Lent Out,1,1.0,1
+cust_029,Sundial Works,2023-03-12,2023-04-26,45,2830.56,Other Receivable,1,0.6667,3
+cust_028,Willow Trading,2023-03-13,2023-03-28,15,533.73,Money Lent Out,1,0.2293,0
+cust_034,Brightwater Group,2023-03-14,2023-04-28,45,698.3,Other Receivable,0,0.0,2
+cust_012,Linden Trading,2023-03-14,2023-05-13,60,402.75,Customer Invoice,0,0.0,1
+cust_038,Granite Works,2023-03-15,2023-04-29,45,2565.91,Customer Invoice,0,0.5,4
+cust_026,Silverline Cafe,2023-03-16,2023-04-30,45,837.48,Money Lent Out,1,1.0,2
+cust_010,Mesa Co.,2023-03-16,2023-04-30,45,294.27,Customer Invoice,0,0.0,2
+cust_015,Granite Partners,2023-03-16,2023-04-30,45,230.26,Customer Invoice,0,0.5,2
+cust_004,Kestrel Retail,2023-03-17,2023-05-01,45,418.98,Other Receivable,1,0.0,1
+cust_035,Beacon Labs,2023-03-17,2023-05-16,60,1451.2,Other Receivable,0,1.0,1
+cust_024,Cedar Services,2023-03-17,2023-05-16,60,251.57,Other Receivable,0,0.2293,0
+cust_005,Bluefin Logistics,2023-03-20,2023-04-19,30,1644.26,Money Lent Out,0,0.5,2
+cust_038,Granite Works,2023-03-22,2023-04-21,30,472.72,Other Receivable,1,0.4,5
+cust_009,Bluefin Retail,2023-03-22,2023-04-06,15,445.34,Money Lent Out,0,0.0,1
+cust_035,Beacon Labs,2023-03-24,2023-05-08,45,1509.23,Money Lent Out,0,0.5,2
+cust_007,Bluefin Co.,2023-03-25,2023-05-09,45,245.04,Customer Invoice,0,0.0,1
+cust_000,Oak & Pine Cafe,2023-03-26,2023-05-25,60,101.21,Money Lent Out,0,0.2293,0
+cust_017,Harbor Labs,2023-03-27,2023-04-26,30,3394.45,Other Receivable,0,0.0,1
+cust_035,Beacon Labs,2023-03-27,2023-05-26,60,187.6,Other Receivable,0,0.3333,3
+cust_000,Oak & Pine Cafe,2023-03-27,2023-04-11,15,1617.85,Other Receivable,0,0.0,1
+cust_036,Beacon Cafe,2023-03-27,2023-04-26,30,634.63,Other Receivable,0,0.2293,0
+cust_029,Sundial Works,2023-03-29,2023-05-28,60,998.84,Other Receivable,0,0.75,4
+cust_005,Bluefin Logistics,2023-03-29,2023-04-28,30,281.46,Money Lent Out,0,0.3333,3
+cust_012,Linden Trading,2023-03-30,2023-04-29,30,1088.83,Money Lent Out,0,0.0,2
+cust_035,Beacon Labs,2023-03-30,2023-05-29,60,903.29,Other Receivable,0,0.25,4
+cust_009,Bluefin Retail,2023-04-02,2023-05-17,45,312.99,Other Receivable,0,0.0,2
+cust_044,Linden Studio,2023-04-02,2023-05-02,30,2521.72,Customer Invoice,0,0.2293,0
+cust_024,Cedar Services,2023-04-03,2023-05-03,30,483.88,Other Receivable,0,0.0,1
+cust_029,Sundial Works,2023-04-06,2023-05-06,30,2160.48,Other Receivable,0,0.6,5
+cust_009,Bluefin Retail,2023-04-07,2023-06-06,60,2745.75,Money Lent Out,0,0.0,3
+cust_039,Maple Partners,2023-04-08,2023-05-08,30,530.88,Money Lent Out,0,0.2293,0
+cust_005,Bluefin Logistics,2023-04-10,2023-06-09,60,635.75,Money Lent Out,0,0.25,4
+cust_014,Beacon Services,2023-04-13,2023-06-12,60,918.44,Customer Invoice,0,0.2293,0
+cust_010,Mesa Co.,2023-04-14,2023-05-29,45,1303.11,Money Lent Out,0,0.0,3
+cust_036,Beacon Cafe,2023-04-14,2023-05-29,45,384.67,Other Receivable,0,0.0,1
+cust_006,Oak & Pine Group,2023-04-14,2023-05-14,30,868.78,Money Lent Out,0,0.0,1
+cust_025,Bluefin Partners,2023-04-15,2023-04-30,15,100.01,Customer Invoice,0,0.3333,3
+cust_010,Mesa Co.,2023-04-15,2023-06-14,60,762.42,Money Lent Out,0,0.0,4
+cust_041,Mesa Trading,2023-04-16,2023-06-15,60,1041.61,Money Lent Out,0,0.0,2
+cust_003,Kestrel Design,2023-04-16,2023-06-15,60,260.0,Other Receivable,1,0.0,1
+cust_010,Mesa Co.,2023-04-17,2023-05-02,15,589.66,Other Receivable,0,0.0,5
+cust_022,Maple Trading,2023-04-17,2023-06-01,45,2526.15,Customer Invoice,0,0.2293,0
+cust_011,Kestrel Labs,2023-04-21,2023-06-20,60,431.1,Other Receivable,0,0.0,1
+cust_022,Maple Trading,2023-04-22,2023-06-21,60,1863.56,Money Lent Out,0,0.0,1
+cust_041,Mesa Trading,2023-04-23,2023-06-07,45,1251.54,Other Receivable,0,0.0,3
+cust_024,Cedar Services,2023-04-23,2023-05-23,30,2199.23,Other Receivable,0,0.0,2
+cust_043,Cedar Market,2023-04-24,2023-06-08,45,884.3,Other Receivable,0,0.0,1
+cust_043,Cedar Market,2023-04-25,2023-06-24,60,409.61,Money Lent Out,0,0.0,2
+cust_002,Harbor Services,2023-04-26,2023-06-25,60,592.44,Customer Invoice,0,0.0,4
+cust_036,Beacon Cafe,2023-04-26,2023-05-26,30,437.72,Customer Invoice,0,0.0,2
+cust_015,Granite Partners,2023-04-27,2023-05-12,15,499.83,Customer Invoice,1,0.3333,3
+cust_035,Beacon Labs,2023-04-29,2023-05-14,15,946.98,Money Lent Out,0,0.2,5
+cust_004,Kestrel Retail,2023-05-02,2023-07-01,60,149.43,Other Receivable,0,0.5,2
+cust_024,Cedar Services,2023-05-03,2023-05-18,15,1634.81,Customer Invoice,1,0.0,3
+cust_039,Maple Partners,2023-05-04,2023-07-03,60,297.4,Other Receivable,0,0.0,1
+cust_025,Bluefin Partners,2023-05-05,2023-06-04,30,1371.36,Money Lent Out,0,0.25,4
+cust_040,Oak & Pine Studio,2023-05-05,2023-06-19,45,719.79,Customer Invoice,0,0.2293,0
+cust_024,Cedar Services,2023-05-06,2023-05-21,15,1224.6,Money Lent Out,1,0.25,4
+cust_041,Mesa Trading,2023-05-06,2023-07-05,60,951.65,Other Receivable,0,0.0,4
+cust_007,Bluefin Co.,2023-05-07,2023-06-21,45,1177.01,Customer Invoice,1,0.0,2
+cust_044,Linden Studio,2023-05-07,2023-05-22,15,463.61,Other Receivable,0,0.0,1
+cust_041,Mesa Trading,2023-05-07,2023-06-21,45,1446.05,Money Lent Out,0,0.0,5
+cust_001,Beacon Studio,2023-05-08,2023-05-23,15,1003.96,Other Receivable,0,1.0,1
+cust_009,Bluefin Retail,2023-05-08,2023-06-07,30,222.2,Money Lent Out,1,0.0,4
+cust_016,Mesa Group,2023-05-08,2023-07-07,60,1290.25,Money Lent Out,0,1.0,1
+cust_001,Beacon Studio,2023-05-09,2023-06-08,30,355.44,Customer Invoice,0,0.5,2
+cust_027,Granite Trading,2023-05-09,2023-06-08,30,2502.18,Money Lent Out,0,0.5,2
+cust_008,Mesa Logistics,2023-05-09,2023-06-23,45,2622.52,Customer Invoice,1,0.0,1
+cust_002,Harbor Services,2023-05-11,2023-07-10,60,346.6,Other Receivable,1,0.0,5
+cust_002,Harbor Services,2023-05-11,2023-06-25,45,312.82,Customer Invoice,0,0.1667,6
+cust_042,Beacon Supplies,2023-05-11,2023-07-10,60,251.94,Money Lent Out,0,0.2293,0
+cust_030,Riverton Market,2023-05-12,2023-06-11,30,160.22,Customer Invoice,0,1.0,1
+cust_039,Maple Partners,2023-05-14,2023-06-13,30,564.04,Money Lent Out,0,0.0,2
+cust_040,Oak & Pine Studio,2023-05-15,2023-06-29,45,634.99,Other Receivable,0,0.0,1
+cust_025,Bluefin Partners,2023-05-15,2023-07-14,60,745.93,Other Receivable,0,0.2,5
+cust_003,Kestrel Design,2023-05-17,2023-06-16,30,203.6,Customer Invoice,0,0.5,2
+cust_026,Silverline Cafe,2023-05-17,2023-06-01,15,495.93,Other Receivable,0,1.0,3
+cust_024,Cedar Services,2023-05-17,2023-07-01,45,1940.87,Money Lent Out,1,0.4,5
+cust_037,Silverline Group,2023-05-17,2023-06-16,30,577.37,Other Receivable,0,0.0,1
+cust_014,Beacon Services,2023-05-18,2023-06-02,15,298.42,Money Lent Out,1,0.0,1
+cust_000,Oak & Pine Cafe,2023-05-19,2023-06-18,30,253.3,Other Receivable,0,0.0,2
+cust_024,Cedar Services,2023-05-19,2023-06-18,30,363.35,Money Lent Out,0,0.5,6
+cust_038,Granite Works,2023-05-19,2023-06-03,15,1010.95,Customer Invoice,0,0.5,6
+cust_025,Bluefin Partners,2023-05-21,2023-06-20,30,758.06,Other Receivable,1,0.1667,6
+cust_006,Oak & Pine Group,2023-05-22,2023-06-21,30,400.09,Other Receivable,0,0.0,2
+cust_038,Granite Works,2023-05-22,2023-06-21,30,1017.74,Money Lent Out,0,0.4286,7
+cust_015,Granite Partners,2023-05-23,2023-07-07,45,1431.48,Other Receivable,0,0.5,4
+cust_004,Kestrel Retail,2023-05-23,2023-06-07,15,1149.57,Other Receivable,1,0.3333,3
+cust_036,Beacon Cafe,2023-05-23,2023-06-22,30,130.71,Other Receivable,0,0.0,3
+cust_010,Mesa Co.,2023-05-24,2023-06-23,30,146.99,Other Receivable,0,0.0,6
+cust_008,Mesa Logistics,2023-05-25,2023-07-09,45,302.44,Other Receivable,0,0.5,2
+cust_019,Kestrel Services,2023-05-26,2023-06-25,30,656.47,Money Lent Out,1,0.0,3
+cust_002,Harbor Services,2023-05-27,2023-06-11,15,1036.05,Customer Invoice,0,0.1429,7
+cust_010,Mesa Co.,2023-05-27,2023-06-26,30,1280.75,Customer Invoice,0,0.0,7
+cust_043,Cedar Market,2023-05-28,2023-07-27,60,202.4,Customer Invoice,0,0.0,3
+cust_043,Cedar Market,2023-05-29,2023-06-13,15,990.52,Customer Invoice,0,0.0,4
+cust_023,Beacon Design,2023-05-30,2023-06-14,15,1447.0,Money Lent Out,0,0.0,3
+cust_029,Sundial Works,2023-05-30,2023-07-14,45,1214.37,Customer Invoice,0,0.5,6
+cust_023,Beacon Design,2023-05-30,2023-07-29,60,604.22,Other Receivable,0,0.0,4
+cust_032,Copperfield Design,2023-05-31,2023-07-15,45,157.26,Money Lent Out,0,1.0,1
+cust_037,Silverline Group,2023-06-02,2023-07-02,30,535.93,Other Receivable,1,0.0,2
+cust_005,Bluefin Logistics,2023-06-02,2023-07-17,45,852.95,Customer Invoice,0,0.2,5
+cust_020,Granite Co.,2023-06-04,2023-06-19,15,4083.09,Customer Invoice,0,0.0,4
+cust_012,Linden Trading,2023-06-04,2023-07-19,45,1256.05,Customer Invoice,1,0.0,3
+cust_027,Granite Trading,2023-06-05,2023-07-20,45,686.52,Customer Invoice,0,0.3333,3
+cust_025,Bluefin Partners,2023-06-05,2023-07-20,45,285.1,Other Receivable,0,0.2857,7
+cust_005,Bluefin Logistics,2023-06-05,2023-07-20,45,595.07,Other Receivable,0,0.1667,6
+cust_019,Kestrel Services,2023-06-06,2023-06-21,15,379.49,Customer Invoice,0,0.25,4
+cust_005,Bluefin Logistics,2023-06-07,2023-06-22,15,1003.27,Customer Invoice,0,0.1429,7
+cust_031,Copperfield Retail,2023-06-08,2023-08-07,60,190.17,Money Lent Out,1,0.0,1
+cust_030,Riverton Market,2023-06-08,2023-08-07,60,413.57,Money Lent Out,0,0.5,2
+cust_021,Granite Cafe,2023-06-08,2023-07-08,30,975.52,Money Lent Out,0,0.0,1
+cust_030,Riverton Market,2023-06-09,2023-06-24,15,515.56,Other Receivable,0,0.3333,3
+cust_032,Copperfield Design,2023-06-09,2023-08-08,60,303.42,Customer Invoice,0,0.5,2
+cust_029,Sundial Works,2023-06-09,2023-08-08,60,340.4,Other Receivable,0,0.4286,7
+cust_006,Oak & Pine Group,2023-06-09,2023-07-09,30,479.72,Customer Invoice,0,0.0,3
+cust_042,Beacon Supplies,2023-06-10,2023-07-10,30,364.75,Money Lent Out,0,0.0,1
+cust_000,Oak & Pine Cafe,2023-06-10,2023-07-25,45,129.83,Other Receivable,0,0.0,3
+cust_027,Granite Trading,2023-06-12,2023-06-27,15,194.85,Money Lent Out,0,0.25,4
+cust_019,Kestrel Services,2023-06-13,2023-07-28,45,476.81,Money Lent Out,0,0.2,5
+cust_035,Beacon Labs,2023-06-14,2023-07-29,45,635.87,Other Receivable,0,0.1667,6
+cust_039,Maple Partners,2023-06-14,2023-06-29,15,279.65,Customer Invoice,0,0.0,3
+cust_012,Linden Trading,2023-06-14,2023-06-29,15,206.53,Other Receivable,0,0.25,4
+cust_008,Mesa Logistics,2023-06-14,2023-07-14,30,582.47,Money Lent Out,0,0.3333,3
+cust_040,Oak & Pine Studio,2023-06-15,2023-07-15,30,988.67,Money Lent Out,0,0.0,2
+cust_011,Kestrel Labs,2023-06-17,2023-07-17,30,576.17,Money Lent Out,0,0.0,2
+cust_032,Copperfield Design,2023-06-17,2023-07-02,15,265.32,Customer Invoice,1,0.3333,3
+cust_009,Bluefin Retail,2023-06-18,2023-08-17,60,2182.24,Money Lent Out,0,0.2,5
+cust_000,Oak & Pine Cafe,2023-06-18,2023-07-03,15,278.55,Customer Invoice,0,0.0,4
+cust_042,Beacon Supplies,2023-06-21,2023-08-05,45,2526.4,Money Lent Out,0,0.0,2
+cust_008,Mesa Logistics,2023-06-22,2023-07-22,30,308.14,Customer Invoice,0,0.25,4
+cust_042,Beacon Supplies,2023-06-22,2023-07-22,30,303.89,Other Receivable,0,0.0,3
+cust_044,Linden Studio,2023-06-22,2023-08-21,60,455.32,Money Lent Out,0,0.0,2
+cust_020,Granite Co.,2023-06-23,2023-07-08,15,262.68,Money Lent Out,0,0.0,5
+cust_009,Bluefin Retail,2023-06-23,2023-07-08,15,802.29,Customer Invoice,0,0.1667,6
+cust_024,Cedar Services,2023-06-24,2023-07-09,15,372.01,Money Lent Out,0,0.4286,7
+cust_017,Harbor Labs,2023-06-25,2023-08-09,45,509.47,Other Receivable,0,0.0,2
+cust_042,Beacon Supplies,2023-06-25,2023-07-10,15,1379.75,Customer Invoice,0,0.0,4
+cust_013,Ironwood Trading,2023-06-25,2023-07-25,30,960.57,Other Receivable,0,0.0,1
+cust_042,Beacon Supplies,2023-06-26,2023-08-25,60,706.66,Other Receivable,1,0.0,5
+cust_003,Kestrel Design,2023-06-27,2023-08-26,60,180.18,Money Lent Out,0,0.3333,3
+cust_041,Mesa Trading,2023-06-27,2023-07-27,30,1812.75,Customer Invoice,1,0.0,6
+cust_036,Beacon Cafe,2023-06-27,2023-08-11,45,459.3,Other Receivable,1,0.0,4
+cust_002,Harbor Services,2023-06-29,2023-08-13,45,309.03,Customer Invoice,0,0.125,8
+cust_029,Sundial Works,2023-07-01,2023-07-16,15,291.35,Other Receivable,0,0.375,8
+cust_013,Ironwood Trading,2023-07-01,2023-07-31,30,1216.91,Money Lent Out,0,0.0,2
+cust_044,Linden Studio,2023-07-02,2023-08-01,30,392.37,Money Lent Out,0,0.0,3
+cust_025,Bluefin Partners,2023-07-03,2023-08-17,45,456.06,Customer Invoice,0,0.25,8
+cust_014,Beacon Services,2023-07-03,2023-09-01,60,303.67,Other Receivable,0,0.5,2
+cust_029,Sundial Works,2023-07-03,2023-08-17,45,352.0,Other Receivable,0,0.3333,9
+cust_006,Oak & Pine Group,2023-07-05,2023-08-04,30,263.4,Other Receivable,1,0.0,4
+cust_043,Cedar Market,2023-07-05,2023-08-04,30,194.16,Money Lent Out,0,0.0,5
+cust_016,Mesa Group,2023-07-05,2023-08-19,45,603.48,Other Receivable,1,0.5,2
+cust_044,Linden Studio,2023-07-06,2023-08-05,30,176.61,Other Receivable,0,0.0,4
+cust_027,Granite Trading,2023-07-07,2023-08-21,45,549.25,Money Lent Out,0,0.2,5
+cust_014,Beacon Services,2023-07-08,2023-09-06,60,2772.68,Money Lent Out,1,0.3333,3
+cust_032,Copperfield Design,2023-07-08,2023-09-06,60,2454.21,Other Receivable,0,0.5,4
+cust_023,Beacon Design,2023-07-08,2023-08-22,45,1263.95,Money Lent Out,0,0.0,5
+cust_031,Copperfield Retail,2023-07-08,2023-08-22,45,771.85,Other Receivable,1,0.5,2
+cust_027,Granite Trading,2023-07-08,2023-09-06,60,1905.26,Money Lent Out,0,0.1667,6
+cust_012,Linden Trading,2023-07-10,2023-07-25,15,869.97,Money Lent Out,0,0.2,5
+cust_011,Kestrel Labs,2023-07-11,2023-07-26,15,2410.14,Other Receivable,0,0.0,3
+cust_038,Granite Works,2023-07-13,2023-08-27,45,262.13,Customer Invoice,0,0.375,8
+cust_039,Maple Partners,2023-07-14,2023-08-13,30,1167.47,Other Receivable,0,0.0,4
+cust_003,Kestrel Design,2023-07-16,2023-08-30,45,846.0,Customer Invoice,0,0.25,4
+cust_015,Granite Partners,2023-07-17,2023-08-01,15,641.86,Money Lent Out,0,0.4,5
+cust_023,Beacon Design,2023-07-17,2023-08-16,30,1667.11,Money Lent Out,1,0.0,6
+cust_017,Harbor Labs,2023-07-18,2023-09-01,45,429.15,Money Lent Out,0,0.0,3
+cust_026,Silverline Cafe,2023-07-18,2023-08-17,30,477.17,Customer Invoice,0,0.75,4
+cust_007,Bluefin Co.,2023-07-19,2023-09-17,60,612.46,Customer Invoice,0,0.3333,3
+cust_000,Oak & Pine Cafe,2023-07-19,2023-09-02,45,88.56,Customer Invoice,0,0.0,5
+cust_020,Granite Co.,2023-07-20,2023-08-04,15,1519.58,Other Receivable,0,0.0,6
+cust_038,Granite Works,2023-07-21,2023-09-04,45,430.6,Other Receivable,0,0.3333,9
+cust_013,Ironwood Trading,2023-07-21,2023-08-20,30,767.64,Money Lent Out,0,0.0,3
+cust_036,Beacon Cafe,2023-07-25,2023-08-24,30,1438.62,Money Lent Out,0,0.2,5
+cust_024,Cedar Services,2023-07-26,2023-08-25,30,520.56,Customer Invoice,0,0.375,8
+cust_009,Bluefin Retail,2023-07-26,2023-09-09,45,392.07,Customer Invoice,0,0.1429,7
+cust_035,Beacon Labs,2023-07-27,2023-08-26,30,1388.25,Customer Invoice,0,0.1429,7
+cust_040,Oak & Pine Studio,2023-07-27,2023-09-10,45,1209.55,Money Lent Out,0,0.0,3
+cust_022,Maple Trading,2023-07-27,2023-09-25,60,988.27,Other Receivable,0,0.0,2
+cust_024,Cedar Services,2023-07-28,2023-08-12,15,4282.07,Other Receivable,0,0.3333,9
+cust_040,Oak & Pine Studio,2023-07-28,2023-08-12,15,773.42,Customer Invoice,0,0.0,4
+cust_012,Linden Trading,2023-08-01,2023-08-31,30,218.9,Other Receivable,1,0.1667,6
+cust_021,Granite Cafe,2023-08-02,2023-09-01,30,441.82,Other Receivable,0,0.0,2
+cust_031,Copperfield Retail,2023-08-04,2023-09-18,45,376.58,Customer Invoice,0,0.6667,3
+cust_025,Bluefin Partners,2023-08-06,2023-09-05,30,397.11,Other Receivable,0,0.2222,9
+cust_042,Beacon Supplies,2023-08-10,2023-10-09,60,480.8,Money Lent Out,0,0.1667,6
+cust_017,Harbor Labs,2023-08-11,2023-08-26,15,563.22,Money Lent Out,0,0.0,4
+cust_020,Granite Co.,2023-08-11,2023-08-26,15,492.48,Other Receivable,0,0.0,7
+cust_030,Riverton Market,2023-08-11,2023-09-25,45,297.07,Other Receivable,0,0.25,4
+cust_032,Copperfield Design,2023-08-13,2023-10-12,60,797.2,Money Lent Out,0,0.4,5
+cust_018,Ironwood Studio,2023-08-14,2023-10-13,60,821.82,Customer Invoice,0,0.0,4
+cust_019,Kestrel Services,2023-08-16,2023-09-15,30,331.97,Other Receivable,0,0.1667,6
+cust_041,Mesa Trading,2023-08-18,2023-10-02,45,547.89,Customer Invoice,0,0.1429,7
+cust_038,Granite Works,2023-08-18,2023-09-17,30,375.98,Money Lent Out,1,0.3,10
+cust_004,Kestrel Retail,2023-08-20,2023-10-19,60,297.69,Other Receivable,0,0.5,4
+cust_016,Mesa Group,2023-08-22,2023-09-21,30,421.36,Other Receivable,0,0.6667,3
+cust_036,Beacon Cafe,2023-08-22,2023-09-21,30,657.22,Other Receivable,0,0.1667,6
+cust_019,Kestrel Services,2023-08-22,2023-09-06,15,333.86,Money Lent Out,0,0.1429,7
+cust_001,Beacon Studio,2023-08-22,2023-10-06,45,567.27,Other Receivable,0,0.3333,3
+cust_018,Ironwood Studio,2023-08-23,2023-10-07,45,482.13,Other Receivable,0,0.0,5
+cust_034,Brightwater Group,2023-08-24,2023-10-08,45,175.26,Money Lent Out,0,0.0,3
+cust_026,Silverline Cafe,2023-08-24,2023-10-08,45,295.37,Other Receivable,1,0.6,5
+cust_025,Bluefin Partners,2023-08-24,2023-09-08,15,262.79,Other Receivable,0,0.2,10
+cust_043,Cedar Market,2023-08-25,2023-10-09,45,1078.52,Customer Invoice,0,0.0,6
+cust_009,Bluefin Retail,2023-08-28,2023-10-12,45,526.7,Other Receivable,1,0.125,8
+cust_018,Ironwood Studio,2023-08-29,2023-09-13,15,1227.84,Other Receivable,1,0.0,6
+cust_036,Beacon Cafe,2023-08-29,2023-09-13,15,106.87,Other Receivable,0,0.1429,7
+cust_042,Beacon Supplies,2023-08-31,2023-09-30,30,896.36,Money Lent Out,0,0.1429,7
+cust_026,Silverline Cafe,2023-09-03,2023-10-03,30,779.48,Other Receivable,0,0.6667,6
+cust_027,Granite Trading,2023-09-03,2023-11-02,60,377.48,Other Receivable,0,0.1429,7
+cust_016,Mesa Group,2023-09-03,2023-09-18,15,5074.51,Other Receivable,1,0.5,4
+cust_006,Oak & Pine Group,2023-09-04,2023-09-19,15,358.12,Money Lent Out,0,0.2,5
+cust_009,Bluefin Retail,2023-09-08,2023-09-23,15,124.58,Other Receivable,0,0.2222,9
+cust_000,Oak & Pine Cafe,2023-09-09,2023-09-24,15,498.56,Money Lent Out,0,0.0,6
+cust_026,Silverline Cafe,2023-09-09,2023-10-09,30,2538.31,Money Lent Out,1,0.5714,7
+cust_029,Sundial Works,2023-09-09,2023-10-09,30,1536.31,Money Lent Out,1,0.3,10
+cust_036,Beacon Cafe,2023-09-10,2023-09-25,15,680.4,Customer Invoice,1,0.125,8
+cust_029,Sundial Works,2023-09-12,2023-10-27,45,445.83,Money Lent Out,0,0.3636,11
+cust_003,Kestrel Design,2023-09-12,2023-09-27,15,2325.72,Customer Invoice,0,0.2,5
+cust_017,Harbor Labs,2023-09-13,2023-10-13,30,389.97,Other Receivable,0,0.0,5
+cust_040,Oak & Pine Studio,2023-09-14,2023-09-29,15,812.56,Other Receivable,0,0.0,5
+cust_041,Mesa Trading,2023-09-15,2023-11-14,60,742.7,Money Lent Out,1,0.125,8
+cust_034,Brightwater Group,2023-09-16,2023-10-01,15,208.72,Other Receivable,0,0.0,4
+cust_013,Ironwood Trading,2023-09-17,2023-10-02,15,664.63,Customer Invoice,0,0.0,4
+cust_027,Granite Trading,2023-09-18,2023-10-18,30,271.27,Other Receivable,0,0.125,8
+cust_012,Linden Trading,2023-09-18,2023-11-17,60,1120.45,Money Lent Out,1,0.2857,7
+cust_039,Maple Partners,2023-09-18,2023-11-17,60,1481.78,Money Lent Out,0,0.0,5
+cust_009,Bluefin Retail,2023-09-19,2023-11-03,45,204.05,Other Receivable,0,0.2,10
+cust_001,Beacon Studio,2023-09-19,2023-10-04,15,1300.6,Customer Invoice,0,0.25,4
+cust_019,Kestrel Services,2023-09-20,2023-10-20,30,582.65,Money Lent Out,1,0.125,8
+cust_024,Cedar Services,2023-09-24,2023-10-24,30,1058.91,Customer Invoice,0,0.3,10
+cust_009,Bluefin Retail,2023-09-24,2023-11-23,60,424.63,Other Receivable,0,0.1818,11
+cust_031,Copperfield Retail,2023-09-26,2023-10-11,15,1109.99,Other Receivable,0,0.5,4
+cust_022,Maple Trading,2023-09-26,2023-11-10,45,814.82,Money Lent Out,1,0.0,3
+cust_012,Linden Trading,2023-09-26,2023-11-25,60,542.65,Other Receivable,0,0.375,8
+cust_008,Mesa Logistics,2023-09-26,2023-11-10,45,60.96,Other Receivable,0,0.2,5
+cust_041,Mesa Trading,2023-09-27,2023-11-11,45,621.13,Other Receivable,0,0.2222,9
+cust_035,Beacon Labs,2023-09-30,2023-11-14,45,173.18,Customer Invoice,0,0.125,8
+cust_016,Mesa Group,2023-09-30,2023-10-30,30,406.15,Customer Invoice,0,0.6,5
+cust_009,Bluefin Retail,2023-10-02,2023-11-01,30,737.55,Money Lent Out,0,0.1667,12
+cust_042,Beacon Supplies,2023-10-03,2023-12-02,60,555.01,Customer Invoice,0,0.125,8
+cust_034,Brightwater Group,2023-10-03,2023-10-18,15,523.92,Other Receivable,0,0.0,5
+cust_008,Mesa Logistics,2023-10-05,2023-11-04,30,227.43,Other Receivable,0,0.1667,6
+cust_019,Kestrel Services,2023-10-06,2023-12-05,60,631.26,Money Lent Out,1,0.2222,9
+cust_015,Granite Partners,2023-10-07,2023-10-22,15,895.78,Other Receivable,1,0.3333,6
+cust_026,Silverline Cafe,2023-10-07,2023-11-06,30,249.42,Customer Invoice,0,0.625,8
+cust_003,Kestrel Design,2023-10-07,2023-11-06,30,268.15,Money Lent Out,0,0.1667,6
+cust_039,Maple Partners,2023-10-07,2023-10-22,15,784.71,Money Lent Out,0,0.0,6
+cust_023,Beacon Design,2023-10-08,2023-11-22,45,639.68,Money Lent Out,0,0.1429,7
+cust_018,Ironwood Studio,2023-10-08,2023-11-22,45,2247.95,Customer Invoice,0,0.1429,7
+cust_001,Beacon Studio,2023-10-11,2023-12-10,60,1101.69,Customer Invoice,0,0.2,5
+cust_014,Beacon Services,2023-10-11,2023-11-10,30,667.38,Other Receivable,0,0.5,4
+cust_003,Kestrel Design,2023-10-11,2023-11-10,30,961.82,Money Lent Out,0,0.1429,7
+cust_016,Mesa Group,2023-10-12,2023-10-27,15,298.54,Money Lent Out,0,0.5,6
+cust_019,Kestrel Services,2023-10-15,2023-11-14,30,659.13,Customer Invoice,0,0.3,10
+cust_024,Cedar Services,2023-10-15,2023-11-14,30,694.2,Customer Invoice,0,0.2727,11
+cust_013,Ironwood Trading,2023-10-16,2023-10-31,15,187.14,Other Receivable,0,0.0,5
+cust_017,Harbor Labs,2023-10-17,2023-11-01,15,898.26,Other Receivable,1,0.0,6
+cust_035,Beacon Labs,2023-10-18,2023-11-17,30,833.12,Customer Invoice,0,0.1111,9
+cust_031,Copperfield Retail,2023-10-20,2023-11-04,15,903.14,Other Receivable,1,0.4,5
+cust_015,Granite Partners,2023-10-21,2023-12-05,45,837.2,Other Receivable,0,0.4286,7
+cust_009,Bluefin Retail,2023-10-21,2023-11-20,30,754.56,Other Receivable,0,0.1538,13
+cust_021,Granite Cafe,2023-10-22,2023-12-06,45,2256.11,Other Receivable,0,0.0,3
+cust_008,Mesa Logistics,2023-10-23,2023-11-07,15,440.76,Money Lent Out,0,0.1429,7
+cust_011,Kestrel Labs,2023-10-23,2023-11-07,15,277.61,Other Receivable,0,0.0,4
+cust_006,Oak & Pine Group,2023-10-23,2023-11-07,15,334.18,Money Lent Out,0,0.1667,6
+cust_000,Oak & Pine Cafe,2023-10-24,2023-11-23,30,980.8,Money Lent Out,0,0.0,7
+cust_022,Maple Trading,2023-10-24,2023-11-23,30,424.74,Customer Invoice,1,0.25,4
+cust_015,Granite Partners,2023-10-24,2023-11-08,15,1418.08,Customer Invoice,0,0.375,8
+cust_040,Oak & Pine Studio,2023-10-25,2023-11-24,30,530.8,Customer Invoice,0,0.0,6
+cust_000,Oak & Pine Cafe,2023-10-26,2023-11-10,15,977.55,Other Receivable,1,0.0,8
+cust_039,Maple Partners,2023-10-26,2023-12-25,60,696.43,Other Receivable,0,0.0,7
+cust_030,Riverton Market,2023-10-27,2023-12-11,45,2053.11,Customer Invoice,1,0.2,5
+cust_034,Brightwater Group,2023-10-27,2023-12-11,45,285.53,Money Lent Out,0,0.0,6
+cust_016,Mesa Group,2023-10-29,2023-11-28,30,270.73,Other Receivable,0,0.4286,7
+cust_038,Granite Works,2023-10-29,2023-12-13,45,616.71,Customer Invoice,0,0.3636,11
+cust_011,Kestrel Labs,2023-10-31,2023-11-15,15,1437.17,Money Lent Out,0,0.0,5
+cust_040,Oak & Pine Studio,2023-11-01,2023-12-01,30,287.03,Other Receivable,0,0.0,7
+cust_018,Ironwood Studio,2023-11-02,2024-01-01,60,905.9,Other Receivable,0,0.125,8
+cust_027,Granite Trading,2023-11-02,2023-11-17,15,1962.24,Customer Invoice,0,0.1111,9
+cust_002,Harbor Services,2023-11-03,2024-01-02,60,714.6,Customer Invoice,1,0.1111,9
+cust_003,Kestrel Design,2023-11-03,2023-12-03,30,1739.3,Other Receivable,0,0.125,8
+cust_033,Silverline Retail,2023-11-04,2023-12-04,30,707.61,Other Receivable,1,0.0,1
+cust_004,Kestrel Retail,2023-11-05,2023-11-20,15,1030.65,Customer Invoice,1,0.4,5
+cust_039,Maple Partners,2023-11-06,2023-11-21,15,219.83,Money Lent Out,0,0.0,8
+cust_005,Bluefin Logistics,2023-11-07,2023-12-22,45,736.99,Money Lent Out,1,0.125,8
+cust_033,Silverline Retail,2023-11-08,2023-12-23,45,747.96,Customer Invoice,1,0.5,2
+cust_007,Bluefin Co.,2023-11-08,2023-12-08,30,512.74,Customer Invoice,0,0.25,4
+cust_032,Copperfield Design,2023-11-10,2023-12-10,30,241.16,Customer Invoice,0,0.3333,6
+cust_032,Copperfield Design,2023-11-11,2024-01-10,60,546.47,Other Receivable,1,0.2857,7
+cust_021,Granite Cafe,2023-11-12,2024-01-11,60,2275.64,Other Receivable,0,0.0,4
+cust_034,Brightwater Group,2023-11-13,2024-01-12,60,2740.39,Money Lent Out,1,0.0,7
+cust_020,Granite Co.,2023-11-19,2023-12-04,15,562.67,Other Receivable,0,0.0,8
+cust_031,Copperfield Retail,2023-11-21,2023-12-06,15,730.19,Other Receivable,1,0.5,6
+cust_028,Willow Trading,2023-11-21,2023-12-21,30,236.01,Other Receivable,0,1.0,1
+cust_031,Copperfield Retail,2023-11-22,2024-01-06,45,1014.43,Money Lent Out,1,0.5714,7
+cust_024,Cedar Services,2023-11-23,2024-01-22,60,808.53,Customer Invoice,0,0.25,12
+cust_006,Oak & Pine Group,2023-11-25,2023-12-25,30,782.97,Money Lent Out,0,0.1429,7
+cust_044,Linden Studio,2023-11-27,2023-12-27,30,1081.44,Money Lent Out,0,0.0,5
+cust_013,Ironwood Trading,2023-11-27,2023-12-12,15,298.01,Customer Invoice,0,0.0,6
+cust_031,Copperfield Retail,2023-11-30,2024-01-29,60,714.75,Money Lent Out,1,0.625,8
+cust_024,Cedar Services,2023-11-30,2024-01-29,60,618.49,Other Receivable,0,0.2308,13
+cust_026,Silverline Cafe,2023-12-01,2023-12-31,30,561.03,Customer Invoice,0,0.5556,9
+cust_021,Granite Cafe,2023-12-01,2023-12-16,15,306.33,Other Receivable,0,0.0,5
+cust_036,Beacon Cafe,2023-12-05,2024-01-04,30,657.55,Money Lent Out,0,0.2222,9
+cust_039,Maple Partners,2023-12-05,2023-12-20,15,1562.09,Customer Invoice,0,0.0,9
+cust_041,Mesa Trading,2023-12-05,2024-01-04,30,2154.37,Customer Invoice,1,0.2,10
+cust_015,Granite Partners,2023-12-06,2024-01-05,30,401.64,Other Receivable,0,0.3333,9
+cust_037,Silverline Group,2023-12-06,2024-01-20,45,168.39,Customer Invoice,0,0.3333,3
+cust_015,Granite Partners,2023-12-06,2023-12-21,15,374.28,Money Lent Out,0,0.3,10
+cust_006,Oak & Pine Group,2023-12-07,2024-02-05,60,300.68,Money Lent Out,0,0.125,8
+cust_009,Bluefin Retail,2023-12-08,2024-02-06,60,578.25,Other Receivable,0,0.1429,14
+cust_040,Oak & Pine Studio,2023-12-09,2023-12-24,15,725.89,Other Receivable,0,0.0,8
+cust_020,Granite Co.,2023-12-11,2024-01-10,30,490.32,Other Receivable,0,0.0,9
+cust_002,Harbor Services,2023-12-13,2024-01-27,45,1585.37,Money Lent Out,0,0.2,10
+cust_015,Granite Partners,2023-12-13,2024-01-27,45,153.17,Customer Invoice,0,0.2727,11
+cust_026,Silverline Cafe,2023-12-14,2024-01-13,30,1371.79,Other Receivable,0,0.5,10
+cust_037,Silverline Group,2023-12-16,2024-01-30,45,1092.44,Money Lent Out,1,0.25,4
+cust_043,Cedar Market,2023-12-16,2023-12-31,15,957.67,Money Lent Out,0,0.0,7
+cust_029,Sundial Works,2023-12-19,2024-02-17,60,486.77,Other Receivable,0,0.3333,12
+cust_025,Bluefin Partners,2023-12-23,2024-01-07,15,646.96,Customer Invoice,0,0.1818,11
+cust_024,Cedar Services,2023-12-26,2024-02-09,45,1725.65,Money Lent Out,0,0.2143,14
+cust_011,Kestrel Labs,2023-12-27,2024-02-25,60,227.89,Money Lent Out,0,0.0,6
+cust_041,Mesa Trading,2023-12-27,2024-01-26,30,837.43,Money Lent Out,1,0.2727,11
+cust_018,Ironwood Studio,2023-12-30,2024-02-28,60,239.16,Money Lent Out,1,0.1111,9
+cust_008,Mesa Logistics,2023-12-30,2024-01-29,30,1716.09,Money Lent Out,1,0.125,8
+cust_019,Kestrel Services,2023-12-31,2024-01-30,30,1478.71,Money Lent Out,0,0.2727,11
+cust_016,Mesa Group,2023-12-31,2024-01-30,30,467.96,Money Lent Out,0,0.375,8
+cust_040,Oak & Pine Studio,2024-01-01,2024-03-01,60,1668.93,Money Lent Out,1,0.0,9
+cust_000,Oak & Pine Cafe,2024-01-02,2024-02-16,45,2524.51,Other Receivable,0,0.1111,9
+cust_035,Beacon Labs,2024-01-05,2024-02-04,30,267.66,Money Lent Out,0,0.1,10
+cust_041,Mesa Trading,2024-01-06,2024-01-21,15,412.17,Customer Invoice,1,0.3333,12
+cust_013,Ironwood Trading,2024-01-09,2024-02-08,30,1340.24,Money Lent Out,0,0.0,7
+cust_022,Maple Trading,2024-01-10,2024-03-10,60,3943.82,Money Lent Out,1,0.4,5
+cust_005,Bluefin Logistics,2024-01-10,2024-01-25,15,723.62,Customer Invoice,0,0.2222,9
+cust_018,Ironwood Studio,2024-01-12,2024-03-12,60,1007.37,Other Receivable,1,0.2,10
+cust_001,Beacon Studio,2024-01-12,2024-01-27,15,795.77,Customer Invoice,0,0.1667,6
+cust_007,Bluefin Co.,2024-01-12,2024-02-26,45,1455.48,Money Lent Out,0,0.2,5
+cust_007,Bluefin Co.,2024-01-13,2024-02-27,45,299.45,Money Lent Out,1,0.1667,6
+cust_024,Cedar Services,2024-01-14,2024-01-29,15,525.36,Money Lent Out,1,0.2,15
+cust_004,Kestrel Retail,2024-01-14,2024-01-29,15,2411.33,Other Receivable,1,0.5,6
+cust_029,Sundial Works,2024-01-16,2024-03-16,60,520.94,Other Receivable,0,0.3077,13
+cust_012,Linden Trading,2024-01-16,2024-03-16,60,4358.32,Money Lent Out,1,0.3333,9
+cust_010,Mesa Co.,2024-01-17,2024-02-01,15,616.4,Other Receivable,0,0.0,8
+cust_021,Granite Cafe,2024-01-18,2024-03-18,60,160.74,Money Lent Out,0,0.0,6
+cust_010,Mesa Co.,2024-01-19,2024-03-04,45,573.24,Other Receivable,0,0.0,9
+cust_011,Kestrel Labs,2024-01-20,2024-03-20,60,778.97,Other Receivable,0,0.0,7
+cust_040,Oak & Pine Studio,2024-01-24,2024-03-24,60,424.85,Customer Invoice,0,0.1,10
+cust_021,Granite Cafe,2024-01-26,2024-02-10,15,1253.0,Other Receivable,0,0.0,7
+cust_035,Beacon Labs,2024-01-27,2024-02-11,15,853.34,Money Lent Out,0,0.0909,11
+cust_032,Copperfield Design,2024-01-28,2024-02-27,30,665.44,Other Receivable,0,0.375,8
+cust_015,Granite Partners,2024-01-31,2024-02-15,15,814.64,Customer Invoice,0,0.25,12
+cust_024,Cedar Services,2024-02-02,2024-03-03,30,391.89,Customer Invoice,0,0.25,16
+cust_012,Linden Trading,2024-02-06,2024-03-22,45,788.58,Money Lent Out,1,0.4,10
+cust_021,Granite Cafe,2024-02-06,2024-03-07,30,906.54,Customer Invoice,0,0.0,8
+cust_017,Harbor Labs,2024-02-07,2024-04-07,60,1255.85,Money Lent Out,0,0.1429,7
+cust_017,Harbor Labs,2024-02-08,2024-04-08,60,1567.62,Money Lent Out,1,0.125,8
+cust_034,Brightwater Group,2024-02-09,2024-04-09,60,376.28,Other Receivable,0,0.125,8
+cust_028,Willow Trading,2024-02-09,2024-03-10,30,973.3,Customer Invoice,0,0.5,2
+cust_034,Brightwater Group,2024-02-11,2024-03-27,45,1408.75,Other Receivable,0,0.1111,9
+cust_020,Granite Co.,2024-02-13,2024-04-13,60,2611.67,Money Lent Out,1,0.0,10
+cust_004,Kestrel Retail,2024-02-14,2024-03-15,30,3077.88,Customer Invoice,0,0.5714,7
+cust_011,Kestrel Labs,2024-02-16,2024-04-16,60,1021.97,Other Receivable,0,0.0,8
+cust_012,Linden Trading,2024-02-16,2024-03-17,30,243.3,Other Receivable,0,0.4545,11
+cust_019,Kestrel Services,2024-02-16,2024-03-02,15,745.02,Other Receivable,0,0.25,12
+cust_033,Silverline Retail,2024-02-17,2024-04-17,60,315.01,Customer Invoice,0,0.6667,3
+cust_044,Linden Studio,2024-02-18,2024-03-19,30,342.43,Customer Invoice,0,0.0,6
+cust_025,Bluefin Partners,2024-02-21,2024-03-07,15,557.49,Money Lent Out,0,0.1667,12
+cust_015,Granite Partners,2024-02-21,2024-03-07,15,328.97,Customer Invoice,0,0.2308,13
+cust_015,Granite Partners,2024-02-21,2024-03-22,30,1765.18,Other Receivable,1,0.2143,14
+cust_021,Granite Cafe,2024-02-22,2024-03-08,15,3571.23,Customer Invoice,1,0.0,9
+cust_022,Maple Trading,2024-02-23,2024-04-23,60,2206.19,Money Lent Out,0,0.5,6
+cust_014,Beacon Services,2024-02-24,2024-03-10,15,1744.59,Other Receivable,0,0.4,5
+cust_030,Riverton Market,2024-02-24,2024-04-24,60,1405.61,Money Lent Out,0,0.3333,6
+cust_000,Oak & Pine Cafe,2024-02-25,2024-03-26,30,592.83,Customer Invoice,1,0.1,10
+cust_016,Mesa Group,2024-02-25,2024-04-25,60,698.3,Customer Invoice,0,0.3333,9
+cust_030,Riverton Market,2024-02-25,2024-03-26,30,507.13,Customer Invoice,0,0.2857,7
+cust_004,Kestrel Retail,2024-02-25,2024-04-25,60,408.52,Other Receivable,0,0.5,8
+cust_015,Granite Partners,2024-02-25,2024-04-10,45,1420.06,Other Receivable,0,0.2667,15
+cust_044,Linden Studio,2024-02-28,2024-04-28,60,797.21,Customer Invoice,0,0.0,7
+cust_040,Oak & Pine Studio,2024-02-28,2024-04-13,45,285.28,Other Receivable,1,0.0909,11
+cust_044,Linden Studio,2024-02-28,2024-04-28,60,626.32,Other Receivable,0,0.0,8
+cust_043,Cedar Market,2024-03-02,2024-05-01,60,465.39,Customer Invoice,0,0.0,8
+cust_008,Mesa Logistics,2024-03-02,2024-05-01,60,154.49,Other Receivable,0,0.2222,9
+cust_027,Granite Trading,2024-03-03,2024-03-18,15,307.18,Other Receivable,0,0.1,10
+cust_042,Beacon Supplies,2024-03-03,2024-04-02,30,330.94,Money Lent Out,0,0.1111,9
+cust_013,Ironwood Trading,2024-03-03,2024-04-02,30,455.32,Money Lent Out,0,0.0,8
+cust_014,Beacon Services,2024-03-03,2024-03-18,15,1440.97,Money Lent Out,0,0.3333,6
+cust_029,Sundial Works,2024-03-05,2024-05-04,60,327.53,Other Receivable,0,0.2857,14
+cust_041,Mesa Trading,2024-03-06,2024-05-05,60,766.91,Money Lent Out,1,0.3846,13
+cust_002,Harbor Services,2024-03-08,2024-05-07,60,1401.85,Customer Invoice,1,0.1818,11
+cust_008,Mesa Logistics,2024-03-08,2024-04-07,30,1013.26,Money Lent Out,0,0.2,10
+cust_007,Bluefin Co.,2024-03-08,2024-05-07,60,699.69,Customer Invoice,1,0.2857,7
+cust_021,Granite Cafe,2024-03-11,2024-03-26,15,1537.34,Customer Invoice,0,0.1,10
+cust_043,Cedar Market,2024-03-13,2024-03-28,15,527.21,Customer Invoice,0,0.0,9
+cust_037,Silverline Group,2024-03-13,2024-03-28,15,280.24,Money Lent Out,1,0.4,5
+cust_011,Kestrel Labs,2024-03-14,2024-03-29,15,230.15,Other Receivable,0,0.0,9
+cust_039,Maple Partners,2024-03-15,2024-03-30,15,585.39,Money Lent Out,0,0.0,10
+cust_019,Kestrel Services,2024-03-15,2024-05-14,60,692.57,Money Lent Out,0,0.2308,13
+cust_011,Kestrel Labs,2024-03-16,2024-05-15,60,205.97,Customer Invoice,0,0.0,10
+cust_029,Sundial Works,2024-03-18,2024-05-02,45,1086.38,Money Lent Out,1,0.2667,15
+cust_031,Copperfield Retail,2024-03-19,2024-05-03,45,293.97,Other Receivable,0,0.6667,9
+cust_028,Willow Trading,2024-03-22,2024-05-06,45,2232.31,Customer Invoice,0,0.3333,3
+cust_021,Granite Cafe,2024-03-23,2024-04-07,15,420.64,Customer Invoice,0,0.0909,11
+cust_014,Beacon Services,2024-03-24,2024-05-08,45,231.9,Other Receivable,0,0.2857,7
+cust_018,Ironwood Studio,2024-03-25,2024-04-09,15,888.92,Other Receivable,0,0.2727,11
+cust_019,Kestrel Services,2024-03-27,2024-04-26,30,550.16,Other Receivable,0,0.2143,14
+cust_016,Mesa Group,2024-03-28,2024-05-27,60,4327.08,Other Receivable,1,0.3,10
+cust_005,Bluefin Logistics,2024-03-28,2024-04-27,30,463.97,Customer Invoice,0,0.2,10
+cust_028,Willow Trading,2024-03-30,2024-04-29,30,706.8,Other Receivable,0,0.25,4
+cust_024,Cedar Services,2024-04-03,2024-04-18,15,1425.94,Customer Invoice,1,0.2353,17
+cust_010,Mesa Co.,2024-04-06,2024-06-05,60,420.51,Other Receivable,1,0.0,10
+cust_000,Oak & Pine Cafe,2024-04-07,2024-05-07,30,1035.93,Customer Invoice,0,0.1818,11
+cust_002,Harbor Services,2024-04-07,2024-05-07,30,1305.85,Customer Invoice,1,0.25,12
+cust_034,Brightwater Group,2024-04-08,2024-04-23,15,581.91,Customer Invoice,0,0.1,10
+cust_019,Kestrel Services,2024-04-08,2024-04-23,15,1468.32,Customer Invoice,1,0.2,15
+cust_044,Linden Studio,2024-04-08,2024-05-23,45,1801.94,Other Receivable,0,0.0,9
+cust_034,Brightwater Group,2024-04-09,2024-05-09,30,904.98,Customer Invoice,0,0.0909,11
+cust_043,Cedar Market,2024-04-09,2024-05-24,45,1008.42,Customer Invoice,0,0.0,10
+cust_019,Kestrel Services,2024-04-09,2024-05-09,30,1595.1,Customer Invoice,1,0.25,16
+cust_044,Linden Studio,2024-04-10,2024-05-10,30,2300.21,Other Receivable,1,0.0,10
+cust_022,Maple Trading,2024-04-11,2024-05-26,45,437.25,Money Lent Out,1,0.4286,7
+cust_017,Harbor Labs,2024-04-13,2024-05-28,45,378.69,Customer Invoice,0,0.2222,9
+cust_024,Cedar Services,2024-04-15,2024-06-14,60,519.27,Customer Invoice,0,0.2778,18
+cust_012,Linden Trading,2024-04-15,2024-04-30,15,1251.1,Other Receivable,0,0.4167,12
+cust_005,Bluefin Logistics,2024-04-18,2024-06-17,60,523.39,Other Receivable,0,0.1818,11
+cust_005,Bluefin Logistics,2024-04-18,2024-06-17,60,1079.54,Customer Invoice,0,0.1667,12
+cust_029,Sundial Works,2024-04-19,2024-05-19,30,1509.24,Other Receivable,0,0.3125,16
+cust_026,Silverline Cafe,2024-04-20,2024-06-04,45,879.88,Money Lent Out,0,0.4545,11
+cust_016,Mesa Group,2024-04-21,2024-06-05,45,268.82,Customer Invoice,1,0.3636,11
+cust_008,Mesa Logistics,2024-04-22,2024-05-22,30,745.4,Money Lent Out,1,0.1818,11
+cust_020,Granite Co.,2024-04-24,2024-06-23,60,903.26,Customer Invoice,1,0.0909,11
+cust_010,Mesa Co.,2024-04-26,2024-06-10,45,1118.23,Money Lent Out,0,0.0909,11
+cust_011,Kestrel Labs,2024-04-28,2024-06-27,60,439.86,Customer Invoice,0,0.0,11
+cust_029,Sundial Works,2024-04-29,2024-06-13,45,1230.63,Customer Invoice,1,0.2941,17
+cust_015,Granite Partners,2024-04-30,2024-06-14,45,1512.29,Customer Invoice,0,0.25,16
+cust_001,Beacon Studio,2024-04-30,2024-06-14,45,438.2,Other Receivable,1,0.1429,7
+cust_029,Sundial Works,2024-04-30,2024-06-14,45,700.97,Money Lent Out,0,0.3333,18
+cust_022,Maple Trading,2024-05-01,2024-06-15,45,902.26,Money Lent Out,0,0.5,8
+cust_041,Mesa Trading,2024-05-03,2024-06-02,30,330.87,Customer Invoice,0,0.4286,14
+cust_029,Sundial Works,2024-05-04,2024-06-03,30,773.77,Customer Invoice,1,0.3158,19
+cust_024,Cedar Services,2024-05-05,2024-05-20,15,384.84,Customer Invoice,0,0.2632,19
+cust_022,Maple Trading,2024-05-06,2024-06-05,30,691.45,Customer Invoice,1,0.4444,9
+cust_024,Cedar Services,2024-05-07,2024-07-06,60,559.4,Money Lent Out,0,0.25,20
+cust_032,Copperfield Design,2024-05-09,2024-05-24,15,333.36,Money Lent Out,0,0.3333,9
+cust_034,Brightwater Group,2024-05-11,2024-06-25,45,595.47,Other Receivable,0,0.0833,12
+cust_021,Granite Cafe,2024-05-12,2024-06-26,45,317.45,Customer Invoice,1,0.0833,12
+cust_006,Oak & Pine Group,2024-05-12,2024-07-11,60,3279.83,Customer Invoice,0,0.1111,9
+cust_001,Beacon Studio,2024-05-14,2024-05-29,15,560.85,Money Lent Out,0,0.25,8
+cust_018,Ironwood Studio,2024-05-14,2024-05-29,15,1072.64,Customer Invoice,0,0.25,12
+cust_042,Beacon Supplies,2024-05-14,2024-06-28,45,1200.45,Other Receivable,0,0.1,10
+cust_016,Mesa Group,2024-05-14,2024-06-13,30,1116.09,Customer Invoice,0,0.4167,12
+cust_033,Silverline Retail,2024-05-15,2024-06-14,30,1108.38,Customer Invoice,1,0.5,4
+cust_004,Kestrel Retail,2024-05-15,2024-05-30,15,491.98,Other Receivable,1,0.4444,9
+cust_042,Beacon Supplies,2024-05-16,2024-06-30,45,379.47,Customer Invoice,0,0.0909,11
+cust_024,Cedar Services,2024-05-16,2024-06-15,30,664.48,Other Receivable,0,0.2381,21
+cust_038,Granite Works,2024-05-16,2024-06-15,30,1446.52,Customer Invoice,1,0.3333,12
+cust_044,Linden Studio,2024-05-17,2024-06-01,15,536.61,Other Receivable,0,0.0909,11
+cust_026,Silverline Cafe,2024-05-19,2024-06-18,30,1445.13,Money Lent Out,0,0.4167,12
+cust_020,Granite Co.,2024-05-21,2024-07-05,45,731.65,Customer Invoice,0,0.1667,12
+cust_043,Cedar Market,2024-05-21,2024-06-05,15,184.28,Other Receivable,0,0.0,11
+cust_043,Cedar Market,2024-05-24,2024-06-08,15,1194.03,Other Receivable,1,0.0,12
+cust_012,Linden Trading,2024-05-24,2024-06-23,30,720.62,Money Lent Out,0,0.3846,13
+cust_025,Bluefin Partners,2024-05-26,2024-06-25,30,502.26,Other Receivable,0,0.1538,13
+cust_026,Silverline Cafe,2024-05-26,2024-06-25,30,570.48,Money Lent Out,0,0.3846,13
+cust_024,Cedar Services,2024-05-26,2024-06-10,15,388.16,Other Receivable,0,0.2273,22
+cust_041,Mesa Trading,2024-05-27,2024-07-26,60,808.37,Customer Invoice,0,0.4,15
+cust_031,Copperfield Retail,2024-05-29,2024-07-13,45,999.48,Customer Invoice,0,0.6,10
+cust_000,Oak & Pine Cafe,2024-06-02,2024-07-17,45,1137.48,Customer Invoice,0,0.1667,12
+cust_030,Riverton Market,2024-06-04,2024-07-19,45,329.83,Customer Invoice,0,0.25,8
+cust_004,Kestrel Retail,2024-06-05,2024-08-04,60,250.93,Customer Invoice,0,0.5,10
+cust_041,Mesa Trading,2024-06-06,2024-06-21,15,595.49,Other Receivable,0,0.375,16
+cust_035,Beacon Labs,2024-06-07,2024-08-06,60,1252.78,Customer Invoice,1,0.0833,12
+cust_018,Ironwood Studio,2024-06-10,2024-08-09,60,365.56,Customer Invoice,0,0.2308,13
+cust_006,Oak & Pine Group,2024-06-13,2024-06-28,15,736.43,Other Receivable,0,0.1,10
+cust_014,Beacon Services,2024-06-14,2024-06-29,15,427.08,Customer Invoice,0,0.25,8
+cust_039,Maple Partners,2024-06-15,2024-07-30,45,301.91,Other Receivable,0,0.0,11
+cust_037,Silverline Group,2024-06-17,2024-08-01,45,1047.05,Customer Invoice,0,0.5,6
+cust_028,Willow Trading,2024-06-17,2024-07-02,15,2163.58,Money Lent Out,1,0.2,5
+cust_043,Cedar Market,2024-06-18,2024-08-02,45,166.78,Customer Invoice,0,0.0769,13
+cust_003,Kestrel Design,2024-06-19,2024-08-03,45,1234.18,Money Lent Out,0,0.1111,9
+cust_017,Harbor Labs,2024-06-19,2024-07-19,30,994.48,Money Lent Out,1,0.2,10
+cust_015,Granite Partners,2024-06-20,2024-08-19,60,337.27,Other Receivable,0,0.2353,17
+cust_015,Granite Partners,2024-06-22,2024-08-21,60,459.49,Customer Invoice,1,0.2222,18
+cust_007,Bluefin Co.,2024-06-22,2024-07-22,30,1050.39,Customer Invoice,0,0.375,8
+cust_014,Beacon Services,2024-06-22,2024-08-21,60,169.82,Other Receivable,0,0.2222,9
+cust_024,Cedar Services,2024-06-24,2024-07-24,30,533.98,Other Receivable,0,0.2174,23
+cust_023,Beacon Design,2024-06-24,2024-07-09,15,566.35,Money Lent Out,0,0.125,8
+cust_041,Mesa Trading,2024-06-25,2024-08-24,60,146.98,Other Receivable,0,0.3529,17
+cust_034,Brightwater Group,2024-06-25,2024-08-24,60,1489.13,Money Lent Out,0,0.0769,13
+cust_023,Beacon Design,2024-06-27,2024-08-26,60,1239.87,Customer Invoice,1,0.1111,9
+cust_028,Willow Trading,2024-06-27,2024-08-26,60,256.7,Money Lent Out,0,0.3333,6
+cust_004,Kestrel Retail,2024-06-28,2024-08-12,45,265.37,Money Lent Out,1,0.4545,11
+cust_026,Silverline Cafe,2024-06-29,2024-07-14,15,958.69,Other Receivable,1,0.3571,14
+cust_036,Beacon Cafe,2024-06-30,2024-07-15,15,2270.52,Money Lent Out,1,0.2,10
+cust_023,Beacon Design,2024-07-01,2024-07-31,30,623.37,Money Lent Out,0,0.2,10
+cust_026,Silverline Cafe,2024-07-01,2024-07-16,15,1180.22,Other Receivable,1,0.4,15
+cust_034,Brightwater Group,2024-07-04,2024-08-03,30,614.77,Customer Invoice,0,0.0714,14
+cust_011,Kestrel Labs,2024-07-04,2024-09-02,60,3173.41,Customer Invoice,0,0.0,12
+cust_035,Beacon Labs,2024-07-05,2024-08-04,30,1166.78,Money Lent Out,0,0.1538,13
+cust_015,Granite Partners,2024-07-08,2024-08-22,45,332.42,Customer Invoice,0,0.2632,19
+cust_004,Kestrel Retail,2024-07-09,2024-07-24,15,591.33,Money Lent Out,1,0.5,12
+cust_013,Ironwood Trading,2024-07-09,2024-08-08,30,605.27,Other Receivable,0,0.0,9
+cust_038,Granite Works,2024-07-09,2024-08-23,45,1246.67,Money Lent Out,0,0.3846,13
+cust_024,Cedar Services,2024-07-10,2024-07-25,15,397.8,Money Lent Out,1,0.2083,24
+cust_003,Kestrel Design,2024-07-11,2024-08-10,30,1354.8,Customer Invoice,0,0.1,10
+cust_019,Kestrel Services,2024-07-11,2024-09-09,60,1058.36,Other Receivable,0,0.2941,17
+cust_017,Harbor Labs,2024-07-11,2024-08-25,45,651.74,Money Lent Out,0,0.2727,11
+cust_031,Copperfield Retail,2024-07-13,2024-08-12,30,1054.77,Other Receivable,0,0.5455,11
+cust_005,Bluefin Logistics,2024-07-15,2024-07-30,15,2713.25,Customer Invoice,0,0.1538,13
+cust_043,Cedar Market,2024-07-16,2024-07-31,15,1874.13,Customer Invoice,0,0.0714,14
+cust_036,Beacon Cafe,2024-07-16,2024-08-15,30,159.51,Other Receivable,0,0.2727,11
+cust_000,Oak & Pine Cafe,2024-07-16,2024-08-30,45,571.35,Customer Invoice,0,0.1538,13
+cust_032,Copperfield Design,2024-07-19,2024-08-18,30,116.68,Money Lent Out,1,0.3,10
+cust_037,Silverline Group,2024-07-21,2024-08-20,30,125.05,Customer Invoice,0,0.4286,7
+cust_006,Oak & Pine Group,2024-07-21,2024-08-05,15,748.49,Money Lent Out,1,0.0909,11
+cust_002,Harbor Services,2024-07-21,2024-08-20,30,645.26,Other Receivable,0,0.3077,13
+cust_043,Cedar Market,2024-07-22,2024-08-06,15,4498.8,Customer Invoice,0,0.0667,15
+cust_016,Mesa Group,2024-07-24,2024-09-22,60,371.46,Customer Invoice,0,0.3846,13
+cust_039,Maple Partners,2024-07-25,2024-09-08,45,339.65,Customer Invoice,0,0.0,12
+cust_009,Bluefin Retail,2024-07-27,2024-08-26,30,2307.56,Money Lent Out,1,0.1333,15
+cust_020,Granite Co.,2024-07-28,2024-08-27,30,654.25,Money Lent Out,1,0.1538,13
+cust_031,Copperfield Retail,2024-07-29,2024-08-13,15,514.14,Money Lent Out,1,0.5,12
+cust_031,Copperfield Retail,2024-07-30,2024-09-28,60,577.05,Customer Invoice,1,0.5385,13
+cust_001,Beacon Studio,2024-07-30,2024-09-13,45,1414.87,Other Receivable,0,0.2222,9
+cust_005,Bluefin Logistics,2024-07-30,2024-09-28,60,955.35,Money Lent Out,0,0.1429,14
+cust_000,Oak & Pine Cafe,2024-07-31,2024-08-30,30,528.91,Customer Invoice,1,0.1429,14
+cust_027,Granite Trading,2024-08-01,2024-09-30,60,1980.43,Money Lent Out,0,0.0909,11
+cust_043,Cedar Market,2024-08-01,2024-09-30,60,942.34,Money Lent Out,0,0.0625,16
+cust_028,Willow Trading,2024-08-02,2024-09-01,30,269.3,Customer Invoice,0,0.2857,7
+cust_033,Silverline Retail,2024-08-02,2024-09-01,30,460.58,Customer Invoice,0,0.6,5
+cust_011,Kestrel Labs,2024-08-04,2024-09-03,30,1904.54,Money Lent Out,0,0.0,13
+cust_018,Ironwood Studio,2024-08-05,2024-08-20,15,2745.86,Customer Invoice,0,0.2143,14
+cust_015,Granite Partners,2024-08-05,2024-09-19,45,373.24,Money Lent Out,0,0.25,20
+cust_006,Oak & Pine Group,2024-08-05,2024-10-04,60,1488.09,Other Receivable,0,0.1667,12
+cust_014,Beacon Services,2024-08-07,2024-09-06,30,1003.73,Money Lent Out,0,0.2,10
+cust_044,Linden Studio,2024-08-07,2024-10-06,60,276.79,Money Lent Out,1,0.0833,12
+cust_044,Linden Studio,2024-08-07,2024-10-06,60,319.25,Customer Invoice,0,0.1538,13
+cust_044,Linden Studio,2024-08-08,2024-08-23,15,1991.6,Money Lent Out,0,0.1429,14
+cust_019,Kestrel Services,2024-08-11,2024-09-25,45,318.93,Money Lent Out,0,0.2778,18
+cust_001,Beacon Studio,2024-08-13,2024-08-28,15,106.86,Money Lent Out,0,0.2,10
+cust_034,Brightwater Group,2024-08-15,2024-09-29,45,100.31,Money Lent Out,0,0.0667,15
+cust_031,Copperfield Retail,2024-08-16,2024-10-15,60,266.8,Customer Invoice,0,0.5714,14
+cust_041,Mesa Trading,2024-08-16,2024-09-30,45,854.19,Other Receivable,0,0.3333,18
+cust_043,Cedar Market,2024-08-18,2024-09-17,30,493.6,Other Receivable,0,0.0588,17
+cust_035,Beacon Labs,2024-08-19,2024-10-18,60,729.78,Customer Invoice,0,0.1429,14
+cust_018,Ironwood Studio,2024-08-20,2024-10-04,45,624.22,Other Receivable,0,0.2,15
+cust_015,Granite Partners,2024-08-21,2024-09-05,15,208.12,Other Receivable,0,0.2381,21
+cust_023,Beacon Design,2024-08-22,2024-09-21,30,1754.71,Other Receivable,0,0.1818,11
+cust_011,Kestrel Labs,2024-08-23,2024-10-07,45,2269.61,Other Receivable,1,0.0,14
+cust_013,Ironwood Trading,2024-08-24,2024-10-08,45,424.4,Money Lent Out,0,0.0,10
+cust_024,Cedar Services,2024-08-27,2024-10-26,60,748.68,Customer Invoice,0,0.24,25
+cust_033,Silverline Retail,2024-08-29,2024-10-13,45,795.13,Customer Invoice,0,0.5,6
+cust_040,Oak & Pine Studio,2024-08-30,2024-09-14,15,3249.67,Customer Invoice,0,0.1667,12
+cust_013,Ironwood Trading,2024-08-31,2024-10-15,45,670.06,Other Receivable,0,0.0,11
+cust_044,Linden Studio,2024-09-02,2024-10-02,30,514.93,Money Lent Out,0,0.1333,15
+cust_018,Ironwood Studio,2024-09-06,2024-11-05,60,819.78,Other Receivable,0,0.1875,16
+cust_008,Mesa Logistics,2024-09-07,2024-10-07,30,339.93,Customer Invoice,0,0.25,12
+cust_026,Silverline Cafe,2024-09-09,2024-09-24,15,155.07,Other Receivable,0,0.4375,16
+cust_002,Harbor Services,2024-09-10,2024-11-09,60,1434.32,Money Lent Out,0,0.2857,14
+cust_011,Kestrel Labs,2024-09-11,2024-09-26,15,1563.91,Customer Invoice,1,0.0667,15
+cust_006,Oak & Pine Group,2024-09-13,2024-10-28,45,813.76,Customer Invoice,0,0.1538,13
+cust_023,Beacon Design,2024-09-13,2024-09-28,15,623.85,Other Receivable,1,0.1667,12
+cust_037,Silverline Group,2024-09-13,2024-10-28,45,545.68,Customer Invoice,0,0.375,8
+cust_012,Linden Trading,2024-09-14,2024-10-14,30,192.7,Other Receivable,1,0.3571,14
+cust_035,Beacon Labs,2024-09-15,2024-10-30,45,139.77,Money Lent Out,0,0.1333,15
+cust_042,Beacon Supplies,2024-09-15,2024-09-30,15,215.7,Money Lent Out,0,0.0833,12
+cust_019,Kestrel Services,2024-09-16,2024-11-15,60,1026.02,Money Lent Out,1,0.2632,19
+cust_009,Bluefin Retail,2024-09-16,2024-11-15,60,405.91,Other Receivable,0,0.1875,16
+cust_002,Harbor Services,2024-09-17,2024-10-02,15,670.46,Money Lent Out,1,0.2667,15
+cust_021,Granite Cafe,2024-09-17,2024-11-01,45,2830.51,Customer Invoice,0,0.1538,13
+cust_036,Beacon Cafe,2024-09-18,2024-10-18,30,205.34,Other Receivable,0,0.25,12
+cust_021,Granite Cafe,2024-09-20,2024-10-20,30,747.9,Other Receivable,0,0.1429,14
+cust_002,Harbor Services,2024-09-21,2024-10-21,30,448.13,Customer Invoice,0,0.3125,16
+cust_026,Silverline Cafe,2024-09-22,2024-11-21,60,447.86,Money Lent Out,1,0.4118,17
+cust_041,Mesa Trading,2024-09-24,2024-10-09,15,3730.67,Customer Invoice,0,0.3158,19
+cust_035,Beacon Labs,2024-09-24,2024-10-09,15,1453.72,Other Receivable,0,0.125,16
+cust_032,Copperfield Design,2024-09-26,2024-10-26,30,1000.14,Customer Invoice,0,0.3636,11
+cust_001,Beacon Studio,2024-09-27,2024-11-11,45,480.23,Customer Invoice,1,0.1818,11
+cust_023,Beacon Design,2024-09-28,2024-11-27,60,647.89,Other Receivable,1,0.2308,13
+cust_039,Maple Partners,2024-09-28,2024-11-27,60,357.86,Customer Invoice,0,0.0,13
+cust_023,Beacon Design,2024-09-28,2024-10-28,30,617.46,Other Receivable,0,0.2857,14
+cust_006,Oak & Pine Group,2024-09-28,2024-10-13,15,110.25,Other Receivable,0,0.1429,14
+cust_004,Kestrel Retail,2024-09-28,2024-11-12,45,438.06,Other Receivable,1,0.5385,13
+cust_032,Copperfield Design,2024-09-29,2024-11-13,45,1067.91,Money Lent Out,0,0.3333,12
+cust_032,Copperfield Design,2024-09-30,2024-10-15,15,277.13,Other Receivable,0,0.3077,13
+cust_007,Bluefin Co.,2024-10-01,2024-11-30,60,4022.5,Other Receivable,0,0.3333,9
+cust_016,Mesa Group,2024-10-05,2024-10-20,15,443.31,Money Lent Out,0,0.3571,14
+cust_002,Harbor Services,2024-10-05,2024-10-20,15,121.97,Customer Invoice,1,0.2941,17
+cust_028,Willow Trading,2024-10-05,2024-10-20,15,1119.61,Money Lent Out,0,0.25,8
+cust_035,Beacon Labs,2024-10-07,2024-10-22,15,267.61,Money Lent Out,0,0.1176,17
+cust_018,Ironwood Studio,2024-10-07,2024-12-06,60,405.79,Other Receivable,0,0.1765,17
+cust_020,Granite Co.,2024-10-07,2024-11-06,30,612.59,Money Lent Out,1,0.2143,14
+cust_034,Brightwater Group,2024-10-08,2024-10-23,15,888.71,Money Lent Out,0,0.0625,16
+cust_007,Bluefin Co.,2024-10-08,2024-10-23,15,340.95,Other Receivable,0,0.3,10
+cust_019,Kestrel Services,2024-10-08,2024-10-23,15,2737.55,Customer Invoice,0,0.3,20
+cust_028,Willow Trading,2024-10-08,2024-11-22,45,785.47,Money Lent Out,0,0.2222,9
+cust_006,Oak & Pine Group,2024-10-08,2024-11-07,30,779.02,Customer Invoice,1,0.1333,15
+cust_019,Kestrel Services,2024-10-11,2024-12-10,60,828.0,Money Lent Out,1,0.2857,21
+cust_043,Cedar Market,2024-10-12,2024-12-11,60,1157.87,Other Receivable,0,0.0556,18
+cust_006,Oak & Pine Group,2024-10-12,2024-11-26,45,346.12,Other Receivable,1,0.1875,16
+cust_028,Willow Trading,2024-10-13,2024-11-12,30,3065.7,Money Lent Out,0,0.2,10
+cust_044,Linden Studio,2024-10-17,2024-12-16,60,533.2,Money Lent Out,0,0.125,16
+cust_011,Kestrel Labs,2024-10-20,2024-12-19,60,1030.22,Other Receivable,0,0.125,16
+cust_005,Bluefin Logistics,2024-10-20,2024-12-19,60,515.54,Money Lent Out,0,0.1333,15
+cust_034,Brightwater Group,2024-10-20,2024-11-19,30,1076.21,Money Lent Out,0,0.0588,17
+cust_029,Sundial Works,2024-10-20,2024-11-19,30,1907.07,Money Lent Out,0,0.35,20
+cust_034,Brightwater Group,2024-10-22,2024-11-21,30,455.64,Other Receivable,0,0.0556,18
+cust_032,Copperfield Design,2024-10-24,2024-11-23,30,466.75,Other Receivable,0,0.2857,14
+cust_040,Oak & Pine Studio,2024-10-24,2024-11-23,30,233.03,Money Lent Out,0,0.1538,13
+cust_008,Mesa Logistics,2024-10-25,2024-12-24,60,574.97,Money Lent Out,1,0.2308,13
+cust_019,Kestrel Services,2024-10-28,2024-11-27,30,267.49,Money Lent Out,0,0.3182,22
+cust_024,Cedar Services,2024-10-29,2024-12-28,60,180.69,Customer Invoice,0,0.2308,26
+cust_029,Sundial Works,2024-10-30,2024-12-29,60,93.51,Money Lent Out,0,0.3333,21
+cust_008,Mesa Logistics,2024-10-31,2024-12-30,60,654.89,Money Lent Out,0,0.2857,14
+cust_031,Copperfield Retail,2024-10-31,2024-12-30,60,1191.86,Other Receivable,0,0.5333,15
+cust_030,Riverton Market,2024-11-01,2024-12-16,45,240.08,Customer Invoice,0,0.2222,9
+cust_022,Maple Trading,2024-11-02,2025-01-01,60,231.72,Money Lent Out,0,0.5,10
+cust_008,Mesa Logistics,2024-11-02,2024-11-17,15,596.14,Money Lent Out,1,0.2667,15
+cust_035,Beacon Labs,2024-11-03,2025-01-02,60,645.4,Other Receivable,0,0.1111,18
+cust_016,Mesa Group,2024-11-04,2024-12-19,45,1129.49,Other Receivable,0,0.3333,15
+cust_038,Granite Works,2024-11-04,2024-12-19,45,1198.03,Customer Invoice,1,0.3571,14
+cust_007,Bluefin Co.,2024-11-05,2025-01-04,60,275.44,Money Lent Out,0,0.2727,11
+cust_042,Beacon Supplies,2024-11-05,2024-12-20,45,3840.56,Money Lent Out,0,0.0769,13
+cust_042,Beacon Supplies,2024-11-06,2024-11-21,15,365.03,Customer Invoice,0,0.0714,14
+cust_035,Beacon Labs,2024-11-06,2024-12-21,45,133.88,Other Receivable,0,0.1053,19
+cust_020,Granite Co.,2024-11-09,2024-11-24,15,959.79,Money Lent Out,0,0.2667,15
+cust_018,Ironwood Studio,2024-11-09,2024-12-09,30,396.72,Other Receivable,0,0.1667,18
+cust_038,Granite Works,2024-11-09,2024-11-24,15,146.96,Money Lent Out,0,0.4,15
+cust_005,Bluefin Logistics,2024-11-13,2024-12-13,30,597.46,Money Lent Out,0,0.125,16
+cust_028,Willow Trading,2024-11-15,2024-11-30,15,179.92,Customer Invoice,0,0.1818,11
+cust_025,Bluefin Partners,2024-11-15,2024-12-15,30,537.85,Other Receivable,0,0.1429,14
+cust_042,Beacon Supplies,2024-11-16,2024-12-16,30,368.97,Money Lent Out,0,0.0667,15
+cust_006,Oak & Pine Group,2024-11-17,2025-01-16,60,568.08,Customer Invoice,0,0.2353,17
+cust_044,Linden Studio,2024-11-17,2024-12-17,30,834.71,Other Receivable,0,0.1176,17
+cust_024,Cedar Services,2024-11-19,2024-12-19,30,2111.49,Customer Invoice,0,0.2222,27
+cust_027,Granite Trading,2024-11-19,2024-12-04,15,702.36,Other Receivable,0,0.0833,12
+cust_007,Bluefin Co.,2024-11-19,2024-12-04,15,374.65,Customer Invoice,1,0.25,12
+cust_032,Copperfield Design,2024-11-20,2025-01-04,45,2314.84,Money Lent Out,1,0.2667,15
+cust_017,Harbor Labs,2024-11-21,2024-12-06,15,537.5,Customer Invoice,0,0.25,12
+cust_000,Oak & Pine Cafe,2024-11-22,2025-01-06,45,194.11,Money Lent Out,0,0.2,15
+cust_015,Granite Partners,2024-11-23,2024-12-08,15,340.5,Customer Invoice,0,0.2273,22
+cust_029,Sundial Works,2024-11-24,2024-12-09,15,379.39,Other Receivable,0,0.3182,22
+cust_025,Bluefin Partners,2024-11-25,2025-01-24,60,2514.72,Other Receivable,0,0.1333,15
+cust_036,Beacon Cafe,2024-11-25,2025-01-24,60,1890.92,Money Lent Out,0,0.2308,13
+cust_009,Bluefin Retail,2024-11-25,2024-12-25,30,218.23,Money Lent Out,0,0.1765,17
+cust_021,Granite Cafe,2024-11-26,2025-01-10,45,932.31,Money Lent Out,0,0.1333,15
+cust_043,Cedar Market,2024-11-27,2024-12-27,30,863.79,Other Receivable,0,0.0526,19
+cust_038,Granite Works,2024-11-30,2024-12-15,15,357.48,Other Receivable,0,0.375,16
+cust_017,Harbor Labs,2024-12-01,2025-01-30,60,245.05,Money Lent Out,0,0.2308,13
+cust_029,Sundial Works,2024-12-02,2024-12-17,15,1017.07,Money Lent Out,1,0.3043,23
+cust_007,Bluefin Co.,2024-12-03,2024-12-18,15,1237.26,Customer Invoice,1,0.3077,13
+cust_025,Bluefin Partners,2024-12-03,2025-02-01,60,2602.32,Customer Invoice,1,0.125,16
+cust_029,Sundial Works,2024-12-04,2025-01-18,45,314.37,Money Lent Out,0,0.3333,24
+cust_006,Oak & Pine Group,2024-12-04,2025-01-03,30,2726.64,Money Lent Out,0,0.2222,18
+cust_014,Beacon Services,2024-12-05,2024-12-20,15,808.54,Customer Invoice,1,0.1818,11
+cust_031,Copperfield Retail,2024-12-07,2025-01-21,45,957.44,Customer Invoice,1,0.5,16
+cust_008,Mesa Logistics,2024-12-07,2025-02-05,60,725.6,Customer Invoice,0,0.3125,16
+cust_029,Sundial Works,2024-12-08,2024-12-23,15,518.25,Money Lent Out,0,0.32,25
+cust_027,Granite Trading,2024-12-08,2025-02-06,60,1870.01,Customer Invoice,0,0.0769,13
+cust_003,Kestrel Design,2024-12-10,2025-02-08,60,411.28,Money Lent Out,0,0.0909,11
+cust_018,Ironwood Studio,2024-12-13,2025-01-27,45,301.32,Money Lent Out,0,0.1579,19
+cust_022,Maple Trading,2024-12-14,2025-02-12,60,400.59,Customer Invoice,0,0.4545,11
+cust_035,Beacon Labs,2024-12-16,2024-12-31,15,594.48,Money Lent Out,0,0.1,20
+cust_029,Sundial Works,2024-12-18,2025-02-16,60,350.08,Money Lent Out,0,0.3077,26
+cust_027,Granite Trading,2024-12-19,2025-02-02,45,992.88,Money Lent Out,0,0.0714,14
+cust_036,Beacon Cafe,2024-12-21,2025-02-19,60,584.83,Other Receivable,1,0.2143,14
+cust_014,Beacon Services,2024-12-23,2025-02-06,45,899.42,Money Lent Out,1,0.25,12
+cust_014,Beacon Services,2024-12-23,2025-02-21,60,570.8,Customer Invoice,0,0.3077,13
+cust_016,Mesa Group,2024-12-24,2025-02-22,60,1146.12,Money Lent Out,0,0.3125,16
+cust_035,Beacon Labs,2024-12-27,2025-02-25,60,756.94,Money Lent Out,0,0.0952,21
+cust_008,Mesa Logistics,2024-12-28,2025-01-27,30,608.71,Customer Invoice,0,0.2941,17
+cust_008,Mesa Logistics,2024-12-29,2025-02-12,45,825.82,Money Lent Out,0,0.2778,18
+cust_013,Ironwood Trading,2024-12-30,2025-02-13,45,2361.46,Money Lent Out,1,0.0,12
+cust_002,Harbor Services,2024-12-30,2025-02-28,60,326.17,Other Receivable,0,0.3333,18
+cust_042,Beacon Supplies,2024-12-31,2025-03-01,60,586.98,Money Lent Out,0,0.0625,16
+cust_007,Bluefin Co.,2024-12-31,2025-02-14,45,469.72,Other Receivable,1,0.3571,14
+cust_038,Granite Works,2025-01-02,2025-02-16,45,1808.09,Customer Invoice,1,0.3529,17
+cust_041,Mesa Trading,2025-01-02,2025-02-16,45,415.39,Money Lent Out,0,0.3,20
+cust_034,Brightwater Group,2025-01-04,2025-02-03,30,1133.59,Customer Invoice,0,0.0526,19
+cust_019,Kestrel Services,2025-01-04,2025-02-18,45,427.88,Other Receivable,0,0.3043,23
+cust_005,Bluefin Logistics,2025-01-05,2025-02-19,45,1651.37,Customer Invoice,0,0.1176,17
+cust_023,Beacon Design,2025-01-05,2025-03-06,60,544.46,Money Lent Out,0,0.2667,15
+cust_031,Copperfield Retail,2025-01-06,2025-02-20,45,1139.49,Other Receivable,1,0.5294,17
+cust_031,Copperfield Retail,2025-01-07,2025-02-21,45,1436.43,Other Receivable,1,0.5556,18
+cust_027,Granite Trading,2025-01-13,2025-03-14,60,749.09,Other Receivable,0,0.0667,15
+cust_021,Granite Cafe,2025-01-13,2025-02-27,45,377.33,Other Receivable,0,0.125,16
+cust_019,Kestrel Services,2025-01-15,2025-03-16,60,404.38,Customer Invoice,0,0.2917,24
+cust_026,Silverline Cafe,2025-01-15,2025-03-01,45,1125.58,Customer Invoice,0,0.4444,18
+cust_031,Copperfield Retail,2025-01-16,2025-01-31,15,1242.31,Money Lent Out,0,0.5789,19
+cust_042,Beacon Supplies,2025-01-16,2025-02-15,30,69.51,Money Lent Out,0,0.0588,17
+cust_029,Sundial Works,2025-01-17,2025-03-03,45,507.21,Money Lent Out,0,0.2963,27
+cust_017,Harbor Labs,2025-01-17,2025-02-01,15,789.5,Other Receivable,0,0.2143,14
+cust_013,Ironwood Trading,2025-01-18,2025-02-02,15,339.24,Money Lent Out,0,0.0769,13
+cust_037,Silverline Group,2025-01-19,2025-03-20,60,1334.75,Money Lent Out,0,0.3333,9
+cust_009,Bluefin Retail,2025-01-20,2025-03-21,60,1311.35,Other Receivable,0,0.1667,18
+cust_016,Mesa Group,2025-01-21,2025-03-22,60,495.12,Money Lent Out,0,0.2941,17
+cust_034,Brightwater Group,2025-01-22,2025-02-21,30,590.91,Other Receivable,0,0.05,20
+cust_044,Linden Studio,2025-01-22,2025-03-08,45,274.49,Customer Invoice,0,0.1111,18
+cust_037,Silverline Group,2025-01-24,2025-02-08,15,1657.59,Customer Invoice,0,0.3,10
+cust_038,Granite Works,2025-01-25,2025-02-09,15,2002.2,Other Receivable,0,0.3889,18
+cust_023,Beacon Design,2025-01-26,2025-02-25,30,1113.69,Customer Invoice,0,0.25,16
+cust_014,Beacon Services,2025-01-28,2025-02-12,15,693.15,Other Receivable,0,0.2857,14
+cust_039,Maple Partners,2025-01-28,2025-02-12,15,1697.49,Money Lent Out,1,0.0,14
+cust_006,Oak & Pine Group,2025-01-28,2025-03-14,45,972.28,Customer Invoice,1,0.2105,19
+cust_026,Silverline Cafe,2025-01-30,2025-03-31,60,1068.36,Customer Invoice,0,0.4211,19
+cust_040,Oak & Pine Studio,2025-01-31,2025-02-15,15,787.63,Money Lent Out,1,0.1429,14
+cust_011,Kestrel Labs,2025-02-02,2025-03-19,45,195.73,Customer Invoice,0,0.1176,17
+cust_040,Oak & Pine Studio,2025-02-02,2025-03-19,45,219.13,Money Lent Out,0,0.2,15
+cust_028,Willow Trading,2025-02-03,2025-04-04,60,1799.02,Customer Invoice,0,0.1667,12
+cust_013,Ironwood Trading,2025-02-03,2025-03-20,45,1555.34,Other Receivable,0,0.0714,14
+cust_044,Linden Studio,2025-02-03,2025-04-04,60,314.22,Customer Invoice,0,0.1053,19
+cust_004,Kestrel Retail,2025-02-05,2025-04-06,60,850.09,Customer Invoice,0,0.5714,14
+cust_007,Bluefin Co.,2025-02-05,2025-02-20,15,1177.37,Other Receivable,0,0.4,15
+cust_003,Kestrel Design,2025-02-06,2025-03-23,45,427.93,Customer Invoice,0,0.0833,12
+cust_031,Copperfield Retail,2025-02-09,2025-03-11,30,123.48,Money Lent Out,0,0.55,20
+cust_003,Kestrel Design,2025-02-10,2025-02-25,15,358.01,Other Receivable,0,0.0769,13
+cust_016,Mesa Group,2025-02-12,2025-03-29,45,299.38,Other Receivable,0,0.2778,18
+cust_017,Harbor Labs,2025-02-12,2025-03-14,30,781.43,Money Lent Out,1,0.2,15
+cust_030,Riverton Market,2025-02-13,2025-03-30,45,1455.59,Money Lent Out,0,0.2,10
+cust_032,Copperfield Design,2025-02-14,2025-04-15,60,786.04,Money Lent Out,0,0.3125,16
+cust_023,Beacon Design,2025-02-14,2025-03-31,45,71.08,Customer Invoice,0,0.2353,17
+cust_022,Maple Trading,2025-02-14,2025-03-31,45,1021.43,Money Lent Out,1,0.4167,12
+cust_018,Ironwood Studio,2025-02-14,2025-04-15,60,693.71,Money Lent Out,0,0.15,20
+cust_031,Copperfield Retail,2025-02-16,2025-03-18,30,477.58,Other Receivable,0,0.5238,21
+cust_017,Harbor Labs,2025-02-20,2025-03-22,30,5541.07,Money Lent Out,0,0.25,16
+cust_011,Kestrel Labs,2025-02-20,2025-04-21,60,600.36,Other Receivable,0,0.1111,18
+cust_019,Kestrel Services,2025-02-21,2025-04-07,45,1054.35,Other Receivable,0,0.28,25
+cust_042,Beacon Supplies,2025-02-21,2025-04-22,60,253.5,Customer Invoice,0,0.0556,18
+cust_041,Mesa Trading,2025-02-21,2025-03-08,15,1085.77,Other Receivable,0,0.2857,21
+cust_019,Kestrel Services,2025-02-24,2025-03-11,15,210.97,Other Receivable,0,0.2692,26
+cust_000,Oak & Pine Cafe,2025-02-24,2025-03-26,30,1898.43,Other Receivable,1,0.1875,16
+cust_002,Harbor Services,2025-02-27,2025-04-28,60,975.91,Money Lent Out,0,0.3158,19
+cust_024,Cedar Services,2025-02-27,2025-03-29,30,237.73,Money Lent Out,0,0.2143,28
+cust_029,Sundial Works,2025-02-28,2025-04-29,60,1115.5,Other Receivable,0,0.2857,28
+cust_002,Harbor Services,2025-02-28,2025-04-29,60,568.62,Customer Invoice,1,0.3,20
+cust_009,Bluefin Retail,2025-03-03,2025-05-02,60,344.59,Customer Invoice,0,0.1579,19
+cust_027,Granite Trading,2025-03-05,2025-04-19,45,378.27,Other Receivable,0,0.0625,16
+cust_021,Granite Cafe,2025-03-06,2025-05-05,60,388.3,Money Lent Out,0,0.1176,17
+cust_044,Linden Studio,2025-03-07,2025-05-06,60,309.61,Other Receivable,0,0.1,20
+cust_012,Linden Trading,2025-03-12,2025-04-11,30,1081.28,Customer Invoice,0,0.4,15
+cust_030,Riverton Market,2025-03-12,2025-04-11,30,482.58,Other Receivable,1,0.1818,11
+cust_022,Maple Trading,2025-03-15,2025-04-29,45,2956.7,Money Lent Out,1,0.4615,13
+cust_019,Kestrel Services,2025-03-17,2025-05-16,60,242.35,Customer Invoice,0,0.2593,27
+cust_020,Granite Co.,2025-03-17,2025-05-16,60,539.46,Customer Invoice,0,0.25,16
+cust_010,Mesa Co.,2025-03-17,2025-04-16,30,858.27,Money Lent Out,0,0.0833,12
+cust_011,Kestrel Labs,2025-03-18,2025-04-17,30,301.11,Money Lent Out,0,0.1053,19
+cust_037,Silverline Group,2025-03-19,2025-04-03,15,435.57,Other Receivable,0,0.2727,11
+cust_020,Granite Co.,2025-03-19,2025-05-03,45,760.84,Other Receivable,0,0.2353,17
+cust_019,Kestrel Services,2025-03-19,2025-05-18,60,578.1,Other Receivable,0,0.25,28
+cust_001,Beacon Studio,2025-03-19,2025-05-03,45,699.81,Other Receivable,0,0.25,12
+cust_008,Mesa Logistics,2025-03-19,2025-04-18,30,425.03,Money Lent Out,0,0.2632,19
+cust_000,Oak & Pine Cafe,2025-03-20,2025-04-04,15,308.06,Customer Invoice,0,0.2353,17
+cust_028,Willow Trading,2025-03-21,2025-04-05,15,411.4,Customer Invoice,0,0.1538,13
+cust_023,Beacon Design,2025-03-24,2025-05-23,60,847.18,Money Lent Out,0,0.2222,18
+cust_042,Beacon Supplies,2025-03-25,2025-05-24,60,756.49,Other Receivable,1,0.0526,19
+cust_037,Silverline Group,2025-03-26,2025-04-10,15,1663.31,Customer Invoice,0,0.25,12
+cust_026,Silverline Cafe,2025-03-28,2025-04-12,15,346.25,Other Receivable,0,0.4,20
+cust_040,Oak & Pine Studio,2025-03-28,2025-04-12,15,1431.27,Money Lent Out,0,0.1875,16
+cust_030,Riverton Market,2025-04-01,2025-05-16,45,387.37,Money Lent Out,1,0.25,12
+cust_001,Beacon Studio,2025-04-02,2025-04-17,15,653.64,Customer Invoice,0,0.2308,13
+cust_019,Kestrel Services,2025-04-04,2025-06-03,60,1226.03,Other Receivable,0,0.2414,29
+cust_025,Bluefin Partners,2025-04-08,2025-04-23,15,146.53,Customer Invoice,0,0.1765,17
+cust_019,Kestrel Services,2025-04-11,2025-06-10,60,559.4,Customer Invoice,0,0.2333,30
+cust_036,Beacon Cafe,2025-04-11,2025-04-26,15,260.86,Other Receivable,0,0.2667,15
+cust_037,Silverline Group,2025-04-11,2025-06-10,60,1927.97,Money Lent Out,0,0.2308,13
+cust_017,Harbor Labs,2025-04-11,2025-04-26,15,780.78,Money Lent Out,0,0.2353,17
+cust_012,Linden Trading,2025-04-12,2025-06-11,60,1987.39,Other Receivable,0,0.375,16
+cust_006,Oak & Pine Group,2025-04-13,2025-05-28,45,413.59,Customer Invoice,0,0.25,20
+cust_038,Granite Works,2025-04-14,2025-05-14,30,754.32,Money Lent Out,0,0.3684,19
+cust_036,Beacon Cafe,2025-04-14,2025-04-29,15,1233.12,Customer Invoice,1,0.25,16
+cust_033,Silverline Retail,2025-04-14,2025-05-29,45,218.19,Customer Invoice,0,0.4286,7
+cust_029,Sundial Works,2025-04-15,2025-04-30,15,340.76,Customer Invoice,0,0.2759,29
+cust_025,Bluefin Partners,2025-04-19,2025-05-04,15,1690.35,Money Lent Out,0,0.1667,18
+cust_018,Ironwood Studio,2025-04-20,2025-06-04,45,171.04,Customer Invoice,0,0.1429,21
+cust_038,Granite Works,2025-04-20,2025-06-04,45,995.77,Other Receivable,1,0.35,20
+cust_020,Granite Co.,2025-04-22,2025-05-07,15,1291.29,Money Lent Out,0,0.2222,18
+cust_001,Beacon Studio,2025-04-22,2025-06-06,45,2373.81,Customer Invoice,0,0.2143,14
+cust_026,Silverline Cafe,2025-04-23,2025-06-07,45,1160.26,Money Lent Out,0,0.381,21
+cust_008,Mesa Logistics,2025-04-23,2025-05-23,30,387.39,Other Receivable,1,0.25,20
+cust_020,Granite Co.,2025-04-24,2025-05-24,30,908.19,Money Lent Out,0,0.2105,19
+cust_043,Cedar Market,2025-04-24,2025-06-08,45,309.51,Other Receivable,0,0.05,20
+cust_044,Linden Studio,2025-04-26,2025-06-25,60,1190.11,Other Receivable,0,0.0952,21
+cust_021,Granite Cafe,2025-04-26,2025-06-10,45,1316.29,Money Lent Out,0,0.1111,18
+cust_011,Kestrel Labs,2025-04-28,2025-06-12,45,993.5,Money Lent Out,0,0.1,20
+cust_039,Maple Partners,2025-04-29,2025-05-29,30,910.82,Other Receivable,0,0.0667,15
+cust_005,Bluefin Logistics,2025-05-02,2025-07-01,60,1385.62,Other Receivable,0,0.1111,18
+cust_012,Linden Trading,2025-05-04,2025-06-03,30,654.78,Other Receivable,0,0.3529,17
+cust_030,Riverton Market,2025-05-05,2025-05-20,15,133.93,Other Receivable,0,0.3077,13
+cust_024,Cedar Services,2025-05-05,2025-05-20,15,272.48,Other Receivable,0,0.2069,29
+cust_040,Oak & Pine Studio,2025-05-07,2025-06-06,30,501.14,Customer Invoice,0,0.1765,17
+cust_035,Beacon Labs,2025-05-09,2025-05-24,15,1997.86,Customer Invoice,0,0.0909,22
+cust_022,Maple Trading,2025-05-10,2025-07-09,60,1408.82,Money Lent Out,0,0.5,14
+cust_008,Mesa Logistics,2025-05-10,2025-07-09,60,121.05,Money Lent Out,1,0.2857,21
+cust_005,Bluefin Logistics,2025-05-11,2025-07-10,60,1128.25,Money Lent Out,0,0.1053,19
+cust_036,Beacon Cafe,2025-05-12,2025-05-27,15,861.8,Money Lent Out,0,0.2941,17
+cust_028,Willow Trading,2025-05-12,2025-06-26,45,1457.96,Money Lent Out,0,0.1429,14
+cust_039,Maple Partners,2025-05-13,2025-06-12,30,1013.65,Other Receivable,0,0.0625,16
+cust_025,Bluefin Partners,2025-05-14,2025-06-13,30,477.08,Customer Invoice,0,0.1579,19
+cust_016,Mesa Group,2025-05-15,2025-05-30,15,260.46,Money Lent Out,0,0.2632,19
+cust_010,Mesa Co.,2025-05-16,2025-06-15,30,569.18,Customer Invoice,0,0.0769,13
+cust_034,Brightwater Group,2025-05-16,2025-06-30,45,458.02,Customer Invoice,0,0.0476,21
+cust_001,Beacon Studio,2025-05-17,2025-06-01,15,335.54,Other Receivable,0,0.2,15
+cust_023,Beacon Design,2025-05-18,2025-07-17,60,272.65,Other Receivable,0,0.2105,19
+cust_002,Harbor Services,2025-05-18,2025-06-02,15,643.08,Other Receivable,1,0.3333,21
+cust_044,Linden Studio,2025-05-21,2025-06-20,30,546.0,Other Receivable,1,0.0909,22
+cust_000,Oak & Pine Cafe,2025-05-21,2025-07-05,45,1695.86,Money Lent Out,1,0.2222,18
+cust_044,Linden Studio,2025-05-22,2025-07-21,60,400.79,Customer Invoice,0,0.1304,23
+cust_028,Willow Trading,2025-05-22,2025-07-21,60,2748.54,Customer Invoice,0,0.1333,15
+cust_023,Beacon Design,2025-05-22,2025-07-21,60,2261.75,Other Receivable,0,0.2,20
+cust_013,Ironwood Trading,2025-05-25,2025-07-09,45,518.26,Customer Invoice,0,0.0667,15
+cust_042,Beacon Supplies,2025-05-25,2025-07-24,60,704.02,Customer Invoice,0,0.1,20
+cust_025,Bluefin Partners,2025-05-25,2025-07-24,60,1006.58,Money Lent Out,0,0.15,20
+cust_003,Kestrel Design,2025-05-26,2025-06-10,15,855.92,Money Lent Out,0,0.0714,14
+cust_020,Granite Co.,2025-05-27,2025-07-26,60,773.12,Customer Invoice,0,0.2,20
+cust_028,Willow Trading,2025-05-27,2025-06-26,30,167.93,Other Receivable,1,0.125,16
+cust_023,Beacon Design,2025-05-27,2025-06-11,15,582.99,Other Receivable,1,0.1905,21
+cust_036,Beacon Cafe,2025-05-28,2025-07-27,60,1379.28,Money Lent Out,1,0.2778,18
+cust_005,Bluefin Logistics,2025-05-28,2025-07-12,45,577.21,Money Lent Out,0,0.1,20
+cust_018,Ironwood Studio,2025-05-29,2025-07-28,60,834.98,Money Lent Out,0,0.1364,22
+cust_028,Willow Trading,2025-05-31,2025-06-15,15,857.3,Money Lent Out,0,0.1765,17
+cust_011,Kestrel Labs,2025-06-04,2025-07-19,45,777.15,Other Receivable,0,0.0952,21
+cust_004,Kestrel Retail,2025-06-06,2025-06-21,15,713.01,Money Lent Out,0,0.5333,15
+cust_004,Kestrel Retail,2025-06-06,2025-08-05,60,2496.99,Money Lent Out,0,0.5,16
+cust_026,Silverline Cafe,2025-06-09,2025-07-24,45,1253.25,Other Receivable,0,0.3636,22
+cust_008,Mesa Logistics,2025-06-10,2025-07-25,45,1049.05,Other Receivable,1,0.3182,22
+cust_042,Beacon Supplies,2025-06-10,2025-08-09,60,430.53,Customer Invoice,1,0.0952,21
+cust_039,Maple Partners,2025-06-11,2025-07-11,30,1134.99,Other Receivable,0,0.0588,17
+cust_038,Granite Works,2025-06-12,2025-06-27,15,1061.21,Other Receivable,0,0.381,21
+cust_038,Granite Works,2025-06-12,2025-06-27,15,1691.34,Money Lent Out,0,0.3636,22
+cust_026,Silverline Cafe,2025-06-13,2025-07-28,45,277.09,Other Receivable,0,0.3478,23
+cust_035,Beacon Labs,2025-06-14,2025-07-14,30,336.26,Customer Invoice,0,0.087,23
+cust_000,Oak & Pine Cafe,2025-06-16,2025-07-01,15,357.07,Other Receivable,0,0.2632,19
+cust_027,Granite Trading,2025-06-16,2025-07-01,15,1021.55,Money Lent Out,1,0.0588,17
+cust_033,Silverline Retail,2025-06-16,2025-07-01,15,359.34,Money Lent Out,0,0.375,8
+cust_008,Mesa Logistics,2025-06-17,2025-07-17,30,1056.27,Customer Invoice,1,0.3478,23
+cust_043,Cedar Market,2025-06-19,2025-08-03,45,441.31,Customer Invoice,1,0.0476,21
+cust_016,Mesa Group,2025-06-21,2025-08-20,60,880.18,Money Lent Out,0,0.25,20
+cust_038,Granite Works,2025-06-21,2025-08-05,45,1922.23,Money Lent Out,0,0.3478,23
+cust_005,Bluefin Logistics,2025-06-23,2025-08-22,60,221.68,Other Receivable,0,0.0952,21
+cust_027,Granite Trading,2025-06-24,2025-07-09,15,659.16,Money Lent Out,1,0.1111,18
+cust_035,Beacon Labs,2025-06-24,2025-07-24,30,377.95,Customer Invoice,0,0.0833,24
+cust_014,Beacon Services,2025-06-25,2025-07-25,30,908.66,Money Lent Out,0,0.2667,15
+cust_011,Kestrel Labs,2025-06-25,2025-07-10,15,964.2,Money Lent Out,1,0.0909,22
+cust_029,Sundial Works,2025-06-26,2025-07-26,30,322.59,Customer Invoice,0,0.2667,30
+cust_031,Copperfield Retail,2025-06-27,2025-07-27,30,506.13,Other Receivable,0,0.5,22
+cust_020,Granite Co.,2025-06-28,2025-07-28,30,794.5,Customer Invoice,0,0.1905,21
+cust_036,Beacon Cafe,2025-06-28,2025-07-28,30,1273.17,Money Lent Out,0,0.3158,19
+cust_037,Silverline Group,2025-06-28,2025-07-28,30,266.89,Customer Invoice,0,0.2143,14
+cust_032,Copperfield Design,2025-06-29,2025-08-28,60,2004.64,Money Lent Out,1,0.2941,17
+cust_041,Mesa Trading,2025-06-30,2025-07-30,30,146.16,Money Lent Out,0,0.2727,22
+cust_036,Beacon Cafe,2025-06-30,2025-07-30,30,783.14,Customer Invoice,0,0.3,20
+cust_039,Maple Partners,2025-07-01,2025-08-15,45,1923.85,Money Lent Out,0,0.0556,18
+cust_043,Cedar Market,2025-07-02,2025-08-16,45,1000.94,Customer Invoice,0,0.0909,22
+cust_013,Ironwood Trading,2025-07-02,2025-07-17,15,684.81,Other Receivable,0,0.0625,16
+cust_024,Cedar Services,2025-07-04,2025-09-02,60,377.29,Customer Invoice,0,0.2,30
+cust_035,Beacon Labs,2025-07-05,2025-08-19,45,621.19,Other Receivable,0,0.08,25
+cust_005,Bluefin Logistics,2025-07-05,2025-08-19,45,1858.13,Other Receivable,0,0.0909,22
+cust_038,Granite Works,2025-07-06,2025-08-20,45,1137.87,Customer Invoice,0,0.3333,24
+cust_022,Maple Trading,2025-07-06,2025-08-05,30,1940.86,Other Receivable,0,0.4667,15
+cust_013,Ironwood Trading,2025-07-07,2025-07-22,15,789.58,Money Lent Out,1,0.0588,17
+cust_009,Bluefin Retail,2025-07-07,2025-08-06,30,436.91,Other Receivable,0,0.15,20
+cust_028,Willow Trading,2025-07-07,2025-09-05,60,985.59,Money Lent Out,1,0.1667,18
+cust_034,Brightwater Group,2025-07-09,2025-07-24,15,402.12,Other Receivable,0,0.0455,22
+cust_031,Copperfield Retail,2025-07-10,2025-08-09,30,1787.45,Money Lent Out,0,0.4783,23
+cust_004,Kestrel Retail,2025-07-10,2025-08-24,45,423.5,Customer Invoice,0,0.4706,17
+cust_042,Beacon Supplies,2025-07-10,2025-09-08,60,1431.32,Money Lent Out,0,0.1364,22
+cust_040,Oak & Pine Studio,2025-07-12,2025-08-26,45,225.09,Customer Invoice,0,0.1667,18
+cust_029,Sundial Works,2025-07-13,2025-07-28,15,207.57,Money Lent Out,0,0.2581,31
+cust_031,Copperfield Retail,2025-07-13,2025-09-11,60,140.84,Other Receivable,0,0.4583,24
+cust_002,Harbor Services,2025-07-13,2025-08-12,30,833.71,Other Receivable,0,0.3636,22
+cust_004,Kestrel Retail,2025-07-14,2025-09-12,60,1496.89,Money Lent Out,1,0.4444,18
+cust_003,Kestrel Design,2025-07-15,2025-07-30,15,971.46,Money Lent Out,0,0.0667,15
+cust_026,Silverline Cafe,2025-07-15,2025-08-29,45,272.94,Money Lent Out,0,0.3333,24
+cust_005,Bluefin Logistics,2025-07-16,2025-07-31,15,1318.91,Customer Invoice,0,0.087,23
+cust_040,Oak & Pine Studio,2025-07-18,2025-09-01,45,699.1,Customer Invoice,0,0.1579,19
+cust_002,Harbor Services,2025-07-19,2025-09-02,45,1007.1,Money Lent Out,0,0.3478,23
+cust_039,Maple Partners,2025-07-19,2025-09-17,60,203.66,Money Lent Out,0,0.0526,19
+cust_044,Linden Studio,2025-07-20,2025-08-19,30,624.69,Other Receivable,0,0.125,24
+cust_015,Granite Partners,2025-07-22,2025-09-05,45,810.75,Other Receivable,0,0.2174,23
+cust_005,Bluefin Logistics,2025-07-22,2025-08-21,30,168.12,Customer Invoice,0,0.0833,24
+cust_044,Linden Studio,2025-07-23,2025-08-07,15,325.32,Money Lent Out,0,0.12,25
+cust_042,Beacon Supplies,2025-07-24,2025-09-07,45,694.55,Customer Invoice,0,0.1304,23
+cust_015,Granite Partners,2025-07-30,2025-08-29,30,384.01,Customer Invoice,0,0.2083,24
+cust_036,Beacon Cafe,2025-07-30,2025-09-28,60,365.44,Money Lent Out,0,0.2857,21
+cust_029,Sundial Works,2025-07-31,2025-09-29,60,379.04,Other Receivable,0,0.25,32
+cust_026,Silverline Cafe,2025-07-31,2025-08-30,30,548.7,Other Receivable,0,0.32,25
+cust_010,Mesa Co.,2025-08-01,2025-09-15,45,2482.25,Customer Invoice,0,0.0714,14
+cust_036,Beacon Cafe,2025-08-02,2025-09-01,30,1354.04,Money Lent Out,0,0.2727,22
+cust_022,Maple Trading,2025-08-02,2025-10-01,60,951.59,Customer Invoice,0,0.4375,16
+cust_012,Linden Trading,2025-08-03,2025-09-17,45,412.25,Other Receivable,0,0.3333,18
+cust_028,Willow Trading,2025-08-05,2025-08-20,15,1468.57,Money Lent Out,0,0.2105,19
+cust_044,Linden Studio,2025-08-06,2025-09-20,45,276.2,Other Receivable,0,0.1154,26
+cust_038,Granite Works,2025-08-07,2025-10-06,60,1975.34,Customer Invoice,1,0.32,25
+cust_031,Copperfield Retail,2025-08-07,2025-09-06,30,272.34,Customer Invoice,0,0.44,25
+cust_007,Bluefin Co.,2025-08-10,2025-10-09,60,1486.52,Customer Invoice,0,0.375,16
+cust_042,Beacon Supplies,2025-08-11,2025-09-10,30,417.96,Other Receivable,0,0.125,24
+cust_028,Willow Trading,2025-08-11,2025-09-25,45,1393.01,Customer Invoice,0,0.2,20
+cust_002,Harbor Services,2025-08-13,2025-09-27,45,1188.53,Money Lent Out,0,0.3333,24
+cust_043,Cedar Market,2025-08-13,2025-09-12,30,449.07,Customer Invoice,0,0.087,23
+cust_037,Silverline Group,2025-08-15,2025-10-14,60,1440.16,Money Lent Out,0,0.2,15
+cust_004,Kestrel Retail,2025-08-16,2025-09-30,45,3175.49,Other Receivable,1,0.4737,19
+cust_019,Kestrel Services,2025-08-16,2025-10-15,60,5991.19,Other Receivable,0,0.2258,31
+cust_020,Granite Co.,2025-08-16,2025-08-31,15,1246.88,Money Lent Out,0,0.1818,22
+cust_036,Beacon Cafe,2025-08-18,2025-09-02,15,511.12,Other Receivable,0,0.2609,23
+cust_009,Bluefin Retail,2025-08-19,2025-10-18,60,2638.79,Customer Invoice,0,0.1429,21
+cust_019,Kestrel Services,2025-08-19,2025-10-18,60,752.62,Money Lent Out,1,0.2188,32
+cust_016,Mesa Group,2025-08-19,2025-09-18,30,480.07,Customer Invoice,1,0.2381,21
+cust_011,Kestrel Labs,2025-08-20,2025-10-04,45,338.07,Money Lent Out,0,0.1304,23
+cust_025,Bluefin Partners,2025-08-20,2025-09-19,30,880.4,Customer Invoice,0,0.1429,21
+cust_042,Beacon Supplies,2025-08-20,2025-10-04,45,535.29,Money Lent Out,0,0.12,25
+cust_013,Ironwood Trading,2025-08-21,2025-10-20,60,1261.11,Money Lent Out,0,0.1111,18
+cust_040,Oak & Pine Studio,2025-08-22,2025-10-21,60,1763.76,Other Receivable,1,0.15,20
+cust_028,Willow Trading,2025-08-22,2025-10-21,60,604.71,Customer Invoice,0,0.1905,21
+cust_021,Granite Cafe,2025-08-24,2025-09-08,15,1255.99,Other Receivable,0,0.1053,19
+cust_003,Kestrel Design,2025-08-24,2025-10-08,45,884.14,Money Lent Out,0,0.0625,16
+cust_006,Oak & Pine Group,2025-08-24,2025-09-08,15,344.07,Customer Invoice,0,0.2381,21
+cust_023,Beacon Design,2025-08-24,2025-10-23,60,746.45,Customer Invoice,1,0.2273,22
+cust_042,Beacon Supplies,2025-08-26,2025-09-25,30,855.75,Money Lent Out,0,0.1154,26
+cust_030,Riverton Market,2025-08-27,2025-09-26,30,236.43,Customer Invoice,0,0.2857,14
+cust_018,Ironwood Studio,2025-08-29,2025-10-28,60,759.81,Customer Invoice,0,0.1304,23
+cust_009,Bluefin Retail,2025-08-31,2025-09-15,15,191.98,Other Receivable,1,0.1364,22
+cust_031,Copperfield Retail,2025-08-31,2025-10-15,45,313.77,Other Receivable,0,0.4231,26
+cust_041,Mesa Trading,2025-08-31,2025-10-15,45,825.02,Other Receivable,1,0.2609,23
+cust_030,Riverton Market,2025-09-01,2025-10-01,30,699.23,Other Receivable,0,0.2667,15
+cust_001,Beacon Studio,2025-09-01,2025-10-01,30,481.72,Customer Invoice,0,0.1875,16
+cust_018,Ironwood Studio,2025-09-03,2025-10-03,30,279.71,Customer Invoice,0,0.125,24
+cust_002,Harbor Services,2025-09-03,2025-11-02,60,289.12,Customer Invoice,0,0.32,25
+cust_041,Mesa Trading,2025-09-04,2025-11-03,60,1662.24,Customer Invoice,0,0.2917,24
+cust_007,Bluefin Co.,2025-09-06,2025-11-05,60,351.12,Other Receivable,0,0.3529,17
+cust_009,Bluefin Retail,2025-09-07,2025-11-06,60,629.92,Other Receivable,0,0.1739,23
+cust_025,Bluefin Partners,2025-09-08,2025-10-23,45,1510.47,Money Lent Out,0,0.1364,22
+cust_043,Cedar Market,2025-09-08,2025-10-23,45,713.25,Money Lent Out,0,0.0833,24
+cust_000,Oak & Pine Cafe,2025-09-08,2025-10-23,45,667.72,Other Receivable,0,0.25,20
+cust_030,Riverton Market,2025-09-09,2025-10-09,30,748.78,Other Receivable,1,0.25,16
+cust_022,Maple Trading,2025-09-10,2025-10-25,45,543.63,Other Receivable,0,0.4118,17
+cust_041,Mesa Trading,2025-09-10,2025-10-25,45,2461.55,Other Receivable,1,0.28,25
+cust_018,Ironwood Studio,2025-09-11,2025-11-10,60,1125.45,Money Lent Out,0,0.12,25
+cust_006,Oak & Pine Group,2025-09-12,2025-10-27,45,914.1,Other Receivable,0,0.2273,22
+cust_019,Kestrel Services,2025-09-14,2025-10-29,45,567.38,Customer Invoice,0,0.2424,33
+cust_009,Bluefin Retail,2025-09-15,2025-09-30,15,358.89,Money Lent Out,0,0.1667,24
+cust_029,Sundial Works,2025-09-17,2025-11-16,60,1027.55,Other Receivable,0,0.2424,33
+cust_000,Oak & Pine Cafe,2025-09-18,2025-10-18,30,552.93,Money Lent Out,0,0.2381,21
+cust_002,Harbor Services,2025-09-19,2025-10-04,15,157.81,Other Receivable,0,0.3077,26
+cust_014,Beacon Services,2025-09-19,2025-10-19,30,793.36,Other Receivable,0,0.25,16
+cust_038,Granite Works,2025-09-20,2025-10-05,15,455.37,Customer Invoice,0,0.3462,26
+cust_041,Mesa Trading,2025-09-22,2025-11-06,45,1689.47,Customer Invoice,1,0.3077,26
+cust_035,Beacon Labs,2025-09-22,2025-11-06,45,1518.09,Other Receivable,0,0.0769,26
+cust_009,Bluefin Retail,2025-09-23,2025-10-08,15,1162.78,Other Receivable,0,0.16,25
+cust_015,Granite Partners,2025-09-23,2025-11-07,45,996.93,Money Lent Out,0,0.2,25
+cust_019,Kestrel Services,2025-09-24,2025-11-08,45,279.54,Money Lent Out,0,0.2353,34
+cust_015,Granite Partners,2025-09-25,2025-10-10,15,609.02,Other Receivable,1,0.1923,26
+cust_013,Ironwood Trading,2025-09-25,2025-11-24,60,1055.44,Other Receivable,1,0.1053,19
+cust_000,Oak & Pine Cafe,2025-09-26,2025-11-10,45,697.54,Other Receivable,1,0.2273,22
+cust_009,Bluefin Retail,2025-09-28,2025-11-27,60,5927.93,Money Lent Out,0,0.1538,26
+cust_023,Beacon Design,2025-09-29,2025-10-14,15,366.48,Customer Invoice,0,0.2609,23
+cust_021,Granite Cafe,2025-10-01,2025-10-16,15,554.3,Other Receivable,0,0.1,20
+cust_021,Granite Cafe,2025-10-01,2025-10-16,15,1162.4,Other Receivable,1,0.0952,21
+cust_010,Mesa Co.,2025-10-02,2025-10-17,15,1904.91,Other Receivable,0,0.0667,15
+cust_043,Cedar Market,2025-10-04,2025-12-03,60,238.23,Money Lent Out,0,0.08,25
+cust_001,Beacon Studio,2025-10-04,2025-11-03,30,1182.75,Money Lent Out,0,0.1765,17
+cust_015,Granite Partners,2025-10-06,2025-11-20,45,530.44,Money Lent Out,1,0.2222,27
+cust_028,Willow Trading,2025-10-06,2025-12-05,60,776.6,Money Lent Out,0,0.1818,22
+cust_035,Beacon Labs,2025-10-07,2025-11-21,45,464.97,Customer Invoice,1,0.0741,27
+cust_019,Kestrel Services,2025-10-07,2025-11-21,45,724.02,Money Lent Out,0,0.2286,35
+cust_043,Cedar Market,2025-10-10,2025-12-09,60,2738.45,Money Lent Out,1,0.0769,26
+cust_005,Bluefin Logistics,2025-10-11,2025-11-10,30,428.93,Money Lent Out,0,0.08,25
+cust_036,Beacon Cafe,2025-10-11,2025-11-25,45,296.41,Other Receivable,0,0.25,24
+cust_030,Riverton Market,2025-10-11,2025-12-10,60,788.87,Customer Invoice,1,0.2941,17
+cust_012,Linden Trading,2025-10-12,2025-12-11,60,1362.98,Other Receivable,0,0.3158,19
+cust_019,Kestrel Services,2025-10-13,2025-11-12,30,1194.28,Money Lent Out,0,0.2222,36
+cust_009,Bluefin Retail,2025-10-14,2025-11-28,45,1687.27,Money Lent Out,0,0.1481,27
+cust_024,Cedar Services,2025-10-14,2025-11-13,30,1311.39,Money Lent Out,1,0.1935,31
+cust_011,Kestrel Labs,2025-10-17,2025-12-16,60,1498.85,Other Receivable,1,0.125,24
+cust_027,Granite Trading,2025-10-17,2025-12-16,60,1313.64,Customer Invoice,1,0.1579,19
+cust_009,Bluefin Retail,2025-10-17,2025-11-16,30,721.17,Customer Invoice,0,0.1429,28
+cust_026,Silverline Cafe,2025-10-18,2025-12-02,45,1355.9,Money Lent Out,1,0.3077,26
+cust_004,Kestrel Retail,2025-10-18,2025-11-02,15,510.34,Customer Invoice,0,0.5,20
+cust_032,Copperfield Design,2025-10-19,2025-12-03,45,1315.03,Money Lent Out,1,0.3333,18
+cust_044,Linden Studio,2025-10-19,2025-11-18,30,319.66,Customer Invoice,0,0.1111,27
+cust_043,Cedar Market,2025-10-21,2025-12-20,60,594.04,Money Lent Out,0,0.1111,27
+cust_010,Mesa Co.,2025-10-22,2025-12-06,45,2933.03,Customer Invoice,1,0.0625,16
+cust_012,Linden Trading,2025-10-22,2025-11-21,30,366.84,Customer Invoice,1,0.3,20
+cust_031,Copperfield Retail,2025-10-22,2025-11-06,15,518.99,Customer Invoice,0,0.4074,27
+cust_040,Oak & Pine Studio,2025-10-24,2025-11-23,30,515.23,Customer Invoice,1,0.1905,21
+cust_013,Ironwood Trading,2025-10-24,2025-12-08,45,758.45,Other Receivable,0,0.15,20
+cust_002,Harbor Services,2025-10-25,2025-12-09,45,185.05,Customer Invoice,0,0.2963,27
+cust_029,Sundial Works,2025-10-26,2025-11-10,15,70.14,Money Lent Out,0,0.2353,34
+cust_027,Granite Trading,2025-10-27,2025-11-26,30,434.6,Customer Invoice,0,0.2,20
+cust_035,Beacon Labs,2025-10-29,2025-12-28,60,220.11,Other Receivable,0,0.1071,28
+cust_038,Granite Works,2025-10-29,2025-12-28,60,348.47,Customer Invoice,0,0.3333,27
+cust_037,Silverline Group,2025-10-31,2025-12-30,60,1222.74,Money Lent Out,0,0.1875,16
+cust_043,Cedar Market,2025-11-01,2025-12-01,30,1732.28,Other Receivable,0,0.1071,28
+cust_028,Willow Trading,2025-11-04,2026-01-03,60,1375.8,Money Lent Out,0,0.1739,23
+cust_025,Bluefin Partners,2025-11-06,2026-01-05,60,388.93,Money Lent Out,0,0.1304,23
+cust_035,Beacon Labs,2025-11-06,2026-01-05,60,1238.99,Customer Invoice,0,0.1034,29
+cust_023,Beacon Design,2025-11-06,2025-12-21,45,190.08,Customer Invoice,0,0.25,24
+cust_014,Beacon Services,2025-11-12,2025-11-27,15,2217.73,Other Receivable,0,0.2353,17
+cust_017,Harbor Labs,2025-11-12,2026-01-11,60,781.4,Money Lent Out,0,0.2222,18
+cust_043,Cedar Market,2025-11-13,2025-12-13,30,400.88,Other Receivable,0,0.1034,29
+cust_008,Mesa Logistics,2025-11-13,2025-12-28,45,1078.47,Money Lent Out,0,0.375,24
+cust_039,Maple Partners,2025-11-15,2025-12-15,30,2814.49,Customer Invoice,1,0.05,20
+cust_043,Cedar Market,2025-11-15,2026-01-14,60,1719.93,Money Lent Out,0,0.1,30
+cust_022,Maple Trading,2025-11-16,2025-12-16,30,1089.5,Money Lent Out,1,0.3889,18
+cust_041,Mesa Trading,2025-11-17,2026-01-01,45,166.99,Money Lent Out,0,0.3333,27
+cust_017,Harbor Labs,2025-11-18,2026-01-17,60,972.58,Money Lent Out,0,0.2105,19
+cust_023,Beacon Design,2025-11-22,2025-12-22,30,863.42,Other Receivable,0,0.24,25
+cust_011,Kestrel Labs,2025-11-22,2026-01-21,60,335.88,Customer Invoice,0,0.16,25
+cust_003,Kestrel Design,2025-11-25,2025-12-10,15,144.62,Money Lent Out,0,0.0588,17
+cust_022,Maple Trading,2025-11-26,2026-01-25,60,2121.03,Money Lent Out,0,0.4211,19
+cust_030,Riverton Market,2025-12-02,2026-01-16,45,1346.17,Customer Invoice,0,0.3333,18
+cust_015,Granite Partners,2025-12-02,2026-01-31,60,233.29,Money Lent Out,0,0.25,28
+cust_001,Beacon Studio,2025-12-02,2026-01-31,60,1511.06,Money Lent Out,0,0.1667,18
+cust_031,Copperfield Retail,2025-12-03,2025-12-18,15,870.36,Customer Invoice,0,0.3929,28
+cust_035,Beacon Labs,2025-12-04,2026-02-02,60,337.84,Customer Invoice,0,0.1,30
+cust_044,Linden Studio,2025-12-04,2025-12-19,15,352.69,Customer Invoice,1,0.1071,28
+cust_041,Mesa Trading,2025-12-04,2026-02-02,60,800.94,Money Lent Out,0,0.3214,28
+cust_013,Ironwood Trading,2025-12-05,2026-01-04,30,567.71,Money Lent Out,1,0.1429,21
+cust_033,Silverline Retail,2025-12-06,2026-01-20,45,500.18,Money Lent Out,0,0.3333,9
+cust_008,Mesa Logistics,2025-12-08,2026-02-06,60,202.8,Money Lent Out,0,0.36,25
+cust_039,Maple Partners,2025-12-08,2025-12-23,15,3016.05,Customer Invoice,1,0.0952,21
+cust_020,Granite Co.,2025-12-09,2025-12-24,15,376.16,Other Receivable,0,0.1739,23
+cust_013,Ironwood Trading,2025-12-10,2026-01-24,45,833.7,Money Lent Out,1,0.1818,22
+cust_000,Oak & Pine Cafe,2025-12-10,2026-01-09,30,2918.6,Customer Invoice,0,0.2609,23
+cust_042,Beacon Supplies,2025-12-13,2026-01-27,45,166.35,Money Lent Out,1,0.1111,27
+cust_044,Linden Studio,2025-12-15,2026-01-14,30,305.54,Other Receivable,0,0.1379,29
+cust_023,Beacon Design,2025-12-15,2026-01-14,30,541.68,Customer Invoice,0,0.2308,26
+cust_006,Oak & Pine Group,2025-12-16,2026-01-30,45,1095.15,Money Lent Out,0,0.2174,23
+cust_007,Bluefin Co.,2025-12-16,2025-12-31,15,432.08,Other Receivable,1,0.3333,18
+cust_029,Sundial Works,2025-12-18,2026-01-17,30,598.88,Customer Invoice,0,0.2286,35
+cust_003,Kestrel Design,2025-12-19,2026-02-02,45,234.78,Money Lent Out,1,0.0556,18
+cust_038,Granite Works,2025-12-19,2026-01-03,15,1337.01,Money Lent Out,0,0.3214,28
+cust_034,Brightwater Group,2025-12-20,2026-02-18,60,1585.88,Money Lent Out,0,0.0435,23
+cust_009,Bluefin Retail,2025-12-20,2026-02-03,45,1408.29,Other Receivable,0,0.1379,29
+cust_034,Brightwater Group,2025-12-20,2026-02-18,60,746.89,Customer Invoice,0,0.0417,24
+cust_018,Ironwood Studio,2025-12-22,2026-01-21,30,371.22,Other Receivable,0,0.1154,26
+cust_023,Beacon Design,2025-12-22,2026-01-21,30,587.36,Other Receivable,0,0.2222,27
+cust_007,Bluefin Co.,2025-12-24,2026-01-23,30,760.64,Money Lent Out,0,0.3684,19
+cust_016,Mesa Group,2025-12-24,2026-01-08,15,343.12,Money Lent Out,1,0.2727,22
+cust_006,Oak & Pine Group,2025-12-25,2026-01-24,30,1643.16,Other Receivable,0,0.2083,24
+cust_043,Cedar Market,2025-12-25,2026-01-09,15,818.08,Other Receivable,0,0.0968,31
+cust_024,Cedar Services,2025-12-26,2026-01-10,15,1939.91,Other Receivable,0,0.2188,32
+cust_008,Mesa Logistics,2025-12-28,2026-01-12,15,1411.55,Customer Invoice,0,0.3462,26
+cust_005,Bluefin Logistics,2025-12-28,2026-02-11,45,283.94,Money Lent Out,0,0.0769,26
+cust_021,Granite Cafe,2025-12-29,2026-02-27,60,363.28,Other Receivable,0,0.1364,22
+cust_021,Granite Cafe,2025-12-31,2026-03-01,60,128.45,Other Receivable,0,0.1304,23
+cust_036,Beacon Cafe,2025-12-31,2026-02-14,45,210.04,Customer Invoice,0,0.24,25
+cust_030,Riverton Market,2025-12-31,2026-02-14,45,660.88,Other Receivable,0,0.3158,19
+cust_022,Maple Trading,2026-01-01,2026-03-02,60,2699.24,Other Receivable,1,0.4,20
+cust_032,Copperfield Design,2026-01-03,2026-02-17,45,609.67,Money Lent Out,0,0.3684,19
+cust_023,Beacon Design,2026-01-03,2026-02-02,30,1395.81,Customer Invoice,0,0.2143,28
+cust_021,Granite Cafe,2026-01-03,2026-01-18,15,1062.48,Other Receivable,0,0.125,24
+cust_036,Beacon Cafe,2026-01-03,2026-01-18,15,342.37,Customer Invoice,0,0.2308,26
+cust_016,Mesa Group,2026-01-06,2026-01-21,15,1510.38,Money Lent Out,0,0.3043,23
+cust_041,Mesa Trading,2026-01-06,2026-03-07,60,288.88,Other Receivable,0,0.3103,29
+cust_031,Copperfield Retail,2026-01-08,2026-01-23,15,2956.38,Customer Invoice,1,0.3793,29
+cust_025,Bluefin Partners,2026-01-09,2026-01-24,15,1872.72,Other Receivable,0,0.125,24
+cust_004,Kestrel Retail,2026-01-09,2026-02-08,30,902.72,Other Receivable,0,0.4762,21
+cust_028,Willow Trading,2026-01-15,2026-01-30,15,531.95,Customer Invoice,0,0.1667,24
+cust_006,Oak & Pine Group,2026-01-15,2026-03-16,60,554.79,Customer Invoice,0,0.2,25
+cust_009,Bluefin Retail,2026-01-17,2026-02-16,30,335.62,Customer Invoice,0,0.1333,30
+cust_042,Beacon Supplies,2026-01-17,2026-02-16,30,351.83,Customer Invoice,0,0.1429,28
+cust_029,Sundial Works,2026-01-18,2026-02-02,15,1951.33,Money Lent Out,0,0.2222,36
+cust_025,Bluefin Partners,2026-01-20,2026-03-06,45,1024.87,Other Receivable,0,0.12,25
+cust_030,Riverton Market,2026-01-21,2026-02-20,30,421.09,Money Lent Out,1,0.3,20
+cust_013,Ironwood Trading,2026-01-24,2026-03-25,60,666.31,Money Lent Out,1,0.2174,23
+cust_043,Cedar Market,2026-01-25,2026-02-24,30,943.08,Other Receivable,0,0.0938,32
+cust_033,Silverline Retail,2026-01-25,2026-02-24,30,698.0,Customer Invoice,0,0.3,10
+cust_009,Bluefin Retail,2026-01-25,2026-02-24,30,160.73,Money Lent Out,0,0.129,31
+cust_010,Mesa Co.,2026-01-26,2026-03-27,60,297.32,Other Receivable,0,0.1176,17
+cust_034,Brightwater Group,2026-01-27,2026-02-26,30,223.32,Customer Invoice,0,0.04,25
+cust_015,Granite Partners,2026-01-27,2026-02-26,30,1046.81,Other Receivable,0,0.2414,29
+cust_007,Bluefin Co.,2026-01-29,2026-03-15,45,1888.14,Other Receivable,1,0.35,20
+cust_036,Beacon Cafe,2026-01-29,2026-02-28,30,1167.91,Customer Invoice,0,0.2222,27
+cust_042,Beacon Supplies,2026-01-30,2026-03-01,30,856.0,Money Lent Out,1,0.1379,29
+cust_021,Granite Cafe,2026-01-30,2026-03-31,60,2955.62,Customer Invoice,1,0.12,25
+cust_014,Beacon Services,2026-01-31,2026-04-01,60,562.37,Money Lent Out,0,0.2222,18
+cust_003,Kestrel Design,2026-02-01,2026-04-02,60,349.19,Other Receivable,1,0.1053,19
+cust_009,Bluefin Retail,2026-02-02,2026-02-17,15,95.78,Other Receivable,0,0.125,32
+cust_002,Harbor Services,2026-02-03,2026-03-20,45,243.36,Customer Invoice,0,0.2857,28
+cust_044,Linden Studio,2026-02-06,2026-02-21,15,1245.37,Customer Invoice,1,0.1333,30
+cust_042,Beacon Supplies,2026-02-07,2026-02-22,15,2502.09,Money Lent Out,0,0.1667,30
+cust_023,Beacon Design,2026-02-10,2026-02-25,15,1234.48,Other Receivable,0,0.2069,29
+cust_037,Silverline Group,2026-02-14,2026-04-15,60,246.92,Money Lent Out,0,0.1765,17
+cust_036,Beacon Cafe,2026-02-16,2026-04-02,45,611.98,Other Receivable,0,0.2143,28
+cust_021,Granite Cafe,2026-02-17,2026-04-18,60,1016.61,Other Receivable,1,0.1538,26
+cust_020,Granite Co.,2026-02-17,2026-04-03,45,447.28,Customer Invoice,0,0.1667,24
+cust_041,Mesa Trading,2026-02-18,2026-03-20,30,1743.25,Other Receivable,0,0.3,30
+cust_044,Linden Studio,2026-02-19,2026-04-05,45,234.23,Money Lent Out,1,0.1613,31
+cust_035,Beacon Labs,2026-02-22,2026-04-23,60,485.34,Other Receivable,1,0.0968,31
+cust_023,Beacon Design,2026-02-23,2026-03-25,30,2828.42,Customer Invoice,1,0.2,30
+cust_008,Mesa Logistics,2026-02-24,2026-04-25,60,529.26,Customer Invoice,0,0.3333,27
+cust_006,Oak & Pine Group,2026-02-24,2026-03-26,30,497.16,Other Receivable,1,0.1923,26
+cust_003,Kestrel Design,2026-02-24,2026-03-26,30,2433.81,Other Receivable,0,0.15,20
+cust_026,Silverline Cafe,2026-02-25,2026-03-12,15,522.92,Money Lent Out,0,0.3333,27
+cust_044,Linden Studio,2026-02-25,2026-03-27,30,1390.15,Customer Invoice,1,0.1875,32
+cust_005,Bluefin Logistics,2026-02-26,2026-04-27,60,376.21,Money Lent Out,0,0.0741,27
+cust_041,Mesa Trading,2026-02-27,2026-04-13,45,267.83,Customer Invoice,0,0.2903,31
+cust_027,Granite Trading,2026-02-28,2026-04-29,60,558.62,Money Lent Out,0,0.1905,21
+cust_023,Beacon Design,2026-03-01,2026-03-31,30,993.63,Other Receivable,0,0.2258,31
+cust_020,Granite Co.,2026-03-03,2026-04-17,45,563.18,Money Lent Out,1,0.16,25
+cust_029,Sundial Works,2026-03-04,2026-05-03,60,1686.18,Customer Invoice,0,0.2162,37
+cust_024,Cedar Services,2026-03-05,2026-04-04,30,372.95,Money Lent Out,1,0.2121,33
+cust_028,Willow Trading,2026-03-07,2026-04-21,45,686.97,Other Receivable,0,0.16,25
+cust_028,Willow Trading,2026-03-07,2026-04-21,45,359.03,Customer Invoice,0,0.1538,26
+cust_003,Kestrel Design,2026-03-09,2026-04-08,30,567.57,Other Receivable,0,0.1429,21
+cust_016,Mesa Group,2026-03-10,2026-04-09,30,397.29,Customer Invoice,1,0.2917,24
+cust_021,Granite Cafe,2026-03-11,2026-05-10,60,670.32,Other Receivable,0,0.1852,27
+cust_019,Kestrel Services,2026-03-14,2026-04-28,45,179.12,Customer Invoice,0,0.2162,37
+cust_027,Granite Trading,2026-03-15,2026-04-14,30,448.58,Other Receivable,0,0.1818,22
+cust_012,Linden Trading,2026-03-17,2026-05-16,60,325.98,Other Receivable,0,0.3333,21
+cust_036,Beacon Cafe,2026-03-17,2026-04-01,15,565.58,Other Receivable,0,0.2069,29
+cust_006,Oak & Pine Group,2026-03-17,2026-04-16,30,1593.72,Other Receivable,0,0.2222,27
+cust_006,Oak & Pine Group,2026-03-20,2026-05-04,45,8703.78,Customer Invoice,1,0.2143,28
+cust_004,Kestrel Retail,2026-03-22,2026-04-21,30,1193.34,Money Lent Out,1,0.4545,22
+cust_021,Granite Cafe,2026-03-22,2026-04-21,30,771.43,Customer Invoice,0,0.1786,28
+cust_017,Harbor Labs,2026-03-24,2026-04-23,30,1184.52,Customer Invoice,0,0.2,20
+cust_034,Brightwater Group,2026-03-25,2026-05-24,60,799.4,Customer Invoice,0,0.0385,26
+cust_030,Riverton Market,2026-03-27,2026-05-11,45,791.26,Money Lent Out,0,0.3333,21
+cust_043,Cedar Market,2026-03-27,2026-05-26,60,414.9,Customer Invoice,1,0.0909,33
+cust_018,Ironwood Studio,2026-03-28,2026-04-12,15,493.66,Other Receivable,0,0.1111,27
+cust_020,Granite Co.,2026-03-28,2026-05-27,60,717.35,Other Receivable,0,0.1923,26
+cust_027,Granite Trading,2026-03-29,2026-04-13,15,1517.2,Other Receivable,0,0.1739,23
+cust_031,Copperfield Retail,2026-03-29,2026-05-13,45,1254.26,Other Receivable,0,0.4,30
+cust_033,Silverline Retail,2026-03-30,2026-04-14,15,644.13,Money Lent Out,1,0.2727,11
+cust_014,Beacon Services,2026-03-31,2026-05-15,45,493.33,Customer Invoice,0,0.2105,19
+cust_021,Granite Cafe,2026-04-01,2026-05-01,30,1237.6,Customer Invoice,0,0.1724,29
+cust_015,Granite Partners,2026-04-02,2026-05-02,30,678.52,Customer Invoice,1,0.2333,30
+cust_042,Beacon Supplies,2026-04-03,2026-04-18,15,297.73,Other Receivable,0,0.1613,31
+cust_003,Kestrel Design,2026-04-04,2026-05-19,45,419.3,Customer Invoice,0,0.1364,22
+cust_032,Copperfield Design,2026-04-06,2026-06-05,60,325.97,Money Lent Out,0,0.35,20
+cust_020,Granite Co.,2026-04-07,2026-04-22,15,567.75,Money Lent Out,0,0.1852,27
+cust_007,Bluefin Co.,2026-04-07,2026-06-06,60,204.87,Customer Invoice,0,0.381,21
+cust_044,Linden Studio,2026-04-07,2026-04-22,15,334.19,Money Lent Out,0,0.2121,33
+cust_039,Maple Partners,2026-04-08,2026-06-07,60,188.12,Other Receivable,1,0.1364,22
+cust_021,Granite Cafe,2026-04-08,2026-04-23,15,871.45,Other Receivable,0,0.1667,30
+cust_008,Mesa Logistics,2026-04-09,2026-06-08,60,101.6,Other Receivable,0,0.3214,28
+cust_023,Beacon Design,2026-04-11,2026-05-26,45,1341.68,Money Lent Out,1,0.2188,32
+cust_005,Bluefin Logistics,2026-04-14,2026-06-13,60,929.23,Money Lent Out,1,0.0714,28
+cust_026,Silverline Cafe,2026-04-14,2026-05-14,30,272.21,Other Receivable,0,0.3214,28
+cust_029,Sundial Works,2026-04-16,2026-05-01,15,1608.95,Customer Invoice,0,0.2105,38
+cust_028,Willow Trading,2026-04-18,2026-05-03,15,219.57,Customer Invoice,0,0.1481,27
+cust_001,Beacon Studio,2026-04-18,2026-06-02,45,765.43,Money Lent Out,0,0.1579,19
+cust_011,Kestrel Labs,2026-04-21,2026-05-21,30,1588.6,Money Lent Out,1,0.1538,26
+cust_036,Beacon Cafe,2026-04-24,2026-05-24,30,1826.91,Other Receivable,0,0.2,30
+cust_009,Bluefin Retail,2026-04-26,2026-05-26,30,404.96,Customer Invoice,0,0.1212,33
+cust_029,Sundial Works,2026-04-27,2026-06-11,45,2452.76,Money Lent Out,1,0.2051,39
+cust_028,Willow Trading,2026-04-28,2026-06-27,60,2155.41,Other Receivable,0,0.1429,28
+cust_017,Harbor Labs,2026-04-29,2026-05-29,30,1013.88,Money Lent Out,0,0.1905,21
+cust_009,Bluefin Retail,2026-04-30,2026-06-14,45,251.87,Money Lent Out,1,0.1176,34
+cust_013,Ironwood Trading,2026-04-30,2026-06-29,60,495.44,Money Lent Out,0,0.25,24
+cust_025,Bluefin Partners,2026-05-01,2026-06-30,60,674.95,Money Lent Out,0,0.1154,26
+cust_042,Beacon Supplies,2026-05-02,2026-07-01,60,444.07,Other Receivable,0,0.1562,32
+cust_043,Cedar Market,2026-05-03,2026-06-02,30,643.71,Customer Invoice,1,0.1176,34
+cust_038,Granite Works,2026-05-05,2026-06-19,45,522.91,Other Receivable,0,0.3103,29
+cust_030,Riverton Market,2026-05-06,2026-05-21,15,995.58,Other Receivable,1,0.3182,22
+cust_042,Beacon Supplies,2026-05-06,2026-06-05,30,428.57,Other Receivable,0,0.1515,33
+cust_006,Oak & Pine Group,2026-05-08,2026-07-07,60,669.44,Customer Invoice,0,0.2414,29
+cust_011,Kestrel Labs,2026-05-08,2026-06-22,45,308.7,Money Lent Out,0,0.1852,27
+cust_044,Linden Studio,2026-05-08,2026-05-23,15,405.6,Money Lent Out,0,0.2059,34
+cust_024,Cedar Services,2026-05-12,2026-06-26,45,512.84,Other Receivable,0,0.2353,34
+cust_038,Granite Works,2026-05-12,2026-07-11,60,877.16,Money Lent Out,1,0.3,30
+cust_018,Ironwood Studio,2026-05-13,2026-07-12,60,942.5,Customer Invoice,1,0.1071,28
+cust_002,Harbor Services,2026-05-13,2026-05-28,15,252.78,Customer Invoice,0,0.2759,29
+cust_040,Oak & Pine Studio,2026-05-13,2026-07-12,60,214.77,Money Lent Out,0,0.2273,22
+cust_002,Harbor Services,2026-05-13,2026-06-12,30,299.68,Other Receivable,1,0.2667,30
+cust_022,Maple Trading,2026-05-14,2026-06-28,45,416.74,Money Lent Out,0,0.4286,21
+cust_016,Mesa Group,2026-05-15,2026-05-30,15,1136.14,Other Receivable,0,0.32,25
+cust_036,Beacon Cafe,2026-05-15,2026-07-14,60,533.93,Customer Invoice,0,0.1935,31
+cust_027,Granite Trading,2026-05-17,2026-06-01,15,262.74,Money Lent Out,0,0.1667,24
+cust_031,Copperfield Retail,2026-05-19,2026-07-03,45,859.16,Other Receivable,0,0.3871,31
+cust_038,Granite Works,2026-05-20,2026-07-19,60,592.46,Money Lent Out,0,0.3226,31
+cust_008,Mesa Logistics,2026-05-20,2026-07-04,45,672.24,Customer Invoice,0,0.3103,29
+cust_012,Linden Trading,2026-05-20,2026-06-04,15,1045.97,Money Lent Out,0,0.3182,22
+cust_014,Beacon Services,2026-05-23,2026-06-22,30,703.42,Other Receivable,0,0.2,20
+cust_041,Mesa Trading,2026-05-25,2026-06-24,30,1696.25,Customer Invoice,0,0.2812,32
+cust_033,Silverline Retail,2026-05-29,2026-06-13,15,4266.42,Customer Invoice,1,0.3333,12
+cust_019,Kestrel Services,2026-05-29,2026-06-28,30,433.45,Customer Invoice,0,0.2105,38
+cust_028,Willow Trading,2026-05-30,2026-07-29,60,611.17,Other Receivable,0,0.1379,29
+cust_036,Beacon Cafe,2026-06-01,2026-07-01,30,1244.69,Other Receivable,1,0.1875,32
+cust_029,Sundial Works,2026-06-03,2026-08-02,60,1297.23,Customer Invoice,0,0.225,40
+cust_042,Beacon Supplies,2026-06-04,2026-07-04,30,1479.4,Customer Invoice,1,0.1471,34
+cust_033,Silverline Retail,2026-06-06,2026-06-21,15,1041.42,Money Lent Out,1,0.3846,13
+cust_034,Brightwater Group,2026-06-08,2026-08-07,60,792.57,Other Receivable,1,0.037,27
+cust_029,Sundial Works,2026-06-09,2026-06-24,15,360.03,Money Lent Out,0,0.2195,41
+cust_028,Willow Trading,2026-06-10,2026-08-09,60,290.3,Money Lent Out,0,0.1333,30
+cust_038,Granite Works,2026-06-10,2026-08-09,60,137.37,Customer Invoice,0,0.3125,32
+cust_021,Granite Cafe,2026-06-10,2026-07-10,30,1298.13,Other Receivable,0,0.1613,31
+cust_043,Cedar Market,2026-06-13,2026-06-28,15,1038.65,Customer Invoice,0,0.1429,35
+cust_034,Brightwater Group,2026-06-13,2026-08-12,60,723.84,Other Receivable,0,0.0714,28
+cust_030,Riverton Market,2026-06-14,2026-07-14,30,194.46,Other Receivable,0,0.3478,23
+cust_021,Granite Cafe,2026-06-15,2026-07-15,30,249.95,Other Receivable,0,0.1562,32
+cust_000,Oak & Pine Cafe,2026-06-16,2026-07-16,30,751.62,Money Lent Out,0,0.25,24
+cust_022,Maple Trading,2026-06-16,2026-07-31,45,1126.92,Other Receivable,1,0.4091,22
+cust_010,Mesa Co.,2026-06-17,2026-08-16,60,1347.47,Money Lent Out,0,0.1111,18
+cust_037,Silverline Group,2026-06-18,2026-07-03,15,700.86,Money Lent Out,0,0.1667,18
+cust_030,Riverton Market,2026-06-19,2026-07-19,30,282.62,Money Lent Out,0,0.3333,24
+cust_031,Copperfield Retail,2026-06-20,2026-07-20,30,392.31,Customer Invoice,0,0.375,32
+cust_012,Linden Trading,2026-06-20,2026-07-20,30,544.3,Other Receivable,0,0.3043,23
+cust_005,Bluefin Logistics,2026-06-23,2026-08-22,60,817.16,Other Receivable,1,0.1034,29
+cust_009,Bluefin Retail,2026-06-25,2026-07-25,30,1026.8,Money Lent Out,0,0.1429,35
+cust_003,Kestrel Design,2026-06-25,2026-08-09,45,589.24,Money Lent Out,0,0.1304,23
+cust_040,Oak & Pine Studio,2026-06-25,2026-07-10,15,348.56,Other Receivable,0,0.2174,23
+cust_016,Mesa Group,2026-06-28,2026-07-13,15,822.93,Other Receivable,0,0.3077,26
+cust_010,Mesa Co.,2026-07-01,2026-07-31,30,840.95,Other Receivable,1,0.1053,19
+cust_032,Copperfield Design,2026-07-02,2026-08-01,30,623.06,Money Lent Out,0,0.3333,21
+cust_002,Harbor Services,2026-07-02,2026-08-01,30,550.4,Money Lent Out,0,0.2903,31
+cust_007,Bluefin Co.,2026-07-02,2026-07-17,15,1278.76,Customer Invoice,0,0.3636,22
+cust_020,Granite Co.,2026-07-05,2026-08-04,30,960.53,Other Receivable,1,0.1786,28
+cust_040,Oak & Pine Studio,2026-07-06,2026-08-20,45,125.48,Money Lent Out,0,0.2083,24
+cust_011,Kestrel Labs,2026-07-07,2026-07-22,15,146.66,Customer Invoice,0,0.1786,28
+cust_044,Linden Studio,2026-07-08,2026-08-22,45,2529.16,Money Lent Out,1,0.2,35
+cust_006,Oak & Pine Group,2026-07-08,2026-09-06,60,808.17,Money Lent Out,1,0.2333,30
+cust_006,Oak & Pine Group,2026-07-09,2026-08-08,30,653.78,Customer Invoice,1,0.2581,31
+cust_033,Silverline Retail,2026-07-10,2026-08-09,30,979.03,Other Receivable,1,0.4286,14
+cust_019,Kestrel Services,2026-07-10,2026-07-25,15,2351.05,Other Receivable,1,0.2051,39
+cust_004,Kestrel Retail,2026-07-10,2026-08-24,45,1260.93,Other Receivable,0,0.4783,23
+cust_007,Bluefin Co.,2026-07-12,2026-09-10,60,238.24,Other Receivable,0,0.3478,23
+cust_007,Bluefin Co.,2026-07-12,2026-09-10,60,2303.53,Money Lent Out,0,0.3333,24
+cust_007,Bluefin Co.,2026-07-12,2026-08-11,30,421.77,Other Receivable,0,0.32,25
+cust_008,Mesa Logistics,2026-07-16,2026-09-14,60,327.17,Customer Invoice,0,0.3,30
+cust_003,Kestrel Design,2026-07-16,2026-08-15,30,1483.09,Money Lent Out,0,0.125,24
+cust_030,Riverton Market,2026-07-18,2026-08-17,30,689.24,Other Receivable,0,0.32,25
+cust_000,Oak & Pine Cafe,2026-07-19,2026-09-17,60,816.3,Customer Invoice,1,0.24,25
+cust_030,Riverton Market,2026-07-20,2026-09-18,60,3831.27,Customer Invoice,1,0.3077,26
+cust_017,Harbor Labs,2026-07-22,2026-09-05,45,1763.03,Customer Invoice,0,0.1818,22
+cust_010,Mesa Co.,2026-07-24,2026-09-07,45,2032.01,Customer Invoice,0,0.15,20
+cust_007,Bluefin Co.,2026-07-26,2026-09-24,60,916.16,Customer Invoice,0,0.3077,26
+cust_009,Bluefin Retail,2026-07-26,2026-08-10,15,1129.34,Money Lent Out,1,0.1389,36
+cust_020,Granite Co.,2026-07-27,2026-09-10,45,266.88,Customer Invoice,0,0.2069,29
+cust_042,Beacon Supplies,2026-07-27,2026-09-10,45,1071.15,Other Receivable,0,0.1714,35
+cust_035,Beacon Labs,2026-07-27,2026-09-25,60,947.16,Money Lent Out,0,0.125,32
+cust_021,Granite Cafe,2026-07-27,2026-08-11,15,1940.07,Other Receivable,0,0.1515,33
+cust_040,Oak & Pine Studio,2026-07-30,2026-09-13,45,896.28,Customer Invoice,0,0.2,25
+cust_038,Granite Works,2026-07-31,2026-08-30,30,146.02,Money Lent Out,0,0.303,33
+cust_010,Mesa Co.,2026-07-31,2026-08-30,30,359.51,Customer Invoice,0,0.1429,21
+cust_035,Beacon Labs,2026-08-01,2026-08-16,15,494.38,Money Lent Out,0,0.1212,33
+cust_013,Ironwood Trading,2026-08-01,2026-09-30,60,969.15,Customer Invoice,1,0.24,25
+cust_041,Mesa Trading,2026-08-02,2026-10-01,60,448.07,Money Lent Out,0,0.2727,33
+cust_022,Maple Trading,2026-08-02,2026-09-01,30,95.92,Customer Invoice,0,0.4348,23
+cust_042,Beacon Supplies,2026-08-03,2026-09-02,30,514.08,Customer Invoice,0,0.1667,36
+cust_030,Riverton Market,2026-08-07,2026-09-21,45,1493.44,Customer Invoice,1,0.3333,27
+cust_008,Mesa Logistics,2026-08-08,2026-10-07,60,1643.71,Customer Invoice,0,0.2903,31
+cust_016,Mesa Group,2026-08-09,2026-08-24,15,810.24,Customer Invoice,1,0.2963,27
+cust_040,Oak & Pine Studio,2026-08-12,2026-08-27,15,1344.88,Customer Invoice,0,0.1923,26
+cust_025,Bluefin Partners,2026-08-13,2026-09-12,30,412.27,Customer Invoice,0,0.1111,27
+cust_010,Mesa Co.,2026-08-14,2026-09-28,45,948.21,Money Lent Out,1,0.1364,22
+cust_004,Kestrel Retail,2026-08-16,2026-09-15,30,1385.76,Other Receivable,1,0.4583,24
+cust_005,Bluefin Logistics,2026-08-16,2026-10-15,60,1146.77,Money Lent Out,1,0.1333,30
+cust_044,Linden Studio,2026-08-17,2026-10-16,60,221.58,Money Lent Out,0,0.2222,36
+cust_037,Silverline Group,2026-08-17,2026-09-01,15,539.58,Money Lent Out,0,0.1579,19
+cust_010,Mesa Co.,2026-08-19,2026-09-03,15,1089.27,Customer Invoice,0,0.1739,23
+cust_009,Bluefin Retail,2026-08-20,2026-09-19,30,2390.92,Other Receivable,1,0.1622,37
+cust_036,Beacon Cafe,2026-08-21,2026-09-05,15,799.0,Customer Invoice,1,0.2121,33
+cust_044,Linden Studio,2026-08-21,2026-09-05,15,138.95,Customer Invoice,0,0.2162,37
+cust_017,Harbor Labs,2026-08-21,2026-10-05,45,502.93,Money Lent Out,1,0.1739,23
+cust_020,Granite Co.,2026-08-23,2026-10-22,60,252.43,Other Receivable,0,0.2,30
+cust_028,Willow Trading,2026-08-23,2026-10-07,45,1785.71,Other Receivable,0,0.129,31
+cust_023,Beacon Design,2026-08-23,2026-10-07,45,2171.65,Other Receivable,1,0.2424,33
+cust_034,Brightwater Group,2026-08-24,2026-09-23,30,1144.71,Customer Invoice,1,0.069,29
+cust_011,Kestrel Labs,2026-08-24,2026-10-08,45,1593.8,Customer Invoice,0,0.1724,29
+cust_037,Silverline Group,2026-08-25,2026-09-24,30,1603.31,Customer Invoice,1,0.15,20
+cust_040,Oak & Pine Studio,2026-08-26,2026-09-25,30,1292.88,Other Receivable,0,0.1852,27
+cust_028,Willow Trading,2026-08-30,2026-10-14,45,858.57,Money Lent Out,1,0.125,32
+cust_043,Cedar Market,2026-08-31,2026-09-15,15,1791.14,Money Lent Out,0,0.1389,36
+cust_030,Riverton Market,2026-09-03,2026-10-18,45,355.71,Customer Invoice,0,0.3571,28
+cust_000,Oak & Pine Cafe,2026-09-03,2026-09-18,15,204.2,Customer Invoice,0,0.2692,26
+cust_018,Ironwood Studio,2026-09-03,2026-09-18,15,3094.69,Customer Invoice,1,0.1379,29
+cust_037,Silverline Group,2026-09-09,2026-10-24,45,1894.93,Money Lent Out,0,0.1905,21
+cust_040,Oak & Pine Studio,2026-09-09,2026-10-09,30,605.39,Money Lent Out,0,0.1786,28
+cust_015,Granite Partners,2026-09-10,2026-10-10,30,290.9,Money Lent Out,1,0.2581,31
+cust_021,Granite Cafe,2026-09-10,2026-10-25,45,972.02,Money Lent Out,0,0.1471,34
+cust_024,Cedar Services,2026-09-11,2026-11-10,60,223.03,Money Lent Out,0,0.2286,35
+cust_002,Harbor Services,2026-09-11,2026-11-10,60,2810.81,Customer Invoice,1,0.2812,32
+cust_022,Maple Trading,2026-09-12,2026-10-12,30,989.52,Money Lent Out,1,0.4167,24
+cust_028,Willow Trading,2026-09-12,2026-10-12,30,2465.97,Customer Invoice,1,0.1515,33
+cust_010,Mesa Co.,2026-09-13,2026-11-12,60,1257.93,Money Lent Out,0,0.1667,24
+cust_002,Harbor Services,2026-09-16,2026-10-16,30,1022.33,Money Lent Out,0,0.303,33
+cust_008,Mesa Logistics,2026-09-19,2026-10-19,30,338.25,Other Receivable,0,0.2812,32
+cust_018,Ironwood Studio,2026-09-19,2026-10-19,30,988.27,Money Lent Out,0,0.1667,30
+cust_025,Bluefin Partners,2026-09-20,2026-11-04,45,398.62,Other Receivable,0,0.1071,28
+cust_037,Silverline Group,2026-09-21,2026-11-05,45,842.84,Money Lent Out,1,0.1818,22
+cust_010,Mesa Co.,2026-09-22,2026-10-07,15,452.84,Other Receivable,0,0.16,25
+cust_035,Beacon Labs,2026-09-22,2026-11-21,60,2194.94,Customer Invoice,1,0.1176,34
+cust_003,Kestrel Design,2026-09-23,2026-11-22,60,777.71,Money Lent Out,0,0.12,25
+cust_010,Mesa Co.,2026-09-23,2026-10-23,30,1198.9,Other Receivable,0,0.1538,26
+cust_033,Silverline Retail,2026-09-23,2026-11-22,60,567.51,Money Lent Out,0,0.4667,15
+cust_017,Harbor Labs,2026-09-24,2026-11-23,60,420.14,Customer Invoice,0,0.2083,24
+cust_022,Maple Trading,2026-09-25,2026-10-10,15,88.24,Money Lent Out,0,0.44,25
+cust_029,Sundial Works,2026-09-26,2026-10-11,15,779.07,Other Receivable,1,0.2143,42
+cust_007,Bluefin Co.,2026-09-26,2026-10-11,15,114.39,Other Receivable,1,0.2963,27
+cust_040,Oak & Pine Studio,2026-09-26,2026-10-26,30,462.68,Money Lent Out,0,0.1724,29
+cust_034,Brightwater Group,2026-09-27,2026-11-11,45,374.51,Other Receivable,0,0.1,30
+cust_018,Ironwood Studio,2026-09-28,2026-10-28,30,398.28,Other Receivable,0,0.1613,31
+cust_037,Silverline Group,2026-09-29,2026-11-13,45,2984.84,Money Lent Out,1,0.2174,23
+cust_029,Sundial Works,2026-09-29,2026-11-28,60,637.97,Other Receivable,0,0.2326,43
+cust_033,Silverline Retail,2026-09-29,2026-11-28,60,822.54,Customer Invoice,0,0.4375,16
+cust_034,Brightwater Group,2026-09-30,2026-10-15,15,192.94,Money Lent Out,0,0.0968,31
+cust_037,Silverline Group,2026-09-30,2026-10-30,30,560.84,Customer Invoice,0,0.25,24
+cust_019,Kestrel Services,2026-09-30,2026-11-14,45,2076.67,Customer Invoice,0,0.225,40
+cust_002,Harbor Services,2026-10-01,2026-11-30,60,596.06,Money Lent Out,0,0.2941,34
+cust_014,Beacon Services,2026-10-01,2026-11-30,60,676.59,Customer Invoice,0,0.1905,21
+cust_027,Granite Trading,2026-10-03,2026-12-02,60,350.57,Other Receivable,0,0.16,25
+cust_005,Bluefin Logistics,2026-10-03,2026-11-17,45,344.96,Money Lent Out,0,0.1613,31
+cust_040,Oak & Pine Studio,2026-10-04,2026-11-03,30,415.31,Other Receivable,1,0.1667,30
+cust_022,Maple Trading,2026-10-05,2026-12-04,60,1471.64,Customer Invoice,0,0.4231,26
+cust_043,Cedar Market,2026-10-05,2026-10-20,15,1701.2,Money Lent Out,0,0.1351,37
+cust_021,Granite Cafe,2026-10-07,2026-10-22,15,1508.32,Other Receivable,1,0.1429,35
+cust_038,Granite Works,2026-10-09,2026-10-24,15,859.73,Money Lent Out,0,0.2941,34
+cust_033,Silverline Retail,2026-10-09,2026-11-23,45,456.49,Money Lent Out,0,0.4118,17
+cust_032,Copperfield Design,2026-10-11,2026-10-26,15,1599.33,Money Lent Out,0,0.3182,22
+cust_033,Silverline Retail,2026-10-13,2026-10-28,15,1507.36,Other Receivable,0,0.3889,18
+cust_027,Granite Trading,2026-10-13,2026-10-28,15,559.22,Money Lent Out,0,0.1538,26
+cust_030,Riverton Market,2026-10-13,2026-10-28,15,622.77,Customer Invoice,0,0.3448,29
+cust_026,Silverline Cafe,2026-10-14,2026-12-13,60,1541.4,Customer Invoice,0,0.3103,29
+cust_033,Silverline Retail,2026-10-14,2026-12-13,60,235.62,Other Receivable,0,0.3684,19
+cust_025,Bluefin Partners,2026-10-14,2026-11-28,45,1129.46,Customer Invoice,0,0.1034,29
+cust_038,Granite Works,2026-10-15,2026-12-14,60,633.86,Money Lent Out,0,0.2857,35
+cust_025,Bluefin Partners,2026-10-16,2026-12-15,60,768.96,Money Lent Out,1,0.1,30
+cust_028,Willow Trading,2026-10-19,2026-11-18,30,205.67,Money Lent Out,0,0.1765,34
+cust_010,Mesa Co.,2026-10-19,2026-12-18,60,242.19,Money Lent Out,0,0.1481,27
+cust_038,Granite Works,2026-10-21,2026-12-20,60,272.48,Customer Invoice,0,0.2778,36
+cust_034,Brightwater Group,2026-10-23,2026-11-07,15,232.54,Money Lent Out,1,0.0938,32
+cust_016,Mesa Group,2026-10-23,2026-11-22,30,434.8,Money Lent Out,0,0.3214,28
+cust_031,Copperfield Retail,2026-10-26,2026-12-25,60,119.38,Money Lent Out,0,0.3636,33
+cust_043,Cedar Market,2026-10-26,2026-12-25,60,1020.8,Customer Invoice,0,0.1316,38
+cust_005,Bluefin Logistics,2026-10-27,2026-12-26,60,409.86,Other Receivable,1,0.1562,32
+cust_039,Maple Partners,2026-10-27,2026-11-26,30,708.8,Customer Invoice,1,0.1739,23
+cust_018,Ironwood Studio,2026-10-28,2026-11-12,15,569.38,Money Lent Out,0,0.1562,32
+cust_028,Willow Trading,2026-10-28,2026-12-12,45,1003.35,Other Receivable,1,0.1714,35
+cust_002,Harbor Services,2026-10-28,2026-12-27,60,750.97,Other Receivable,0,0.2857,35
+cust_020,Granite Co.,2026-10-29,2026-12-28,60,335.18,Customer Invoice,0,0.1935,31
+cust_038,Granite Works,2026-10-29,2026-12-13,45,2673.19,Customer Invoice,0,0.2703,37
+cust_041,Mesa Trading,2026-10-30,2026-11-14,15,309.27,Money Lent Out,0,0.2647,34
+cust_024,Cedar Services,2026-10-30,2026-11-29,30,292.25,Customer Invoice,0,0.2222,36
+cust_035,Beacon Labs,2026-10-30,2026-12-29,60,837.96,Money Lent Out,0,0.1429,35
+cust_032,Copperfield Design,2026-10-31,2026-12-15,45,1666.6,Other Receivable,0,0.3043,23

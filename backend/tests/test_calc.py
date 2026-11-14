@@ -66,9 +66,22 @@ def test_ar_ap_summary():
 
 def test_prediction_states_method():
     p = calc.predict_next_month_revenue(FIXTURE)
-    # parity with calc.ts: trailing 3-month average includes pending income rows
-    assert p["value"] == 9000  # (5000 + 6000 + 7000 + 9000) / 3
-    assert p["method"] == "Trailing 3-month average of recorded income"
+    # SKILL.md §11.1: the trained regression serves the number, and the old rule
+    # of thumb is still reported next to it as the baseline to beat.
+    assert p["source"] == "model"
+    assert p["value"] > 0
+    assert "regression" in p["method"].lower()
+    # SKILL.md §11.1 baseline: "next month = this month" persistence. October's
+    # income is 7000 paid + 9000 pending, and pending income counts here — the same
+    # parity rule calc.ts uses for monthly figures (it is excluded only from cash).
+    assert p["baseline_value"] == 16000
+
+
+def test_prediction_falls_back_when_no_income():
+    empty = [t for t in FIXTURE if t.type != "income"]
+    p = calc.predict_next_month_revenue(empty)
+    assert p["value"] == 0
+    assert p["source"] == "none"
 
 
 def test_statement():

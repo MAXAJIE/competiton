@@ -20,40 +20,50 @@ from typing import Optional
 
 import httpx
 
-from . import config, db
+from . import categories, config, db
 
 # Valid transaction vocabulary (SKILL.md §9).
 _TYPES = {"income", "expense", "ar", "ap"}
 _STATUSES = {"paid", "pending", "overdue"}
 _DOC_TYPES = {"receipt", "invoice", "bank_statement"}
 
-EXTRACTION_PROMPTS: dict[str, str] = {
-    "receipt": (
-        "Read this receipt image and return ONE JSON object (never an array) with exactly "
-        "these keys: transaction_date (YYYY-MM-DD), vendor_or_customer (the shop name), "
-        "amount (the FINAL TOTAL paid as a number, not a line item), category (one of: "
-        "Rent, Payroll, Supplies, Software, Utilities, Sales, Invoice, Bill, Other), "
-        'type (always "expense"), status (always "paid"). Return only the JSON object.'
-    ),
-    "invoice": (
-        "Read this invoice image and return ONE JSON object (never an array) with exactly "
-        "these keys: transaction_date (issue date, YYYY-MM-DD), vendor_or_customer, "
-        "amount (the FINAL INVOICE TOTAL as a number, not a line item), category "
-        '("Invoice" if this business issued it, "Bill" if received), type ("ar" if the '
-        'business is owed money, "ap" if it owes), due_date (YYYY-MM-DD or null), status '
-        '("pending" unless the document shows it was already settled, then "paid"). '
-        "Return only the JSON object."
-    ),
-    "bank_statement": (
-        "Read this bank statement image and return ONE JSON object (never an array) with "
-        "exactly these keys: transaction_date (YYYY-MM-DD), vendor_or_customer "
-        "(counterparty), amount (the transaction amount as a positive number), category "
-        "(one of: Rent, Payroll, Supplies, Software, Utilities, Sales, Invoice, Bill, "
-        'Other), type ("income" for money in, "expense" for money out), status (always '
-        '"paid"). If several lines are visible, use the first line only. Return only the '
-        "JSON object."
-    ),
-}
+def _prompt(doc_type: str) -> str:
+    """Fixed extraction prompt per doc_type, with the live category taxonomy.
+
+    The category list is injected from categories.py so the model picks from the
+    same schema the UI and classifier use, and normalize_fields still coerces
+    whatever it answers back into that schema.
+    """
+    kinds = {"receipt": ["expense"],
+             "invoice": ["ar", "ap"],
+             "bank_statement": ["income", "expense"]}[doc_type]
+    cat_lines = "\n".join(f"- {k}: {categories.prompt_list(k)}" for k in kinds)
+    common = (
+        "Return ONE JSON object (never an array) and nothing else. Keys: "
+        "transaction_date (YYYY-MM-DD), vendor_or_customer, amount (a number), "
+        "category, type, status."
+    )
+    if doc_type == "receipt":
+        return (
+            f"Read this receipt/shop bill image. {common} amount must be the FINAL "
+            'TOTAL paid (not a line item). type is always "expense", status is '
+            'always "paid".\nChoose category from this list ONLY:\n' + cat_lines
+        )
+    if doc_type == "invoice":
+        return (
+            f"Read this invoice image. {common} amount must be the INVOICE TOTAL. "
+            'Use type "ar" if this business is owed the money, "ap" if the business '
+            'owes it; include due_date (YYYY-MM-DD or null); status "pending" unless '
+            'the document shows it was settled.\n'
+            "Choose category from this list ONLY:\n" + cat_lines
+        )
+    return (
+        f"Read this bank statement image. {common} Use type \"income\" for money in "
+        'and "expense" for money out, status "paid", vendor_or_customer = the '
+        "counterparty, amount = a positive number.\n"
+        "Choose category from this list ONLY:\n" + cat_lines
+    )
+
 
 _DATE_FORMATS = (
     "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y",
@@ -191,7 +201,16 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
     fields["status"] = status if status in _STATUSES else ("paid" if doc_type != "invoice" else "pending")
 
     category = str(obj.get("category") or "").strip()
-    fields["category"] = category or ("Invoice" if tx_type == "ar" else "Bill" if tx_type == "ap" else "Other")
+    # The keyword classifier arbitrates: when the vendor strongly matches a
+    # category, it overrules a vague model answer (and repairs labels that are
+    # not in the taxonomy at all).
+    resolved, changed, hits = categories.resolve(
+        category, tx_type, fields["vendor_or_customer"],
+        str(obj.get("description") or ""))
+    if changed:
+        matched = f" (matched: {', '.join(hits[:3])})" if hits else ""
+        notes.append(f"Category '{category or 'none'}' set to '{resolved}'{matched}.")
+    fields["category"] = resolved
 
     if tx_type in ("ar", "ap"):
         fields["due_date"] = _date(obj.get("due_date")) or fields["transaction_date"]
@@ -206,7 +225,7 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
 def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
                 max_tokens: int) -> object:
     """One extraction request. Returns parsed JSON or raises with a clear reason."""
-    content: list[dict] = [{"type": "text", "text": EXTRACTION_PROMPTS[doc_type]}]
+    content: list[dict] = [{"type": "text", "text": _prompt(doc_type)}]
     for filename, content_type, data in images:
         content.append({"type": "image_url",
                         "image_url": {"url": _image_data_url(filename, content_type, data)}})
@@ -247,6 +266,55 @@ def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
     return parsed
 
 
+def _extract(doc_type: str, images: list[tuple[str, str, bytes]]) -> tuple[object, str]:
+    """Run the model chain over one page set. Returns (parsed, model)."""
+    errors: list[str] = []
+    for model in config.OCR_MODELS:
+        # First try the configured budget; a reasoning model that spent it all on
+        # hidden reasoning (finish_reason=length) gets one retry with double room.
+        for budget in (config.OCR_MAX_TOKENS, config.OCR_MAX_TOKENS * 2):
+            try:
+                return _call_model(model, doc_type, images, budget), model
+            except Exception as e:  # rate limits, missing vision support, bad JSON
+                errors.append(str(e))
+                if "hit the" not in str(e):  # only the budget error is worth a retry
+                    break
+    raise RuntimeError("All OCR models failed: " + " | ".join(errors))
+
+
+def _merge_pages(pages: list[dict]) -> tuple[dict, list[str]]:
+    """Combine per-page extractions into the one row the reviewer confirms.
+
+    First non-empty value wins per field, because page 1 usually carries the
+    document header. When two pages disagree on the amount or the date, that is
+    exactly what a human should look at, so it becomes a note instead of a
+    silent pick.
+    """
+    merged: dict = {}
+    for page in pages:
+        for key, value in (page.get("fields") or {}).items():
+            if value in (None, "", []):
+                continue
+            if merged.get(key) in (None, "", []):
+                merged[key] = value
+
+    notes: list[str] = []
+    if len(pages) > 1:
+        notes.append(f"{len(pages)} pages read separately and merged — check each page.")
+    for page in pages:
+        for note in page.get("notes") or []:
+            notes.append(f"Page {page['index']}: {note}")
+
+    for key, label in (("amount", "amount"), ("transaction_date", "date")):
+        values = [(p["index"], (p.get("fields") or {}).get(key))
+                  for p in pages if (p.get("fields") or {}).get(key) not in (None, "", [])]
+        distinct = {v for _, v in values}
+        if len(distinct) > 1:
+            seen = ", ".join(f"page {i} says {v}" for i, v in values)
+            notes.append(f"Pages disagree on the {label} ({seen}) — keep the right one.")
+    return merged, notes
+
+
 def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
             doc_type_hint: str = "") -> dict:
     """Extract fields → documents row (reviewed=false) → draft for the review form.
@@ -262,29 +330,32 @@ def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
     if doc_type not in _DOC_TYPES:
         doc_type = "receipt"
 
-    errors: list[str] = []
-    parsed = None
-    used_model = None
-    for model in config.OCR_MODELS:
-        # First try the configured budget; a reasoning model that spent it all on
-        # hidden reasoning (finish_reason=length) gets one retry with double room.
-        for budget in (config.OCR_MAX_TOKENS, config.OCR_MAX_TOKENS * 2):
-            try:
-                parsed = _call_model(model, doc_type, files, budget)
+    # One page at a time, so each image can be checked against its own reading
+    # (the review dialog steps through them). A multi-page document still
+    # produces ONE draft and one confirm, so the human gate is unchanged.
+    pages: list[dict] = []
+    used_model: str | None = None
+    if len(files) == 1:
+        parsed, used_model = _extract(doc_type, files)
+        fields, notes = normalize_fields(parsed, doc_type)
+        pages = [{"index": 1, "fields": fields, "notes": notes, "model": used_model}]
+    else:
+        try:
+            for index, page in enumerate(files, start=1):
+                parsed, model = _extract(doc_type, [page])
+                page_fields, page_notes = normalize_fields(parsed, doc_type)
+                pages.append({"index": index, "fields": page_fields,
+                              "notes": page_notes, "model": model})
                 used_model = model
-                break
-            except Exception as e:  # rate limits, missing vision support, bad JSON
-                errors.append(str(e))
-                if "hit the" not in str(e):  # only the budget error is worth a retry
-                    break
-        if parsed is not None:
-            break
-    if parsed is None:
-        raise RuntimeError("All OCR models failed: " + " | ".join(errors))
-
-    fields, notes = normalize_fields(parsed, doc_type)
-    if len(files) > 1:
-        notes.insert(0, f"{len(files)} pages read together.")
+        except Exception:
+            # A single unreadable page must not lose the whole document: fall back
+            # to reading every page in one request, as before.
+            parsed, used_model = _extract(doc_type, files)
+            fields, notes = normalize_fields(parsed, doc_type)
+            pages = [{"index": 1, "fields": fields, "notes": notes, "model": used_model}]
+            notes = notes + ["Pages were read together after a single page failed — verify carefully."]
+        else:
+            fields, notes = _merge_pages(pages)
 
     # Best-effort file retention in Supabase Storage; review does not depend on it.
     file_url = None
@@ -298,10 +369,11 @@ def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
         file_url = None
 
     doc = db.insert_document(user_id, doc_type, file_url,
-                             {"fields": fields, "notes": notes, "model": used_model})
+                             {"fields": fields, "notes": notes, "model": used_model,
+                              "pages": pages})
 
     return {"doc_type": doc_type, "fields": fields, "notes": notes,
-            "document_id": doc["id"], "model": used_model}
+            "document_id": doc["id"], "model": used_model, "pages": pages}
 
 
 def confirm_and_save(user_id: str, document_id: str, fields: dict) -> dict:

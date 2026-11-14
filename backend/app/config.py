@@ -43,6 +43,17 @@ ADVISOR_MODEL = env("ADVISOR_MODEL", "google/gemini-2.5-flash")
 ADVISOR_FALLBACKS = env("ADVISOR_FALLBACK_MODELS", "openai/gpt-4o-mini,google/gemini-2.5-flash-lite")
 ADVISOR_MODELS = _models_list(ADVISOR_MODEL, ADVISOR_FALLBACKS)
 
+# Questions about rates, markets, tax rules or law are answered from live search
+# results, not from the model's memory. OpenRouter exposes this as the ":online"
+# model suffix (web plugin, billed per result). Verified working with this key on
+# gemini-2.5-flash and gpt-4o-mini; ":free" variants cannot be combined with it,
+# so the web chain is built from paid models only.
+ADVISOR_WEB_MODEL = env("ADVISOR_WEB_MODEL", "google/gemini-2.5-flash")
+ADVISOR_WEB_FALLBACKS = env("ADVISOR_WEB_FALLBACK_MODELS", "openai/gpt-4o-mini")
+ADVISOR_WEB_MODELS = [m if m.endswith(":online") else f"{m}:online"
+                      for m in _models_list(ADVISOR_WEB_MODEL, ADVISOR_WEB_FALLBACKS)
+                      if ":free" not in m]
+
 # Reasoning models (nemotron-*\-reasoning, o-series…) spend the completion budget
 # on hidden reasoning FIRST, so a small max_tokens returns empty `content`
 # (finish_reason=length). Verified: 700 tokens → 0 chars of content, 2500 → valid
