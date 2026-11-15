@@ -11,6 +11,13 @@ required failure case:
   * AR risk  — "always on time" baseline, accuracy + precision/recall + confusion
                matrix with raw counts (§11.2 asks for counts, not just ratios)
 
+The AR model additionally gets an ABLATION: the v1 feature set and the v2
+(customer-history) feature set are trained through the identical code path on
+the identical split, and the delta is reported with a bootstrap confidence
+interval. 79 late rows in the test slice is ±0.06 F1 of pure noise, so a bare
+"v2 is better" claim is not worth making. Either set could win; whichever wins
+the pre-declared rule below is what gets shipped, and the artifact says which.
+
 Artifacts are saved to `backend/models/` and loaded by app/ml.py at request time,
 so the app, the advisor and the notebook all use ONE implementation.
 
@@ -25,19 +32,18 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+from sklearn.metrics import (accuracy_score, average_precision_score,
+                             brier_score_loss, confusion_matrix, f1_score,
                              mean_absolute_error, precision_score, recall_score)
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
+from . import features
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
 
-AR_CATEGORIES = ["Customer Invoice", "Money Lent Out", "Other Receivable"]
-# log(amount) rather than raw amount: invoice size effects are multiplicative,
-# and using the log measurably improved hold-out F1 (0.49 -> 0.52).
-AR_NUMERIC = ["log_amount", "days_until_due", "customer_historical_late_rate",
-              "customer_prior_count"]
+AR_CATEGORIES = features.AR_CATEGORIES
 # Persistence + momentum + the fusion feature (last month's receivables state)
 # + seasonal position. Chosen by comparing feature sets on the chronological
 # split; month_index was dropped because extrapolating an index past the
@@ -49,6 +55,8 @@ EXPECTED_F1_CEILING = 0.85  # decided BEFORE training (§11.4) — see README
 # Severity band above the flag threshold, so the UI can separate "watch" from
 # "chase now" instead of showing one blunt binary.
 HIGH_RISK_MARGIN = 0.25
+BOOTSTRAP_RESAMPLES = 1000
+BOOTSTRAP_CI = (5, 95)
 
 
 def _load(name: str) -> pd.DataFrame:
@@ -60,19 +68,24 @@ def _load(name: str) -> pd.DataFrame:
 
 # --- AR late-payment risk (classification, §11.2) ---------------------------
 
-def _ar_design(df: pd.DataFrame) -> pd.DataFrame:
-    """Numeric features + one-hot categories, in a stable column order."""
+def _ar_design(df: pd.DataFrame, numeric: list[str]) -> pd.DataFrame:
+    """Numeric features (per the requested set) + one-hot categories.
+
+    Only `log_amount` is derived here; every other column already exists in the
+    stored CSV, which keeps the CSV the single source of truth for how history
+    features were built (ml/features.py does that job, once).
+    """
     df = df.copy()
     df["log_amount"] = np.log(df["amount"].astype(float).clip(lower=0.01))
-    out = df[AR_NUMERIC].astype(float).copy()
+    out = df[numeric].astype(float).copy()
     for cat in AR_CATEGORIES:
         out[f"cat_{cat}"] = (df["category"] == cat).astype(float)
     return out
 
 
-def train_ar_risk() -> dict:
-    df = _load("ar_training").sort_values("transaction_date").reset_index(drop=True)
-    X = _ar_design(df)
+def _fit_and_score_ar(df: pd.DataFrame, numeric: list[str]) -> dict:
+    """One feature set through the full protocol. Returns metrics + raw scores."""
+    X = _ar_design(df, numeric)
     y = df["paid_late"].astype(int)
 
     split = int(len(df) * (1 - TEST_FRACTION))
@@ -117,9 +130,14 @@ def train_ar_risk() -> dict:
     pred = (proba >= best_threshold).astype(int)
 
     tn, fp, fn, tp = (int(v) for v in confusion_matrix(y_test, pred, labels=[0, 1]).ravel())
+    late_actual = int(y_test.sum())
     result = {
         "task": "ar_late_payment_risk",
         "model": "LogisticRegression + StandardScaler (calibrated probabilities)",
+        # `features` is the full design matrix (the UI lists it); the artifact
+        # separately records which numeric columns its model consumes.
+        "features": list(X.columns),
+        "features_used": list(numeric),
         "rows": {"total": int(len(df)), "train": int(len(X_train)), "test": int(len(X_test))},
         "baseline": baseline,
         "model_metrics": {
@@ -127,20 +145,113 @@ def train_ar_risk() -> dict:
             "precision": round(float(precision_score(y_test, pred, zero_division=0)), 4),
             "recall": round(float(recall_score(y_test, pred, zero_division=0)), 4),
             "f1": round(float(f1_score(y_test, pred, zero_division=0)), 4),
+            # Ranking quality and probability honesty, so a small F1 move is not
+            # mistaken for progress on a 79-positive test slice.
+            "pr_auc": round(float(average_precision_score(y_test, proba)), 4),
+            "brier": round(float(brier_score_loss(y_test, proba)), 4),
         },
         "confusion_matrix": {
             "labels": ["on_time", "late"],
             "matrix": [[tn, fp], [fn, tp]],
             "true_negative": tn, "false_positive": fp,
             "false_negative": fn, "true_positive": tp,
-            "late_actual": int(y_test.sum()), "late_caught": tp,
+            "late_actual": late_actual, "late_caught": tp,
         },
         "threshold": best_threshold,
         "threshold_tuned_on": "last 20% of the training window (test rows never seen)",
-        "features": list(X.columns),
+    }
+    return {"result": result, "proba": proba, "pred": pred, "model": model,
+            "y_test": y_test, "test_rows": df.iloc[split:]}
+
+
+def _bootstrap_delta(v1: dict, v2: dict) -> dict:
+    """Confidence interval on (v2 - v1) by resampling the test slice.
+
+    Without this, "F1 went from 0.506 to 0.53" is indistinguishable from noise:
+    the test slice has 79 late rows, so F1 alone moves ±0.06 on resampling.
+    """
+    y = v1["y_test"].to_numpy()
+    n = len(y)
+    if not n:
+        return {"resamples": 0, "note": "empty test slice"}
+    rng = np.random.default_rng(0)
+    d_f1, d_ap = [], []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        idx = rng.integers(0, n, n)
+        if y[idx].sum() == 0:            # a resample with no positives has no recall
+            continue
+        d_f1.append(f1_score(y[idx], v2["pred"][idx], zero_division=0)
+                    - f1_score(y[idx], v1["pred"][idx], zero_division=0))
+        d_ap.append(average_precision_score(y[idx], v2["proba"][idx])
+                    - average_precision_score(y[idx], v1["proba"][idx]))
+
+    def band(vals: list[float]) -> dict:
+        if not vals:
+            return {"p05": None, "p95": None}
+        return {"p05": round(float(np.percentile(vals, BOOTSTRAP_CI[0])), 4),
+                "p95": round(float(np.percentile(vals, BOOTSTRAP_CI[1])), 4)}
+
+    m1, m2 = v1["result"]["model_metrics"], v2["result"]["model_metrics"]
+    return {
+        "resamples": len(d_f1),
+        "resamples_requested": BOOTSTRAP_RESAMPLES,
+        "ci": f"{BOOTSTRAP_CI[0]}-{BOOTSTRAP_CI[1]}%",
+        "delta_f1": {"point": round(m2["f1"] - m1["f1"], 4), **band(d_f1)},
+        "delta_pr_auc": {"point": round(m2["pr_auc"] - m1["pr_auc"], 4), **band(d_ap)},
+        "note": ("a CI straddling 0 means the ablation is inconclusive, not that v2 won"),
     }
 
-    test_view = df.iloc[split:].copy()
+
+def _ablation_summary(scored: dict) -> dict:
+    m = scored["result"]["model_metrics"]
+    return {k: m[k] for k in ("accuracy", "precision", "recall", "f1", "pr_auc", "brier")} | {
+        "features": len(scored["result"]["features_used"]),
+        "threshold": scored["result"]["threshold"],
+        "late_caught": scored["result"]["confusion_matrix"]["late_caught"],
+        "late_actual": scored["result"]["confusion_matrix"]["late_actual"],
+    }
+
+
+def _select_feature_set(v1: dict, v2: dict) -> tuple[str, str]:
+    """The ship rule, declared before the ablation was ever run.
+
+    v2 ships only if it ranks better AND does not lose ground on F1/recall —
+    recall being the safety metric, because a missed late invoice means an
+    unpaid invoice nobody chased. A tie on everything means "keep the simpler
+    model", so v1 wins ties.
+    """
+    m1, m2 = v1["result"]["model_metrics"], v2["result"]["model_metrics"]
+    d_f1 = m2["f1"] - m1["f1"]
+    d_ap = m2["pr_auc"] - m1["pr_auc"]
+    d_recall = m2["recall"] - m1["recall"]
+    if d_ap > 0 and d_f1 >= 0 and d_recall >= 0 and (d_ap > 0 or d_f1 > 0):
+        return "v2", (f"v2 ships: delta PR-AUC {d_ap:+.4f}, delta F1 {d_f1:+.4f}, "
+                      f"delta recall {d_recall:+.4f}")
+    return "v1", (f"v1 ships (v2 not clearly better): delta PR-AUC {d_ap:+.4f}, "
+                  f"delta F1 {d_f1:+.4f}, delta recall {d_recall:+.4f}")
+
+
+def train_ar_risk() -> dict:
+    df = _load("ar_training").sort_values("transaction_date").reset_index(drop=True)
+
+    v1 = _fit_and_score_ar(df, features.AR_NUMERIC_V1)
+    v2 = _fit_and_score_ar(df, features.AR_NUMERIC_V2)
+    bootstrap = _bootstrap_delta(v1, v2)
+    selected, verdict = _select_feature_set(v1, v2)
+    chosen = v2 if selected == "v2" else v1
+
+    result = dict(chosen["result"])
+    result["selected"] = selected
+    result["selection_rule"] = (
+        "v2 ships only if PR-AUC improves, F1 does not drop and recall does not "
+        "drop; ties go to the simpler model (declared before training)"
+    )
+    result["selection_verdict"] = verdict
+    result["ablation"] = {"v1": _ablation_summary(v1), "v2": _ablation_summary(v2)}
+    result["bootstrap"] = bootstrap
+
+    proba, pred = chosen["proba"], chosen["pred"]
+    test_view = chosen["test_rows"].copy()
     test_view["pred"] = pred
     test_view["p_late"] = proba
     wrong = test_view[test_view["pred"].astype(int) != test_view["paid_late"].astype(int)]
@@ -157,7 +268,7 @@ def train_ar_risk() -> dict:
             "predicted_late": int(worst["pred"]),
             "p_late": round(float(worst["p_late"]), 3),
             "hypothesis": ("a customer with a reliable history went late anyway — a "
-                           "one-off cash-flow shock no feature at creation time can see"
+                           "one-off cash-flow shock no creation-time feature can see"
                            if was_late else
                            "the customer's short late history flagged them, but they paid "
                            "on time — label noise blurs the true pattern"),
@@ -171,9 +282,16 @@ def train_ar_risk() -> dict:
     }
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"model": model, "categories": AR_CATEGORIES, "numeric": AR_NUMERIC,
-                 "threshold": best_threshold,
-                 "high_risk_margin": HIGH_RISK_MARGIN}, MODEL_DIR / "ar_risk.joblib")
+    joblib.dump({"model": chosen["model"], "categories": AR_CATEGORIES,
+                 "numeric": (features.AR_NUMERIC_V2 if selected == "v2"
+                             else features.AR_NUMERIC_V1),
+                 "threshold": result["threshold"],
+                 "high_risk_margin": HIGH_RISK_MARGIN,
+                 "feature_version": 2 if selected == "v2" else 1,
+                 # Serving compares these against ml/features.py and refuses to
+                 # score with an artifact whose constants have drifted.
+                 **features.artifact_constants()},
+                MODEL_DIR / "ar_risk.joblib")
     return result
 
 
@@ -256,8 +374,19 @@ def train_all() -> dict:
     m = ar["model_metrics"]
     print(f"\n[AR risk] baseline acc {ar['baseline']['accuracy']:.3f} "
           f"(caught 0/{cm['late_actual']} late)")
+    print(f"[AR risk] ablation v1 (4 history-poor features): {ar['ablation']['v1']['f1']} F1 "
+          f"/ {ar['ablation']['v1']['pr_auc']} PR-AUC")
+    print(f"[AR risk] ablation v2 (8 features):              {ar['ablation']['v2']['f1']} F1 "
+          f"/ {ar['ablation']['v2']['pr_auc']} PR-AUC")
+    b = ar["bootstrap"]
+    print(f"[AR risk] delta F1 {b['delta_f1']['point']:+.4f} "
+          f"(CI {b['delta_f1']['p05']} .. {b['delta_f1']['p95']}), "
+          f"delta PR-AUC {b['delta_pr_auc']['point']:+.4f} "
+          f"(CI {b['delta_pr_auc']['p05']} .. {b['delta_pr_auc']['p95']})")
+    print(f"[AR risk] selected: {ar['selected']} — {ar['selection_verdict']}")
     print(f"[AR risk] model  acc {m['accuracy']:.3f} P {m['precision']:.3f} "
-          f"R {m['recall']:.3f} F1 {m['f1']:.3f} @ threshold {ar['threshold']}")
+          f"R {m['recall']:.3f} F1 {m['f1']:.3f} PR-AUC {m['pr_auc']:.3f} "
+          f"Brier {m['brier']:.3f} @ threshold {ar['threshold']}")
     print(f"[AR risk] confusion rows=actual [on_time, late]: {cm['matrix']} "
           f"(caught {cm['late_caught']}/{cm['late_actual']} late)")
     print(f"[AR risk] ceiling check: {ar['ceiling_check']['status']} "

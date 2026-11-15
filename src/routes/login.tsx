@@ -69,7 +69,7 @@ function Login() {
             <br />
             <span className="italic text-accent">in clear view.</span>
           </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+          <p className="lede mt-4 max-w-md">
             Sign in to see your ledger and the financial signals that matter—kept private to your
             account.
           </p>

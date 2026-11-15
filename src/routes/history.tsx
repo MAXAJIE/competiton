@@ -19,6 +19,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Headline, Page } from "@/components/Reveal";
+import { SkeletonBlock } from "@/components/Skeleton";
+import { HistoryListSkeleton, HistoryTotalsSkeleton } from "@/components/skeletons/HistorySkeleton";
+import { useSlowPending } from "@/lib/use-slow-pending";
 import { ForcedEntrance } from "@/components/ForcedEntrance";
 import { usd } from "@/lib/calc";
 import {
@@ -116,6 +119,7 @@ function HistoryPage() {
   const activeAnim = useRef<Animation | null>(null);
   const closing = useRef(false);
 
+  const slowPending = useSlowPending(!loaded);
   const visibleTransactions = useMemo(() => filterTransactions(tx, filters), [tx, filters]);
   const totals = useMemo(
     () =>
@@ -214,48 +218,56 @@ function HistoryPage() {
         className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         data-reveal
       >
-        <p className="text-sm text-slate-500" aria-live="polite">
-          {loaded
-            ? `${visibleTransactions.length} of ${tx.length} ${tx.length === 1 ? "entry" : "entries"}`
-            : "Loading your ledger…"}
-        </p>
+        {loaded ? (
+          <p className="text-sm text-slate-500" aria-live="polite">
+            {`${visibleTransactions.length} of ${tx.length} ${tx.length === 1 ? "entry" : "entries"}`}
+          </p>
+        ) : slowPending ? (
+          <SkeletonBlock className="h-3 w-36 rounded-full" />
+        ) : null}
         <Link to="/entry" className="btn btn-solid w-full justify-center sm:w-auto">
           Add transaction <ArrowRight aria-hidden className="h-4 w-4" />
         </Link>
       </div>
 
-      <section aria-label="Ledger totals" className="mb-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {(
-          [
-            ["income", "Income recorded", "text-emerald-700", "bg-emerald-50"],
-            ["expense", "Expenses recorded", "text-slate-700", "bg-slate-100"],
-            ["ar", "Receivables", "text-sky-700", "bg-sky-50"],
-            ["ap", "Payables", "text-amber-700", "bg-amber-50"],
-          ] as const
-        ).map(([type, label, color, background], index) => (
-          <ForcedEntrance
-            key={type}
-            index={index}
-            className="surface rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
-              <span
-                className={`flex h-8 w-8 items-center justify-center rounded-xl ${background} ${color}`}
-              >
-                {isIncoming(type) ? (
-                  <ArrowUpRight aria-hidden className="h-4 w-4" />
-                ) : (
-                  <ArrowDownRight aria-hidden className="h-4 w-4" />
-                )}
-              </span>
-            </div>
-            <p className={`num mt-3 text-xl font-semibold tracking-tight sm:text-2xl ${color}`}>
-              {usd(totals[type])}
-            </p>
-          </ForcedEntrance>
-        ))}
-      </section>
+      {!loaded ? (
+        slowPending ? (
+          <HistoryTotalsSkeleton />
+        ) : null
+      ) : (
+        <section aria-label="Ledger totals" className="mb-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {(
+            [
+              ["income", "Income recorded", "text-emerald-700", "bg-emerald-50"],
+              ["expense", "Expenses recorded", "text-slate-700", "bg-slate-100"],
+              ["ar", "Receivables", "text-sky-700", "bg-sky-50"],
+              ["ap", "Payables", "text-amber-700", "bg-amber-50"],
+            ] as const
+          ).map(([type, label, color, background], index) => (
+            <ForcedEntrance
+              key={type}
+              index={index}
+              className="surface rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl ${background} ${color}`}
+                >
+                  {isIncoming(type) ? (
+                    <ArrowUpRight aria-hidden className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownRight aria-hidden className="h-4 w-4" />
+                  )}
+                </span>
+              </div>
+              <p className={`num mt-3 text-xl font-semibold tracking-tight sm:text-2xl ${color}`}>
+                {usd(totals[type])}
+              </p>
+            </ForcedEntrance>
+          ))}
+        </section>
+      )}
 
       <section
         className="surface overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm"
@@ -346,11 +358,9 @@ function HistoryPage() {
         )}
 
         {!loaded ? (
-          <div className="space-y-3 p-5" aria-label="Loading transaction history" aria-busy="true">
-            {[0, 1, 2, 3].map((item) => (
-              <div key={item} className="h-14 animate-pulse rounded-xl bg-slate-100" />
-            ))}
-          </div>
+          slowPending ? (
+            <HistoryListSkeleton />
+          ) : null
         ) : visibleTransactions.length === 0 ? (
           <div className="px-5 py-16 text-center sm:py-20">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
@@ -359,7 +369,7 @@ function HistoryPage() {
             <h2 className="mt-4 text-lg font-semibold text-slate-800">
               {tx.length === 0 ? "No history yet" : "No matching entries"}
             </h2>
-            <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-slate-500">
+            <p className="lede mx-auto mt-1 max-w-md">
               {tx.length === 0
                 ? "Once you record income, expenses, invoices, or bills, they’ll all appear here."
                 : "Try another name or amount, or clear the filters to see more of your ledger."}

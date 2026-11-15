@@ -169,7 +169,7 @@ export function DocScanDialog({
       <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto bg-background">
         <DialogHeader>
           <DialogTitle className="font-display text-3xl">{title}</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription className="lede">
             {stage === "done"
               ? "Everything you confirmed is in the ledger."
               : stage === "review"

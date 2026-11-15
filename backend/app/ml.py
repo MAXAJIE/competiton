@@ -18,10 +18,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Optional
 
-MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
+# The AR feature rules live in ml/features.py so training and serving cannot
+# drift apart. The artifact records those constants; if the loaded artifact was
+# trained with different ones, scoring degrades to the documented rule rather
+# than quietly using mismatched numbers.
+from ml.features import (AR_CATEGORIES, HistoryAccumulator, artifact_constants,
+                         feature_values, outcome_known_on)
 
-# Must match ml/train_models.py
-AR_CATEGORIES = ["Customer Invoice", "Money Lent Out", "Other Receivable"]
+MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
 class _Model:
@@ -178,24 +182,58 @@ def _is_late_evidence(t) -> bool:
     return False
 
 
-def _customer_history(tx: list, exclude=None) -> dict[str, tuple[float, int]]:
-    """vendor → (observed late rate, prior AR count).
+def _is_same_row(t, exclude) -> bool:
+    """Identity first: API rows have no database id yet, so an id-only check
+    would silently match nothing and leak the scored row into its own feature."""
+    if exclude is None:
+        return False
+    return t is exclude or (exclude.id is not None and t.id == exclude.id)
 
-    `exclude` is the row being scored, kept out of its own feature (that would be
-    leakage: the model would be told the answer it is predicting). It is matched
-    by identity first, because rows arriving from the API have no database id yet
-    and an id-based check would silently match nothing.
+
+def _history_accumulator(tx: list, exclude, scoring_moment: date) -> HistoryAccumulator:
+    """Customer history as it stood *before* `scoring_moment`.
+
+    A prior invoice counts only once its outcome was known — `due_date` earlier
+    than the scoring moment — which is the same rule the trainer uses. Admitting
+    invoices that were still open would tell training the answer before it
+    happened, and would make training more informed than serving, which has to
+    skip rows that have not resolved.
+
+    A past-due row still marked `pending` counts as late evidence: overdue is a
+    fact in this app, not a forecast. A `pending` row that is not yet due has no
+    outcome and contributes nothing.
     """
-    counts: dict[str, list[int]] = {}
+    acc = HistoryAccumulator()
     for t in tx:
-        if t.type != "ar":
+        if t.type != "ar" or _is_same_row(t, exclude):
             continue
-        if exclude is not None and (t is exclude or (exclude.id is not None and t.id == exclude.id)):
+        resolved_on = outcome_known_on(t.transaction_date, t.due_date)
+        if resolved_on is None or resolved_on >= scoring_moment:
             continue
         if t.status == "pending":
-            continue  # no outcome evidence yet
-        counts.setdefault(t.vendor_or_customer, []).append(1 if _is_late_evidence(t) else 0)
-    return {k: (sum(v) / len(v), len(v)) for k, v in counts.items() if v}
+            # No status sweep yet, but the due date has passed: overdue is a fact.
+            if not _is_past_due(t, scoring_moment):
+                continue
+            late = True
+        else:
+            late = _is_late_evidence(t)
+        acc.add(t.vendor_or_customer, float(t.amount), late, resolved_on)
+    return acc
+
+
+def _is_past_due(t, today: date) -> bool:
+    due = outcome_known_on(t.transaction_date, t.due_date)
+    return due is not None and due < today
+
+
+def _artifact_mismatch(model: "_Model") -> Optional[str]:
+    """Why this artifact cannot be trusted, or None when it can."""
+    for key, expected in artifact_constants().items():
+        if model.payload.get(key) != expected:
+            return (f"artifact was trained with {key}={model.payload.get(key)!r}, "
+                    f"this build uses {expected!r} — retrain with "
+                    "`python -m ml.train_models`")
+    return None
 
 
 def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> list[dict]:
@@ -206,16 +244,21 @@ def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> li
     tx = list(tx)
     today = today or date.today()
     model = _ar_model()
+    mismatch = _artifact_mismatch(model) if model is not None else None
+    if mismatch:
+        model = None  # never score with constants that do not match the features
     open_rows = [t for t in tx if t.type == "ar" and t.status in ("pending", "overdue")]
     if not open_rows:
         return []
 
     out: list[dict] = []
     for t in open_rows:
-        history = _customer_history(tx, exclude=t)
-        global_rate = (sum(r for r, _ in history.values()) / len(history)) if history else 0.2
-        rate, prior = history.get(t.vendor_or_customer, (global_rate, 0.0))
-        prior = int(prior)
+        acc = _history_accumulator(tx, exclude=t, scoring_moment=today)
+        # One shared builder: every history column is produced here, then the
+        # artifact decides which of them its model actually consumes. That is
+        # why a v1 artifact keeps working without a version branch.
+        stats = acc.stats(t.vendor_or_customer)
+        fv = feature_values(stats, acc.pooled_rate(), today)
         days_until_due = ((date.fromisoformat(str(t.due_date)) - today).days
                           if t.due_date else 30)
         # The classifier answers "will this be paid late?". Once due_date has
@@ -224,29 +267,32 @@ def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> li
         # an invoice 401 days late, which reads as "probably fine" — wrong and
         # dangerous. The model's own number is kept only as `model_p_late`.
         already_late = t.status == "overdue" or days_until_due < 0
+        row = dict(fv)
+        row["log_amount"] = math.log(max(float(t.amount), 0.01))
+        row["days_until_due"] = float(days_until_due)
+        for cat in AR_CATEGORIES:
+            row[f"cat_{cat}"] = 1.0 if t.category == cat else 0.0
+
         model_p_late: float | None = None
         if model is not None:
-            row = {
-                "log_amount": math.log(max(float(t.amount), 0.01)),
-                "days_until_due": float(days_until_due),
-                "customer_historical_late_rate": rate,
-                "customer_prior_count": float(prior),
-            }
-            for cat in AR_CATEGORIES:
-                row[f"cat_{cat}"] = 1.0 if t.category == cat else 0.0
-            # Same column order the trainer used: numerics, then one-hot categories.
-            features = list(model.payload["numeric"]) + \
-                [f"cat_{c}" for c in model.payload["categories"]]
-            import pandas as pd
-            frame = pd.DataFrame([[row[f] for f in features]], columns=features)
-            model_p_late = float(model.model.predict_proba(frame)[0][1])
+            try:
+                columns = list(model.payload["numeric"]) + \
+                    [f"cat_{c}" for c in model.payload["categories"]]
+                import pandas as pd
+                frame = pd.DataFrame([[row[c] for c in columns]], columns=columns)
+                model_p_late = float(model.model.predict_proba(frame)[0][1])
+            except Exception:
+                # A stale or hand-edited artifact must not 500 a dashboard.
+                model_p_late = None
+
+        if model_p_late is not None:
             p_late = 1.0 if already_late else model_p_late
             threshold = float(model.payload.get("threshold", 0.3))
             high_margin = float(model.payload.get("high_risk_margin", 0.12))
             source = "model"
         else:
-            # Documented rule of its own when no artifact exists — never pretend.
-            model_p_late = min(0.95, 0.15 + 0.4 * rate)
+            # Documented rule of its own when no usable artifact exists — never pretend.
+            model_p_late = round(min(0.95, 0.15 + 0.4 * fv["customer_historical_late_rate"]), 4)
             p_late = 1.0 if already_late else model_p_late
             threshold = 0.5
             high_margin = 0.15
@@ -260,8 +306,8 @@ def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> li
             "due_date": t.due_date,
             "status": t.status,
             "days_until_due": days_until_due,
-            "customer_historical_late_rate": round(rate, 3),
-            "customer_prior_count": prior,
+            "customer_historical_late_rate": fv["customer_historical_late_rate"],
+            "customer_prior_count": fv["customer_prior_count"],
             "p_late": round(p_late, 3),
             "already_late": already_late,
             "days_overdue": max(0, -days_until_due),
@@ -310,7 +356,8 @@ def ar_risk_summary(tx: Iterable, today: date | None = None) -> dict:
         "method": ("Overdue invoices are 100% late by definition and are ranked by "
                    "exposure (amount x days overdue). Not-yet-due invoices get the "
                    "logistic-regression probability of being paid late — amount, payment "
-                   "terms, the customer's observed late history and category — trained on "
-                   "synthetic data and evaluated chronologically (see models/metrics.json)."),
+                   "terms, the customer's resolved late history and category — trained on "
+                   "synthetic data and evaluated chronologically (see models/metrics.json). "
+                   "Only invoices resolved before the scoring moment count as history."),
         "source": flags[0]["source"] if flags else "none",
     }

@@ -4,10 +4,13 @@ export function CountUp({
   value,
   format,
   delay = 0.3,
+  className = "tabular-nums",
 }: {
   value: number;
   format: (n: number) => string;
   delay?: number;
+  /** Digits come from the surrounding figure; tabular by default so they align. */
+  className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   useGSAP(
@@ -30,7 +33,7 @@ export function CountUp({
     { dependencies: [value] },
   );
   return (
-    <span ref={ref} className="num">
+    <span ref={ref} className={className}>
       {format(value)}
     </span>
   );

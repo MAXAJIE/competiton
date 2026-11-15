@@ -9,7 +9,7 @@ export function CashChart({ data }: { data: M[] }) {
   if (data.length < 2) {
     return (
       <div className="mt-6 flex h-[260px] items-center justify-center border border-dashed">
-        <p className="text-sm text-muted-foreground">
+        <p className="lede">
           {data.length === 0 ? "No monthly flow yet — add entries to see the trend." : "One month recorded — add another to see the trend."}
         </p>
       </div>

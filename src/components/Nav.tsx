@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { signOut } from "@/lib/api";
 import { useStore } from "@/lib/store";
 
@@ -56,17 +57,49 @@ function NavigationLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function Nav() {
-  const { mode } = useStore();
+  const { mode, setMode, setTx } = useStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const isGuest = mode === "guest";
 
   const handleSignOut = async () => {
+    setSigningOut(true);
     try {
       await signOut();
       location.assign("/login");
     } catch (error) {
+      setSigningOut(false);
+      setConfirmOpen(false);
       toast.error(error instanceof Error ? error.message : "Could not sign out.");
     }
   };
+
+  // Guest data lives in this tab only, so leaving the session clears it. Nothing
+  // was ever sent to a server, which is exactly what the confirmation says.
+  const handleGuestExit = () => {
+    setMode(null);
+    setTx([]);
+    location.assign("/login");
+  };
+
+  const confirm = isGuest
+    ? {
+        title: "Leave the guest session?",
+        description:
+          "The demo ledger lives in this browser tab only, so leaving clears it. Nothing was saved to an account, and you can start a fresh guest session any time.",
+        confirmLabel: "Yes, leave guest session",
+        cancelLabel: "Keep exploring",
+        onConfirm: handleGuestExit,
+      }
+    : {
+        title: "Log out of your account?",
+        description:
+          "You'll go back to the login screen. Your ledger, receipts and settings stay saved in your account — nothing is deleted.",
+        confirmLabel: "Yes, log me out",
+        cancelLabel: "Stay signed in",
+        onConfirm: handleSignOut,
+      };
 
   return (
     <>
@@ -126,11 +159,15 @@ export function Nav() {
                 </p>
               </div>
             </div>
-            {mode === "user" ? (
+            {mode ? (
+              // One control only: signing out lands on /login, so a separate
+              // "sign in" shortcut next to it would just be a second door to
+              // the same page.
               <button
                 type="button"
-                onClick={handleSignOut}
-                aria-label="Sign out"
+                onClick={() => setConfirmOpen(true)}
+                aria-label={isGuest ? "Leave guest session" : "Sign out"}
+                aria-haspopup="dialog"
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <LogOut aria-hidden className="h-4 w-4" />
@@ -177,10 +214,13 @@ export function Nav() {
                   ? "Guest session"
                   : "Choose a workspace"}
             </span>
-            {mode === "user" ? (
+            {mode ? (
               <button
                 type="button"
-                onClick={handleSignOut}
+                onClick={() => {
+                  setMobileOpen(false);
+                  setConfirmOpen(true);
+                }}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
                 <LogOut className="h-4 w-4" /> Sign out
@@ -197,6 +237,19 @@ export function Nav() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={confirm.onConfirm}
+        title={confirm.title}
+        description={confirm.description}
+        confirmLabel={confirm.confirmLabel}
+        cancelLabel={confirm.cancelLabel}
+        busy={!isGuest && signingOut}
+        busyLabel="Signing out…"
+        icon={LogOut}
+      />
     </>
   );
 }

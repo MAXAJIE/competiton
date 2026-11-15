@@ -188,3 +188,172 @@ def test_summary_separates_certain_from_forecast():
 
     assert summary["overdue_count"] == 2 and summary["overdue_amount"] == 500957.0
     assert summary["predicted_high_count"] == 1 and summary["predicted_high_amount"] == 50000.0
+
+
+# --- history features: one implementation, admitted by resolution date ------
+
+from ml import features as ar_features  # noqa: E402
+
+
+def _hist(rows, moment):
+    acc = ar_features.HistoryAccumulator()
+    for (key, amount, late, resolved) in rows:
+        if resolved < moment:
+            acc.add(key, amount, late, resolved)
+    return acc
+
+
+def test_stored_history_only_counts_invoices_resolved_before_issuance():
+    """The leak fix, asserted on the shipped CSV.
+
+    For every invoice, the number of prior invoices its features were built from
+    must equal the number of that customer's invoices whose due date fell
+    strictly before it. An invoice still open when this one was issued tells you
+    nothing yet — including it made training more informed than serving.
+    """
+    ar = pd.read_csv(ml.MODEL_DIR.parent / "data" / "ar_training.csv")
+    due = pd.to_datetime(ar["due_date"]).to_numpy()
+    txn = pd.to_datetime(ar["transaction_date"]).to_numpy()
+
+    for _, idx in ar.groupby("customer_id").groups.items():
+        pos = list(idx)
+        resolved_before = (due[pos][None, :] < txn[pos][:, None]).sum(axis=1)
+        assert list(resolved_before) == list(ar.loc[pos, "customer_prior_count"])
+
+
+def test_a_client_with_unresolved_invoices_has_no_history_yet():
+    today = date(2026, 11, 20)
+    # Two invoices for the same customer, both still open, issued before `today`.
+    tx = [
+        Transaction(type="ar", category="Customer Invoice", vendor_or_customer="Slow Co",
+                    amount=1000, transaction_date="2026-11-01", due_date="2026-12-15",
+                    status="pending"),
+        Transaction(type="ar", category="Customer Invoice", vendor_or_customer="Slow Co",
+                    amount=1200, transaction_date="2026-11-10", due_date="2026-12-20",
+                    status="pending"),
+    ]
+    acc = ml._history_accumulator(tx, exclude=None, scoring_moment=today)
+    assert acc.stats("Slow Co") is None, "an invoice that has not resolved is not history"
+
+
+def test_a_past_due_pending_row_is_late_evidence_but_a_future_one_is_not():
+    today = date(2026, 11, 20)
+    tx = [
+        # overdue by the calendar even though the status was never swept
+        Transaction(type="ar", category="Customer Invoice", vendor_or_customer="Lag Co",
+                    amount=500, transaction_date="2026-10-01", due_date="2026-10-31",
+                    status="pending"),
+        # not due yet: no outcome to learn from
+        Transaction(type="ar", category="Customer Invoice", vendor_or_customer="Lag Co",
+                    amount=500, transaction_date="2026-11-15", due_date="2026-12-30",
+                    status="pending"),
+    ]
+    stats = ml._history_accumulator(tx, exclude=None, scoring_moment=today).stats("Lag Co")
+    assert stats.count == 1 and stats.late_count == 1
+
+
+def test_cold_start_row_gets_declared_prior_and_finite_features():
+    today = date(2026, 11, 20)
+    acc = _hist([], today)
+    fv = ar_features.feature_values(acc.stats("New Co"), acc.pooled_rate(), today)
+    assert fv["has_history"] == 0.0
+    assert fv["customer_prior_count"] == 0
+    assert fv["customer_historical_late_rate"] == ar_features.COLD_START_PRIOR
+    assert fv["customer_late_rate_shrunk"] == ar_features.COLD_START_PRIOR
+    assert fv["customer_late_amount_share"] == 0.0
+    assert fv["days_since_last_late_capped"] == float(ar_features.RECENCY_CAP_DAYS)
+    for value in fv.values():
+        assert isinstance(value, (int, float)) and value == value  # no NaN
+
+
+def test_shrunk_rate_moves_toward_the_population_rate_as_history_shrinks():
+    today = date(2026, 11, 20)
+    pooled = (0.20, 500)
+    thin = ar_features.CustomerStats(count=1, late_count=1)
+    thick = ar_features.CustomerStats(count=40, late_count=40)
+    thin_rate = ar_features.feature_values(thin, pooled, today)["customer_late_rate_shrunk"]
+    thick_rate = ar_features.feature_values(thick, pooled, today)["customer_late_rate_shrunk"]
+    assert 0.20 < thin_rate < thick_rate < 1.0, "one bad invoice must not read as 'always late'"
+
+
+def test_recency_sentinel_only_when_there_has_never_been_a_late_payment():
+    today = date(2026, 11, 20)
+    clean = ar_features.CustomerStats(count=5, late_count=0, total_amount=500.0)
+    assert ar_features.feature_values(clean, (0.2, 500), today)["days_since_last_late_capped"] \
+        == float(ar_features.RECENCY_CAP_DAYS)
+    assert ar_features.feature_values(clean, (0.2, 500), today)["has_prior_late"] == 0.0
+
+    lapsed = ar_features.CustomerStats(count=5, late_count=2, total_amount=500.0,
+                                       late_amount=100.0, last_late_on=date(2026, 11, 1))
+    fv = ar_features.feature_values(lapsed, (0.2, 500), today)
+    assert fv["has_prior_late"] == 1.0 and fv["days_since_last_late_capped"] == 19.0
+
+
+def test_amount_share_is_zero_not_nan_when_nothing_settled_has_value():
+    fv = ar_features.feature_values(
+        ar_features.CustomerStats(count=2, late_count=1, total_amount=0.0, late_amount=0.0),
+        (0.2, 500), date(2026, 11, 20),
+    )
+    assert fv["customer_late_amount_share"] == 0.0
+
+
+def test_pooled_rate_is_row_level_not_the_mean_of_customer_rates():
+    acc = ar_features.HistoryAccumulator()
+    day = date(2026, 1, 1)
+    for _ in range(9):          # customer A: 9 on-time invoices
+        acc.add("A", 100.0, False, day)
+    acc.add("B", 100.0, True, day)   # customer B: 1 late invoice
+    rate, n = acc.pooled_rate()
+    assert n == 10 and rate == 0.1, "one invoice must not weigh as much as nine"
+
+
+# --- artifact guards --------------------------------------------------------
+
+def _scoring_tx():
+    return [Transaction(type="ar", category="Customer Invoice", vendor_or_customer="Mesa Retail",
+                        amount=2000, transaction_date="2026-11-01", due_date="2026-11-28",
+                        status="pending")]
+
+
+def _with_payload(monkeypatch, payload):
+    monkeypatch.setattr(ml, "_ar_model", lambda: ml._Model(payload, ml.MODEL_DIR / "x.joblib"))
+    return ml.ar_risk_flags(_scoring_tx(), today=date(2026, 11, 20))[0]
+
+
+def test_a_v1_artifact_still_scores(monkeypatch):
+    import joblib
+    payload = joblib.load(ml.MODEL_DIR / "ar_risk.joblib")
+    row = _with_payload(monkeypatch, payload)
+    assert row["source"] == "model" and row["model_p_late"] is not None
+
+
+def test_a_v2_artifact_scores_with_the_same_feature_builder(monkeypatch):
+    import joblib
+    import numpy as np
+    from sklearn.linear_model import LogisticRegression
+
+    payload = joblib.load(ml.MODEL_DIR / "ar_risk.joblib")
+    columns = list(ar_features.AR_NUMERIC_V2) + [f"cat_{c}" for c in ar_features.AR_CATEGORIES]
+    frame = pd.DataFrame(np.zeros((4, len(columns))), columns=columns)
+    model = LogisticRegression(max_iter=200).fit(frame, [0, 1, 0, 1])
+    payload.update({"model": model, "numeric": list(ar_features.AR_NUMERIC_V2),
+                    "feature_version": 2, **ar_features.artifact_constants()})
+    row = _with_payload(monkeypatch, payload)
+    assert row["source"] == "model", "every v2 column must exist in the serving frame"
+
+
+def test_an_artifact_trained_with_other_constants_degrades_instead_of_scoring(monkeypatch):
+    import joblib
+    payload = joblib.load(ml.MODEL_DIR / "ar_risk.joblib")
+    payload["shrink_k"] = 99          # someone retrained with different features
+    row = _with_payload(monkeypatch, payload)
+    assert row["source"] == "fallback_rule"
+    assert row["model_p_late"] is not None   # still a number, just not the model's
+
+
+def test_a_corrupt_artifact_does_not_raise(monkeypatch):
+    import joblib
+    payload = joblib.load(ml.MODEL_DIR / "ar_risk.joblib")
+    payload["numeric"] = ["log_amount", "a_column_that_does_not_exist"]
+    row = _with_payload(monkeypatch, payload)
+    assert row["source"] == "fallback_rule"
