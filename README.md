@@ -10,6 +10,34 @@ actually works (data model, OCR pipeline, advisor, models), read
 
 ---
 
+## 0. One command (recommended)
+
+```bash
+git clone https://github.com/MAXAJIE/competiton.git
+cd competiton
+bash setup.sh
+```
+
+Run that once in the project folder. It:
+
+1. checks Node and Python (3.11–3.13) and installs both dependency sets;
+2. asks for **Supabase** (URL, anon key, service key), **OpenRouter** (key, OCR +
+   advisor model) and **Resend** (key, from address) — press `Enter` to skip any
+   of them, and with no keys at all the app still runs in guest mode;
+3. writes `.env.local` and `backend/.env` (both gitignored, never printed back);
+4. starts the backend on `:8000` and the site on `:8080` — `Ctrl+C` stops both.
+
+```bash
+bash setup.sh --no-run          # install + configure only, no servers
+bash setup.sh --force-install   # rebuild node_modules and backend/.venv (env files kept)
+bash setup.sh --help            # everything it does, in one screen
+```
+
+Needs Git Bash / macOS / Linux. The manual steps below do exactly the same
+thing by hand.
+
+---
+
 ## 1. Run the website (2 commands)
 
 You only need Node. No account, no keys, no database.
@@ -170,6 +198,9 @@ inside `.output/` for a real build preview.
 
 | Symptom | Fix |
 |---|---|
+| `setup.sh`: "no Python 3.11-3.13 found" | Install 3.13 from python.org with the `py` launcher ticked, or let the script install it with `uv` when uv is present |
+| `setup.sh`: "port 8000/8080 is already in use" | A leftover server is still running — stop it, then re-run |
+| `setup.sh` rejected the Supabase URL | It must start with `https://` (copy it from Supabase → Project Settings → API) |
 | `node` / `npm` not recognised | Install Node 20.19+/22.12+, reopen the terminal |
 | Vite refuses to start, `EBADENGINE` | Node too old — upgrade to Node 22 LTS |
 | Page loads with no data | Expected — press **Explore as guest** on `/login` |
