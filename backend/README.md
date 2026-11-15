@@ -460,6 +460,78 @@ Two deliberate anti-cheating measures:
 Without artifacts present, `app/ml.py` degrades to a documented rule and says so in
 `source`/`method` — it never silently presents a fallback as a model prediction.
 
+## Keeping the backend always on (no tunnel)
+
+A tunnel dies with your laptop. For an always-on backend, deploy the FastAPI
+process to any container host; `backend/Dockerfile` is ready for Railway,
+Render or Fly.io and binds the host-assigned `PORT` automatically. Verified
+locally with the same command the container runs: health, login and the ledger
+all answer with `PORT` set.
+
+Railway (fastest path):
+
+1. Push the repo (the model artifacts are committed, so scoring works on first
+   boot — no training step on the host).
+2. New project → Deploy from repo → it detects `backend/Dockerfile` (set the
+   service's root directory to `backend/` if asked).
+3. Add variables in the dashboard — the same names as `backend/.env`:
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`,
+   `OPENROUTER_API_KEY`, plus the model pins if you want non-defaults. Generate
+   a domain: you get a permanent `https://…up.railway.app` URL.
+4. Point the frontend at it: set `VITE_API_URL=https://…up.railway.app` in the
+   Cloudflare **build** settings and redeploy (see the section below).
+
+Render works the same (new Web Service → Docker → root dir `backend`). Note the
+free tier sleeps after inactivity, so the first request after a pause waits
+~30–60s while the container wakes; paid tiers or Railway remove that.
+
+Health checks: `GET /api/health` returns `{"ok": true}` — wire the host's
+health check to it.
+
+**Secrets stay in the host's dashboard.** `backend/.env` is git-ignored and
+Docker-ignored on purpose; the container reads everything from real env vars
+(`app/config.py` uses `load_dotenv` only as a local convenience — absent `.env`,
+environment wins).
+
+## Deploying the frontend (Cloudflare Workers / Pages)
+
+"Failed to fetch" on a deployed site is one thing, every time: **the browser is
+calling a URL that is not reachable from where it runs.** Vite bakes
+`VITE_API_URL` into the bundle at *build* time, and the fallback is
+`http://localhost:8000`. On the machine running uvicorn that works; on a
+deployed `https://` site it cannot — the browser blocks plain `http://`
+(mixed content), and even without that, `localhost` would be the *visitor's*
+machine, not yours.
+
+So a deployed site needs:
+
+1. **The backend reachable over HTTPS.** It is a normal FastAPI process — it
+   does not run inside Workers. Two ways:
+   - quick test: `cloudflared tunnel --url http://localhost:8000` gives a
+     temporary `https://*.trycloudflare.com` URL while your machine is on;
+   - properly: deploy `backend/` (uvicorn) to Railway / Render / Fly.io with
+     `OPENROUTER_API_KEY` etc. set in that host's dashboard — from
+     `backend/.env`, never from the repo.
+2. **`VITE_API_URL` set to that https:// URL at build time**, e.g. in the
+   Cloudflare build settings (plus `VITE_SUPABASE_URL` /
+   `VITE_SUPABASE_ANON_KEY` — without them auth is disabled by design), then
+   rebuild and redeploy. Changing Cloudflare's runtime env vars does not help;
+   only a rebuild bakes them in.
+3. CORS is already `allow_origins=["*"]`, so no backend change is needed.
+
+**About the keys.** There are two `.env` files and they follow the site:
+
+- frontend `.env.local` (`VITE_*`) — public by design (Supabase URL + anon
+  key, backend URL). Baked into the bundle at build time.
+- `backend/.env` (`OPENROUTER_API_KEY`, OCR/advisor model pins, Resend…)
+  — server-only. It must live wherever the backend runs; it never ships to the
+  browser, and moving the frontend does not move it.
+
+When the backend is unreachable the UI now says so with the URL it tried
+("Could not reach the backend at http://localhost:8000. A deployed site needs
+VITE_API_URL set to a https:// backend URL at build time…") instead of the
+browser's bare "Failed to fetch".
+
 ## Frontend contract (replaces the stubs in `src/lib/api.ts`)
 
 | Stub | Call |
