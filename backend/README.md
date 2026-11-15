@@ -64,6 +64,19 @@ external calls.
 4. Supabase dashboard → Authentication → URL Configuration: set Site URL to your dev origin (e.g. `http://localhost:8080`) and add it to Redirect URLs too.
 
 > The dev port is whatever Vite prints (`8080` with the Lovable config, sometimes `5199`). Add **every** origin you actually use to Supabase's Redirect URLs, or Google login bounces back to a blank page.
+>
+> Two things make Google sign-in land on `ERR_CONNECTION_REFUSED` at
+> `localhost:54321` (the Supabase-CLI port), neither of which is a Google
+> problem:
+>
+> 1. **The build had no `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.** They
+>    are baked in at build time; a build without them used to silently create a
+>    client pointing at the CLI port. It now refuses instead: the button shows
+>    "Google sign-in is not configured in this build…" and the console explains.
+>    On Cloudflare, set both vars in the *build* settings (plus `VITE_API_URL`),
+>    then redeploy — runtime env vars are not enough.
+> 2. The site URL / redirect list in Supabase → Authentication → URL
+>    Configuration does not include the origin you are signing in from.
 
 No backend change is needed for Google: the browser completes the OAuth flow
 with `@supabase/supabase-js` (PKCE), and the backend validates the resulting

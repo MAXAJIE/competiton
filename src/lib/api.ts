@@ -1,7 +1,7 @@
 // Real backend client. Every function maps 1:1 to the FastAPI endpoints in
 // backend/ (see backend/README.md). Guest mode (SKILL.md §8): no session →
 // no server calls for writes; data stays in the browser session store.
-import { supabase, sessionOrNull } from "./supabase";
+import { supabase, sessionOrNull, AUTH_CONFIGURED } from "./supabase";
 import type { OcrScanResult } from "./ocr-types";
 import type { AdvisorReply, RiskSettings, Transaction } from "./types";
 
@@ -43,6 +43,11 @@ export async function signIn(email: string, password: string) {
 
 /** Google OAuth via Supabase (redirects away and back; PKCE flow). */
 export async function signInWithGoogle() {
+  if (!AUTH_CONFIGURED) {
+    throw new Error(
+      "Google sign-in is not configured in this build: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are missing. Set them in the deploy platform's build settings and redeploy.",
+    );
+  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: `${window.location.origin}/login` },
