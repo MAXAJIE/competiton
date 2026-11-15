@@ -21,6 +21,7 @@ import {
   signInWithGoogle,
 } from "@/lib/api";
 import { getAiSettings } from "@/lib/ai";
+import { AUTH_CONFIGURED } from "@/lib/supabase";
 import { MIN_AGE, PRIVACY, PRIVACY_VERSION, TERMS, TERMS_VERSION } from "@/lib/legal";
 import {
   confirmProblem as confirmIssue,
@@ -160,6 +161,22 @@ function Login() {
         className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(27,43,69,0.10)] lg:grid-cols-[1.05fr_.95fr]"
       >
         <section className="p-6 sm:p-10 lg:p-12">
+          {!AUTH_CONFIGURED && (
+            <div className="mb-6 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-xs leading-relaxed text-amber-900">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+              <p>
+                <span className="font-semibold">
+                  This deployment was built without Supabase credentials, so accounts cannot work.
+                </span>{" "}
+                Sign-in and sign-up are disabled — the guest workspace below is fully usable. To
+                enable accounts, set{" "}
+                <code className="rounded bg-amber-100 px-1">VITE_SUPABASE_URL</code> and{" "}
+                <code className="rounded bg-amber-100 px-1">VITE_SUPABASE_ANON_KEY</code> in the
+                deploy platform&apos;s build settings and redeploy.
+              </p>
+            </div>
+          )}
+
           <div className="mb-8 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
               <LockKeyhole className="h-3.5 w-3.5" /> Private finance workspace
@@ -265,7 +282,11 @@ function Login() {
                     onChange={(event) => setPassword(event.target.value)}
                   />
                 </label>
-                <button type="submit" disabled={busy} className="btn btn-solid w-full">
+                <button
+                  type="submit"
+                  disabled={busy || !AUTH_CONFIGURED}
+                  className="btn btn-solid w-full"
+                >
                   {busy ? (
                     <span
                       className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
@@ -286,7 +307,7 @@ function Login() {
               </div>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || !AUTH_CONFIGURED}
                 className="btn w-full"
                 onClick={() => void enter(signInWithGoogle)}
               >
@@ -399,7 +420,11 @@ function Login() {
                   </label>
                 </div>
 
-                <button type="submit" disabled={!canRegister} className="btn btn-solid w-full">
+                <button
+                  type="submit"
+                  disabled={!canRegister || !AUTH_CONFIGURED}
+                  className="btn btn-solid w-full"
+                >
                   {busy ? (
                     <span
                       className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"

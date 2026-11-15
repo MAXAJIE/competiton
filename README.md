@@ -363,6 +363,7 @@ Backend tests need no network, no Supabase keys and no OpenRouter credits.
 | Vite refuses to start, `EBADENGINE` | Node too old — upgrade to Node 22 LTS |
 | Page loads with no data | Expected — press **“Explore as guest”** on `/login` |
 | Console warns `VITE_SUPABASE_URL … are not set` | Harmless in guest mode |
+| Deployed site: "Google sign-in is not configured in this build" (or sign-in does nothing) | The build ran without `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, so accounts are off and only guest mode works. Set both as **build** variables in the deploy platform (Cloudflare Workers/Pages → Settings → Variables), redeploy, and add the site origin to Supabase → Authentication → URL Configuration. Check: the built JS should contain your `https://<project>.supabase.co` URL |
 | `Failed to fetch` when signed in | Backend not running on port 8000 |
 | Google login returns a blank page | Add the exact origin to Supabase → URL Configuration → Redirect URLs |
 | `Building wheel for scikit-learn … error`, `Microsoft Visual C++ 14.0 … required` | Python too new — delete `backend/.venv`, recreate with `py -3.13 -m venv .venv` |
