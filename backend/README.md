@@ -493,6 +493,16 @@ Docker-ignored on purpose; the container reads everything from real env vars
 (`app/config.py` uses `load_dotenv` only as a local convenience — absent `.env`,
 environment wins).
 
+### Build fails with "lockfile had changes, but lockfile is frozen"
+
+Cloudflare picks its package manager by lockfile. This repo is npm
+(`package-lock.json`); a stale `bun.lock` (one that predates a dependency in
+`package.json`) makes Cloudflare choose bun, and `bun install --frozen-lockfile`
+then refuses to resolve. Fix: keep only the lockfile you actually use — delete
+the stale one and push. If you regenerate any lockfile (`npm install` /
+`bun install`), commit it in the same change as the `package.json` edit so the
+two never drift.
+
 ## Deploying the frontend (Cloudflare Workers / Pages)
 
 "Failed to fetch" on a deployed site is one thing, every time: **the browser is
