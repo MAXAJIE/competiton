@@ -16,6 +16,13 @@ Ground truth (SKILL.md §11.3), all in this one file so it is never re-derived:
   then NOISE_FLIP_PROB of labels are flipped, which is the deliberate ceiling
   control from §11.4 — it exists so the model cannot recover the rule perfectly.
 
+The history features (customer late rate and friends) are built by
+`ml/features.py` — the same module `app/ml.py` scores with — and a prior invoice
+only counts as history once it has RESOLVED, not merely been issued. See that
+module's docstring for why; briefly: on Jan 10 you do not know whether the
+invoice you issued on Jan 1 was paid late, and letting training see that answer
+makes it more informed than serving.
+
 Run:  python -m ml.generate_training_data
 """
 from __future__ import annotations
@@ -27,6 +34,8 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
+from . import features
+
 SEED = 42
 N_CUSTOMERS = 45
 N_AR_ROWS = 1400
@@ -35,9 +44,9 @@ NOISE_FLIP_PROB = 0.08          # §11.4 ceiling control — do not remove
 START = date(2023, 1, 1)
 END = date(2026, 11, 1)
 
-# Receivable categories come from the app's own taxonomy (categories.py) so a
-# model trained here is directly usable on real `transactions` rows.
-AR_CATEGORIES = ["Customer Invoice", "Money Lent Out", "Other Receivable"]
+# Receivable categories come from the shared feature module (which mirrors the
+# app's taxonomy) so a model trained here is directly usable on real rows.
+AR_CATEGORIES = features.AR_CATEGORIES
 CATEGORY_RISK = {               # hand-picked log-odds nudge per category
     "Customer Invoice": 0.1,
     "Money Lent Out": 0.5,
@@ -120,14 +129,38 @@ def _generate_ar(customers: list[Customer], rng: random.Random) -> list[dict]:
 
 
 def _add_history_feature(rows: list[dict]) -> None:
-    """Observed late-rate from PRIOR rows only (no leakage, §11.2)."""
-    total = sum(r["paid_late"] for r in rows) / max(len(rows), 1)
-    seen: dict[str, list[int]] = {}
+    """History features from PRIOR RESOLVED rows only (no leakage, §11.2).
+
+    `rows` arrive sorted by transaction_date, so the scoring moment only moves
+    forward and a single pointer over the resolution-ordered rows yields the
+    correct "resolved strictly before this invoice" set in O(n) — no per-row
+    rescan, no chance of the two orders drifting apart.
+
+    Two answers this deliberately does NOT use:
+      * the current row's own outcome (it is the thing being predicted),
+      * any outcome that was still unknown when this row was issued.
+    """
     for r in rows:
-        past = seen.get(r["customer_id"], [])
-        r["customer_historical_late_rate"] = round(sum(past) / len(past), 4) if past else round(total, 4)
-        r["customer_prior_count"] = len(past)
-        seen.setdefault(r["customer_id"], []).append(r["paid_late"])
+        r["_resolved_on"] = features.outcome_known_on(r["transaction_date"], r["due_date"])
+
+    observations = sorted(
+        rows, key=lambda r: (r["_resolved_on"], r["customer_id"], r["transaction_date"])
+    )
+    acc = features.HistoryAccumulator()
+    ptr = 0
+    for r in rows:
+        moment = features.parse_date(r["transaction_date"])
+        while ptr < len(observations):
+            obs = observations[ptr]
+            if obs["_resolved_on"] >= moment:
+                break
+            acc.add(obs["customer_id"], obs["amount"], bool(obs["paid_late"]),
+                    obs["_resolved_on"])
+            ptr += 1
+        r.update(features.feature_values(acc.stats(r["customer_id"]), acc.pooled_rate(), moment))
+
+    for r in rows:
+        r.pop("_resolved_on", None)
 
 
 def _month_key(d: str) -> str:

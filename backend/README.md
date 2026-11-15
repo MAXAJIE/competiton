@@ -193,7 +193,8 @@ a future response-only field is added without joining that tuple.
 | `db.py` | Supabase access | status derivation, confirm gate, settlement trigger |
 | `ocr.py` | image → draft, prompt, normalization | type resolution, "never writes" |
 | `advisor.py` | tool-calling advisor | scope guard, no figures without tools |
-| `ml.py` | loads `models/*.joblib`, scores rows | model-or-named-fallback, overdue = fact |
+| `ml.py` | loads `models/*.joblib`, scores rows | model-or-named-fallback, overdue = fact, artifact-constants guard |
+| `ml/features.py` | the AR history features + their constants | ONE definition shared by training and serving |
 | `categories.py` | category taxonomy + keyword classifier | the only allowed labels |
 | `market.py` | snapshot job (yfinance + RSS) | data cached, never fetched per request |
 | `reports.py` | cash report text + Resend send | never fake a send |
@@ -345,11 +346,53 @@ Two models, each graded against a declared baseline.
 | | Model | Features | Baseline | Held-out result |
 |---|---|---|---|---|
 | Revenue forecast | `LinearRegression` | prior month, 3-month momentum, last month's AR-overdue share, month-of-year (sin/cos) | "next month = this month" | MAE **$1,069** vs $1,498 (**28.6%** better) |
-| AR late-payment risk | `LogisticRegression` | log amount, days-until-due, customer's own observed late rate + prior count, category one-hots | "everyone pays on time" | caught **61/79** late rows vs **0/79**; F1 0.51, P 0.38, R 0.77 |
+| AR late-payment risk | `LogisticRegression` | log amount, days-until-due, customer's resolved late rate + prior count, category one-hots | "everyone pays on time" | caught **60/79** late rows vs **0/79**; F1 0.50, P 0.38, R 0.76, PR-AUC 0.46 |
 
 Accuracy is reported but not leaned on: the always-on-time baseline scores 0.72
 accuracy while catching nothing, which is why recall and the confusion matrix
-are the headline numbers.
+are the headline numbers. F1 is not leaned on either — with 79 late rows in the
+test slice it moves ±0.06 on resampling — so `metrics.json` also carries PR-AUC
+(ranking) and Brier (probability honesty), and the ablation below reports a
+bootstrap interval rather than a bare delta.
+
+**History is admitted by resolution date, not invoice date.** An invoice issued
+on 1 Jan with 60-day terms does not resolve until March; an invoice issued on
+10 Jan cannot know how the first one ended. A prior invoice therefore only
+becomes history once its due date is strictly earlier than the scoring moment
+(`outcome_known_on` in `ml/features.py`). Before this, training counted every
+earlier-issued row immediately — measured, that dropped the average prior-invoice
+count from 15.6 to 14.7, i.e. ~5% of history was still open when it was counted —
+while serving deliberately skipped `pending` rows, so training was
+better informed than the thing it was grading. The fix cost score (F1 0.506 →
+0.502) and that is the point: the lower number is the one that means something.
+
+**One implementation, checked.** `ml/features.py` builds the history features
+for both the trainer and `app/ml.py`; `AR_CATEGORIES`, the shrinkage strength
+`k = 3` (declared before training, not tuned), the cold-start prior, and the
+recency cap live there once. The artifact records those constants and serving
+refuses to score with an artifact whose values differ — it reports the
+documented fallback rule and says why, instead of using mismatched numbers.
+
+**A v2 feature set was tried and rejected.** The candidate added a shrunk
+late-rate, late-*dollar* share, recency since the last late payment, and
+`has_history` / `has_prior_late` flags. Trained through the identical path on
+the identical split it was **worse**, not better: ΔF1 −0.022, ΔPR-AUC −0.022,
+Δrecall −0.089, every bootstrap interval straddling zero. Even an oracle
+threshold on the test slice (F1 0.480 vs 0.502) did not rescue it. The reason is
+the data, not the idea: the generator's ground truth is linear in a per-customer
+reliability parameter plus amount and category, so the observed late rate is
+already (close to) a sufficient statistic and the extra columns only add
+variance. Those features target behaviour this dataset does not simulate —
+customers deteriorating over time, exposure-weighted risk — so the verdict is
+"unmeasurable here", and the ship rule (`models/metrics.json` →
+`ar_risk.selection_verdict`) keeps v1. Both sets remain in the code and the
+ablation re-runs on every train, so real ledger data can select v2 without a
+code change.
+
+**Behaviour change:** `customer_historical_late_rate` now counts fewer prior
+invoices (unresolved ones are excluded) and the unseen-customer fallback uses
+the pooled row-level rate instead of the mean of per-customer rates, which is
+what the trainer always assumed.
 
 **Data is a committed file, not an in-memory generator.**
 `ml/generate_training_data.py` writes `data/*.csv`; `ml/train_models.py` only
@@ -548,11 +591,12 @@ backend/
     reports.py      report text + Resend
     demo_seed.py    idempotent demo account
   ml/
+    features.py                 history features — trainer and server both import it
     generate_training_data.py   synthetic dataset → data/*.csv
     train_models.py             reads CSVs, fits, evaluates → models/*
   data/             committed training CSVs
   models/           ar_risk.joblib, revenue_forecast.joblib, metrics.json
-  tests/            pure-layer test suite (75 tests)
+  tests/            pure-layer test suite (87 tests)
   schema.sql        Supabase schema + RLS policies
   demo_assets/      sample_receipt.png for manual testing
 

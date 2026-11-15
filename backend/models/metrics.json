@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-14T15:52:00.076626+00:00",
+  "generated_at": "2026-11-15T16:26:00.080930+00:00",
   "data_files": [
     "data/ar_training.csv",
     "data/revenue_training.csv",
@@ -8,6 +8,21 @@
   "ar_risk": {
     "task": "ar_late_payment_risk",
     "model": "LogisticRegression + StandardScaler (calibrated probabilities)",
+    "features": [
+      "log_amount",
+      "days_until_due",
+      "customer_historical_late_rate",
+      "customer_prior_count",
+      "cat_Customer Invoice",
+      "cat_Money Lent Out",
+      "cat_Other Receivable"
+    ],
+    "features_used": [
+      "log_amount",
+      "days_until_due",
+      "customer_historical_late_rate",
+      "customer_prior_count"
+    ],
     "rows": {
       "total": 1400,
       "train": 1120,
@@ -22,9 +37,11 @@
     },
     "model_metrics": {
       "accuracy": 0.575,
-      "precision": 0.3765,
-      "recall": 0.7722,
-      "f1": 0.5062
+      "precision": 0.375,
+      "recall": 0.7595,
+      "f1": 0.5021,
+      "pr_auc": 0.4623,
+      "brier": 0.1987
     },
     "confusion_matrix": {
       "labels": [
@@ -33,32 +50,68 @@
       ],
       "matrix": [
         [
-          100,
-          101
+          101,
+          100
         ],
         [
-          18,
-          61
+          19,
+          60
         ]
       ],
-      "true_negative": 100,
-      "false_positive": 101,
-      "false_negative": 18,
-      "true_positive": 61,
+      "true_negative": 101,
+      "false_positive": 100,
+      "false_negative": 19,
+      "true_positive": 60,
       "late_actual": 79,
-      "late_caught": 61
+      "late_caught": 60
     },
     "threshold": 0.18,
     "threshold_tuned_on": "last 20% of the training window (test rows never seen)",
-    "features": [
-      "log_amount",
-      "days_until_due",
-      "customer_historical_late_rate",
-      "customer_prior_count",
-      "cat_Customer Invoice",
-      "cat_Money Lent Out",
-      "cat_Other Receivable"
-    ],
+    "selected": "v1",
+    "selection_rule": "v2 ships only if PR-AUC improves, F1 does not drop and recall does not drop; ties go to the simpler model (declared before training)",
+    "selection_verdict": "v1 ships (v2 not clearly better): delta PR-AUC -0.0220, delta F1 -0.0225, delta recall -0.0886",
+    "ablation": {
+      "v1": {
+        "accuracy": 0.575,
+        "precision": 0.375,
+        "recall": 0.7595,
+        "f1": 0.5021,
+        "pr_auc": 0.4623,
+        "brier": 0.1987,
+        "features": 4,
+        "threshold": 0.18,
+        "late_caught": 60,
+        "late_actual": 79
+      },
+      "v2": {
+        "accuracy": 0.5893,
+        "precision": 0.3732,
+        "recall": 0.6709,
+        "f1": 0.4796,
+        "pr_auc": 0.4403,
+        "brier": 0.2021,
+        "features": 8,
+        "threshold": 0.18,
+        "late_caught": 53,
+        "late_actual": 79
+      }
+    },
+    "bootstrap": {
+      "resamples": 1000,
+      "resamples_requested": 1000,
+      "ci": "5-95%",
+      "delta_f1": {
+        "point": -0.0225,
+        "p05": -0.0538,
+        "p95": 0.0087
+      },
+      "delta_pr_auc": {
+        "point": -0.022,
+        "p05": -0.0416,
+        "p95": 0.0031
+      },
+      "note": "a CI straddling 0 means the ablation is inconclusive, not that v2 won"
+    },
     "failure_case": {
       "kind": "false_safe",
       "vendor_or_customer": "Bluefin Co.",
@@ -67,12 +120,12 @@
       "days_until_due": 15,
       "actual_late": 1,
       "predicted_late": 0,
-      "p_late": 0.093,
-      "hypothesis": "a customer with a reliable history went late anyway \u2014 a one-off cash-flow shock no feature at creation time can see"
+      "p_late": 0.091,
+      "hypothesis": "a customer with a reliable history went late anyway \u2014 a one-off cash-flow shock no creation-time feature can see"
     },
     "ceiling_check": {
       "expected_f1_ceiling": 0.85,
-      "observed_f1": 0.5062,
+      "observed_f1": 0.5021,
       "status": "ok"
     }
   },
