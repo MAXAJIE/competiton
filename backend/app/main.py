@@ -135,7 +135,7 @@ async def run_ocr_upload(user_id: str | None = Depends(current_user_id),
                          files: list[UploadFile] | None = File(None),
                          file: UploadFile | None = File(None),
                          doc_type: str = Form("")) -> dict:
-    """Extract fields from 1..N page images. `file` kept for single-file clients."""
+    """Extract one independent entry per image. `file` kept for single-file clients."""
     uid = require_user(user_id)
     uploads = [f for f in (files or []) if f is not None]
     if file is not None:

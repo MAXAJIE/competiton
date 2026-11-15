@@ -375,6 +375,19 @@ function RiskCard({ status, risk }: { status: Status; risk: ArRiskSummary | null
             </div>
           </div>
 
+          {(risk.overdue_count ?? 0) > 0 && (
+            <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-[11px] leading-relaxed text-rose-800">
+              <span className="font-semibold">
+                {risk.overdue_count} already overdue — {usd(risk.overdue_amount ?? 0)}.
+              </span>{" "}
+              Late is a fact for these, so their risk reads 100% and they are ordered by
+              amount × days overdue.{" "}
+              {(risk.predicted_high_count ?? 0) === 1
+                ? `The other flagged row (${usd(risk.predicted_high_amount ?? 0)}) is not yet due — that percentage is the model's forecast.`
+                : `The other ${risk.predicted_high_count ?? 0} flagged rows (${usd(risk.predicted_high_amount ?? 0)}) are not yet due — those percentages are the model's forecast.`}
+            </p>
+          )}
+
           <p className="mt-4 text-[11px] leading-relaxed text-slate-500">{risk.method}</p>
         </>
       )}
@@ -483,7 +496,12 @@ function RiskQueue({ status, risk }: { status: Status; risk: ArRiskSummary | nul
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <RiskMeter value={row.p_late} threshold={row.threshold} customer={row.vendor_or_customer} />
+                        <RiskMeter
+                          value={row.p_late}
+                          threshold={row.threshold}
+                          customer={row.vendor_or_customer}
+                          alreadyLate={row.already_late ?? false}
+                        />
                         <span
                           className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${severityChipClass(row.severity)}`}
                         >
@@ -521,7 +539,12 @@ function RiskQueue({ status, risk }: { status: Status; risk: ArRiskSummary | nul
                   </span>
                 </div>
                 <div className="mt-2">
-                  <RiskMeter value={row.p_late} threshold={row.threshold} customer={row.vendor_or_customer} />
+                  <RiskMeter
+                    value={row.p_late}
+                    threshold={row.threshold}
+                    customer={row.vendor_or_customer}
+                    alreadyLate={row.already_late ?? false}
+                  />
                 </div>
               </li>
             ))}
@@ -555,10 +578,12 @@ function RiskMeter({
   value,
   threshold,
   customer,
+  alreadyLate = false,
 }: {
   value: number;
   threshold: number;
   customer: string;
+  alreadyLate?: boolean;
 }) {
   const fillRef = useRef<HTMLSpanElement>(null);
   const ratio = Math.max(0, Math.min(1, value));
@@ -581,11 +606,19 @@ function RiskMeter({
     <div className="flex items-center gap-2">
       <div
         role="progressbar"
-        aria-label={`Predicted late-payment risk for ${customer || "this customer"}`}
+        aria-label={
+          alreadyLate
+            ? `${customer || "This customer"} is already overdue — risk is 100% by definition`
+            : `Predicted late-payment risk for ${customer || "this customer"}`
+        }
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(ratio * 100)}
-        title={`Threshold ${threshold.toFixed(2)}`}
+        title={
+          alreadyLate
+            ? "Already past due: late by definition, ranked by amount x days overdue"
+            : `Threshold ${threshold.toFixed(2)}`
+        }
         className="relative h-1.5 w-[72px] overflow-hidden rounded-full bg-slate-100"
       >
         <span ref={fillRef} className={`absolute inset-y-0 left-0 rounded-full ${tone}`} />
@@ -596,6 +629,11 @@ function RiskMeter({
         />
       </div>
       <span className="num w-9 text-right text-xs font-semibold text-slate-700">{pct(ratio)}</span>
+      {alreadyLate && (
+        <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-rose-600">
+          late
+        </span>
+      )}
     </div>
   );
 }

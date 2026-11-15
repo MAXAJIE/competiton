@@ -22,6 +22,9 @@ class Transaction(BaseModel):
     status: TxStatus = "paid"
     source: Literal["manual", "ocr"] = "manual"
     document_id: Optional[str] = None
+    # When the row was recorded (schema default). The UI sorts "recent" by this,
+    # not by transaction_date, so a scan of an old invoice still shows as new.
+    created_at: Optional[str] = None
 
 
 class RiskSettings(BaseModel):

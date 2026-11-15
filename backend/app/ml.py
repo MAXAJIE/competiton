@@ -218,6 +218,13 @@ def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> li
         prior = int(prior)
         days_until_due = ((date.fromisoformat(str(t.due_date)) - today).days
                           if t.due_date else 30)
+        # The classifier answers "will this be paid late?". Once due_date has
+        # passed unpaid, that has already happened: P = 1, not a guess. Feeding
+        # days_until_due = -401 to a model trained on -60..+90 produced 52% for
+        # an invoice 401 days late, which reads as "probably fine" — wrong and
+        # dangerous. The model's own number is kept only as `model_p_late`.
+        already_late = t.status == "overdue" or days_until_due < 0
+        model_p_late: float | None = None
         if model is not None:
             row = {
                 "log_amount": math.log(max(float(t.amount), 0.01)),
@@ -232,13 +239,15 @@ def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> li
                 [f"cat_{c}" for c in model.payload["categories"]]
             import pandas as pd
             frame = pd.DataFrame([[row[f] for f in features]], columns=features)
-            p_late = float(model.model.predict_proba(frame)[0][1])
+            model_p_late = float(model.model.predict_proba(frame)[0][1])
+            p_late = 1.0 if already_late else model_p_late
             threshold = float(model.payload.get("threshold", 0.3))
             high_margin = float(model.payload.get("high_risk_margin", 0.12))
             source = "model"
         else:
             # Documented rule of its own when no artifact exists — never pretend.
-            p_late = min(0.95, 0.15 + (0.35 if t.status == "overdue" else 0) + 0.4 * rate)
+            model_p_late = min(0.95, 0.15 + 0.4 * rate)
+            p_late = 1.0 if already_late else model_p_late
             threshold = 0.5
             high_margin = 0.15
             source = "fallback_rule"
@@ -254,14 +263,28 @@ def ar_risk_flags(tx: Iterable, today: date | None = None, limit: int = 6) -> li
             "customer_historical_late_rate": round(rate, 3),
             "customer_prior_count": prior,
             "p_late": round(p_late, 3),
+            "already_late": already_late,
+            "days_overdue": max(0, -days_until_due),
+            "model_p_late": None if model_p_late is None else round(model_p_late, 3),
             "at_risk": p_late >= threshold,
-            "severity": ("high" if p_late >= threshold + high_margin
+            "severity": ("high" if already_late or p_late >= threshold + high_margin
                          else "medium" if p_late >= threshold else "low"),
             "threshold": threshold,
             "source": source,
         })
 
-    out.sort(key=lambda r: (-r["p_late"], -r["amount"]))
+    # "Who to chase first" needs a priority that stays informative once every
+    # overdue row is 100%. Overdue rows lead and are ordered by exposure
+    # (amount x days overdue); the rest by expected value (p_late x amount).
+    def priority(row: dict) -> float:
+        if row["already_late"]:
+            return float(row["amount"]) * max(row["days_overdue"], 1)
+        return float(row["amount"]) * float(row["p_late"])
+
+    out.sort(key=lambda r: priority(r), reverse=True)
+    out.sort(key=lambda r: not r["already_late"])  # stable: overdue group first
+    for row in out:
+        row["priority"] = round(priority(row), 2)
     return out[:limit]
 
 
@@ -269,16 +292,25 @@ def ar_risk_summary(tx: Iterable, today: date | None = None) -> dict:
     flags = ar_risk_flags(tx, today=today, limit=100)
     risky = [f for f in flags if f["at_risk"]]
     high = [f for f in flags if f.get("severity") == "high"]
+    overdue = [f for f in flags if f.get("already_late")]
+    predicted = [f for f in flags if not f.get("already_late") and f["at_risk"]]
     return {
         "scored": len(flags),
         "at_risk": len(risky),
         "at_risk_amount": round(sum(f["amount"] for f in risky), 2),
         "high_risk": len(high),
         "high_risk_amount": round(sum(f["amount"] for f in high), 2),
+        # Money that is late is a fact; money that might be late is a forecast.
+        "overdue_count": len(overdue),
+        "overdue_amount": round(sum(f["amount"] for f in overdue), 2),
+        "predicted_high_count": len(predicted),
+        "predicted_high_amount": round(sum(f["amount"] for f in predicted), 2),
         "open_amount": round(sum(f["amount"] for f in flags), 2),
         "top": flags[:6],
-        "method": ("Logistic regression on amount, payment terms, customer's observed "
-                   "late history and receivable category — trained on synthetic data, "
-                   "evaluated chronologically (see models/metrics.json)."),
+        "method": ("Overdue invoices are 100% late by definition and are ranked by "
+                   "exposure (amount x days overdue). Not-yet-due invoices get the "
+                   "logistic-regression probability of being paid late — amount, payment "
+                   "terms, the customer's observed late history and category — trained on "
+                   "synthetic data and evaluated chronologically (see models/metrics.json)."),
         "source": flags[0]["source"] if flags else "none",
     }

@@ -110,3 +110,81 @@ def test_ar_risk_ignores_paid_and_expense_rows():
     summary = ml.ar_risk_summary(tx, today=date(2026, 11, 20))
     assert summary["scored"] == 0
     assert summary["at_risk_amount"] == 0
+
+
+# --- "will it be late?" is undefined once it already is ----------------------
+
+def _ar_row(id_, vendor, amount, due, status, category="Customer Invoice"):
+    from app.models import Transaction
+    return Transaction(id=id_, type="ar", category=category, vendor_or_customer=vendor,
+                       amount=amount, transaction_date="2026-10-01", due_date=due,
+                       status=status)
+
+
+def test_an_overdue_invoice_is_100_percent_late_not_a_prediction():
+    from datetime import date
+    from app import ml
+
+    today = date(2026, 11, 15)
+    rows = ml.ar_risk_flags([_ar_row("1", "Estelle Darcy", 957, "2025-10-10", "overdue")], today=today)
+    row = rows[0]
+
+    assert row["p_late"] == 1.0, "an invoice 401 days late cannot be '52% likely to be late'"
+    assert row["already_late"] is True
+    assert row["days_overdue"] == 401
+    assert row["severity"] == "high"
+    # The model's own number is still recorded, but never as the risk figure.
+    assert row["model_p_late"] is None or 0 <= row["model_p_late"] <= 1
+
+
+def test_a_pending_invoice_keeps_the_model_probability():
+    from datetime import date
+    from app import ml
+
+    today = date(2026, 11, 15)
+    row = ml.ar_risk_flags([_ar_row("2", "Mesa Retail", 20000, "2026-11-28", "pending")], today=today)[0]
+
+    assert row["already_late"] is False
+    assert row["days_overdue"] == 0
+    assert row["p_late"] < 1.0
+    assert row["p_late"] == row["model_p_late"]
+
+
+def test_a_late_invoice_is_flagged_overdue_even_if_status_is_stale():
+    """A row still marked pending but past its due date is late all the same."""
+    from datetime import date
+    from app import ml
+
+    row = ml.ar_risk_flags([_ar_row("3", "Bluefin Co.", 5000, "2026-11-01", "pending")],
+                           today=date(2026, 11, 15))[0]
+    assert row["p_late"] == 1.0 and row["already_late"] is True and row["days_overdue"] == 14
+
+
+def test_overdue_rows_are_chased_before_predicted_ones():
+    from datetime import date
+    from app import ml
+
+    today = date(2026, 11, 15)
+    rows = ml.ar_risk_flags([
+        _ar_row("small", "Estelle Darcy", 957, "2025-10-10", "overdue"),     # 401 days late
+        _ar_row("big", "LEBRON", 500000, "2026-11-13", "overdue"),           # 2 days late
+        _ar_row("maybe", "Mesa Retail", 50000, "2026-11-28", "pending"),     # forecast only
+    ], today=today)
+
+    assert [r["id"] for r in rows][:2] == ["big", "small"], "exposure = amount x days overdue"
+    assert rows[-1]["id"] == "maybe", "a forecast never outranks money already late"
+
+
+def test_summary_separates_certain_from_forecast():
+    from datetime import date
+    from app import ml
+
+    today = date(2026, 11, 15)
+    summary = ml.ar_risk_summary([
+        _ar_row("a", "LEBRON", 500000, "2026-11-13", "overdue"),
+        _ar_row("b", "Estelle Darcy", 957, "2025-10-10", "overdue"),
+        _ar_row("c", "Mesa Retail", 50000, "2026-11-28", "pending"),
+    ], today=today)
+
+    assert summary["overdue_count"] == 2 and summary["overdue_amount"] == 500957.0
+    assert summary["predicted_high_count"] == 1 and summary["predicted_high_amount"] == 50000.0

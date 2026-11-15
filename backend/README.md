@@ -108,6 +108,206 @@ to pick the best fit. It is used in three places:
 3. **Write paths** — `save_manual_transaction` and the OCR confirm gate both coerce
    to the taxonomy, so no out-of-schema category can reach `transactions`.
 
+## OCR: why the model returns nothing (reasoning budget)
+
+A "no answer: used all N tokens" error is almost never a too-small limit. The
+pinned nemotron model is a **reasoning** model: it emits hidden reasoning tokens
+before any visible text, and a receipt transcription needs none of that. Measured
+on the bundled sample receipt with the real prompt:
+
+| request | reasoning tokens | completion tokens | result |
+|---|---|---|---|
+| no `reasoning` field | 796 | — | empty `content`, `finish=error` |
+| `reasoning.effort=low` | 530 | 574 | JSON, but most of the budget burned |
+| `reasoning.effort=minimal` | 3000 | — | empty `content`, `finish=length` |
+| `reasoning.enabled=false` | **0** | **66** | correct JSON |
+
+So raising `OCR_MAX_TOKENS` treats the symptom. Instead:
+
+- `OCR_REASONING=off` (default) sends `reasoning: {enabled: false}` on every
+  extraction request, so the model answers directly.
+- `OCR_MAX_TOKENS` default dropped **3000 → 800** — still ~12x what a full row
+  needs, with the automatic 2x retry for long statements. A big budget only hid
+  the burn.
+- The advisor gets `ADVISOR_REASONING=low` for the same reason: it picks a tool
+  and writes a short answer, and reasoning was competing with the tool call.
+
+Both knobs accept `off | low | medium | high` and are unit-tested in
+`tests/test_ocr.py` (`build_payload`, `_reasoning_param`). With the switch on, a
+two-image scan completes in ~7s instead of failing.
+
+## Scanning: one image in, one entry out
+
+Images are **independent**, not pages of one document. A photo of two receipts is
+two transactions; nothing is merged. Upload up to 5 at a time and the dialog walks
+them one by one:
+
+    Entry 1 of 3   image 1 | its form   -> "Confirm & save, next"
+    Entry 2 of 3   image 2 | its form   -> "Confirm & save, next"
+    Entry 3 of 3   logo.png | "could not read this image: not a document"
+
+- `POST /api/documents/ocr` returns `{entries: [...], saved, skipped}` — one
+  entry per uploaded image, each with its own `documents` row and therefore its
+  own confirm. The human gate stays per entry (SKILL.md §4): the model still
+  never writes a transaction.
+- Each entry is classified on its own (`resolve_doc_type` per image), so one
+  upload can legitimately contain a receipt, an invoice and a bank statement.
+- An image that cannot become an entry comes back `ok: false` with a `reason`
+  instead of inventing a row. Two cases:
+  - the model says `is_document: false` — a logo, product photo, screenshot;
+  - the model reads a document but no amount and no vendor, so there is nothing
+    to confirm.
+  The dialog shows the image, the reason, and a **Next** button; nothing is
+  recorded. Saved and skipped images are listed on the final screen.
+- Saving one entry no longer affects the others: the form is keyed on the
+  document id, so moving to image 2 cannot carry image 1's fields along.
+
+Verified through the live API: a $957 invoice, a $410.50 receipt and a boba logo
+uploaded together came back as `saved=2, skipped=1` with the logo reported as
+`not a document`, and the invoice confirmed in the browser landed as one AR row
+while the logo left no trace.
+
+## Server-owned columns are never written
+
+`transactions.created_at` is `not null default now()`, and the API model now
+carries it (the UI sorts Recent entries by it). A plain `model_dump()` therefore
+sent `created_at: null` on insert and every confirm failed with
+`23502 null value in column "created_at"`. The fix is one helper, not a special
+case at each call site:
+
+```python
+SERVER_OWNED = ("created_at",)
+
+def write_row(t: Transaction) -> dict:
+    """Fields a client may write — id and server-owned columns stripped."""
+    return t.model_dump(exclude={"id", *SERVER_OWNED})
+```
+
+Both write paths (`save_manual_transaction`, `confirm_document_and_save`) use it,
+so the column is left to the database default and still comes back in the
+response. `tests/test_settlement.py::test_writes_never_send_server_owned_columns`
+fails if a new response-only field is ever added without joining that tuple.
+
+## Nothing is visible-only-if-animation-finishes
+
+The risk settings page rendered its header and footer but a blank middle. The
+cards were there — GSAP had set them to `opacity: 0` for a reveal tween that
+never ran to completion, and nothing put them back. Two things made that page
+the one to notice it: the cards only mount after `GET /api/settings` resolves,
+so the page's `MutationObserver` animates them later, and a tween that stalls
+(a background/frozen tab, a route change killing it mid-flight) leaves the
+inline `opacity: 0` behind for good.
+
+Content must not depend on an animation finishing, so there are now three
+independent guarantees in `src/lib/reveal`-land:
+
+- `Page` skips the entrance timeline entirely when `document.visibilityState`
+  is `hidden`, and finishes anything it started when the tab becomes visible.
+- The async-mount path (`.widget-surface` cards) does not animate while hidden.
+- `src/lib/motion.ts` runs a 2s sweep: any reveal target still at inline
+  `opacity: 0` with no active tween gets its opacity cleared, so CSS decides.
+  Timers still fire in a hidden tab even though rAF does not, which is why the
+  sweep is a timer rather than a ticker.
+
+The sweep only touches elements that are genuinely stuck — it skips anything
+with a running tween, so normal entrances are unaffected. Verified by stranding
+a settings card (`opacity: 0`, no tween): the sweep restored it within a cycle,
+and the page now shows both cards with live values (threshold 1.5 months,
+current runway 1.1 mo).
+
+## Risk: late is a fact once it is late
+
+The AR classifier answers one question — *will this invoice be paid after its due
+date?* For a row that is already past due, that question has been answered: the
+probability is 1, not a guess. The old code fed `days_until_due` straight in, so
+an invoice **401 days late scored 52%** (the model extrapolating far outside the
+-60..+90 range it was trained on). Reading "52%" for a 401-day-old debt is worse
+than useless — it looks like reassurance.
+
+Now (`ml.ar_risk_flags`):
+
+- `already_late` is true when `status == "overdue"` **or** `due_date` has passed,
+  so a stale status cannot hide a late invoice.
+- Those rows get `p_late = 1.0`, `severity = "high"`, and `days_overdue`.
+  The classifier's own output is still reported, in `model_p_late`, so nothing
+  is hidden — it simply is not the risk figure.
+- Rows not yet due keep the model probability unchanged.
+
+Ranking had to change with it, because "all overdue = 100%" would otherwise make
+"who to chase first" meaningless:
+
+| group | ordering key |
+|---|---|
+| already late | `amount × days overdue` (exposure) |
+| not yet due | `p_late × amount` (expected value at risk) |
+
+Overdue rows always precede forecasts: money already late beats money that might
+be. Each row carries the computed `priority`, and the API also returns
+`overdue_count` / `overdue_amount` alongside `predicted_high_count` /
+`predicted_high_amount`, so the UI can say *"3 already overdue — $11,700; the
+other flagged row ($5,200) is not yet due — that percentage is the model's
+forecast"* instead of lumping certainties in with predictions.
+
+Pinned by five tests: overdue is 1.0 with the model number kept separately, a
+pending row keeps its probability, a stale `pending` status past its due date is
+still caught, overdue rows outrank a forecast, and the summary separates the two.
+
+## Where a saved scan shows up
+
+A confirmed entry is a normal transaction, so it appears everywhere a manual one
+does. Two things made scans look like they were not recorded:
+
+- **"Recent entries" is now ordered by when a row was recorded**, not by the date
+  printed on the document. Scanning your July invoice therefore puts it at the
+  top of the list instead of below months of activity. `transactions.created_at`
+  is returned by the API (the Pydantic model used to drop it) and the list falls
+  back to `transaction_date` for rows that predate it.
+- Scanned rows carry a small **scanned** tag in that list, so the source is
+  visible without opening History.
+
+History keeps its chronological sort — it is a ledger, and a back-dated invoice
+belongs in July. The link under Recent entries now goes to History ("View full
+history") rather than back to the dashboard.
+
+## One forecast number everywhere
+
+The overview card, `/api/forecast` and the Insights page now agree, because the
+card asks the backend. It used to run the client-side trailing average while
+Insights showed the trained regression, so two different numbers described the
+same month (e.g. $22,060 vs $20,521).
+
+- `POST /api/forecast` is the source of truth when there is a session.
+- The trailing average is still computed, but only as a labelled fallback: it is
+  what you see offline or as a guest, and it is printed as "Trailing 3-month
+  average: $X" beneath the model figure so the difference is explicit rather
+  than a contradiction.
+
+## Document type: the page decides, not the file name
+
+An invoice uploaded as `image.png` used to be read as a receipt, because the only
+signal was the file name — and photo names ("image.png", `IMG_4821.jpg`) are not
+evidence. Type resolution now runs in this order (`ocr.resolve_doc_type`):
+
+1. **What you picked** in the dialog — a deliberate choice, never overridden.
+2. **What the model read on the page** — "Invoice", an invoice number, "Billed
+   to", line items with a total.
+3. **A keyword in the file name** (`resolve_doc_type` falls back here only when
+   the page gave nothing usable).
+4. `receipt`, only if none of the above.
+
+With no type selected the prompt is an auto-detect one: it asks the model to
+classify first and offers all four category lists. When the reading contradicts
+the file name the review panel says so ("Read as an invoice from the page itself
+(the file name suggested a receipt)"), and an invoice never lands in a generic
+category — it becomes **Customer Invoice** (AR) or **Supplier Bill** (AP). The
+AR/AP side is genuinely ambiguous from one page, so it is flagged for you to
+switch rather than presented as fact.
+
+Verified on a real 4-line invoice ($957, dated 30 July 2025): detected as
+`invoice`, correct date and total, category "Customer Invoice" — where the same
+file named `image.png` previously came back as a receipt. A receipt uploaded as
+`invoice-march.pdf` still reads as a receipt.
+
 ## OCR troubleshooting
 
 The scan flow is `File[] → POST /api/documents/ocr → detail dialog → POST /api/documents/{id}/confirm`.

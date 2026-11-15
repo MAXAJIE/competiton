@@ -1,26 +1,26 @@
-// Document scan dialog — drop/preview → extract → REVIEW DETAIL → confirm.
-// The extracted values are never saved automatically: confirming goes through
-// POST /api/documents/{id}/confirm, which flips reviewed=true and writes the
-// transaction in one call (SKILL.md §4). Mirrors the reference UX in
-// MAXAJIE/acc's DocumentScanDialog (client-side downscale, page thumbnails,
-// spinner while scanning, detail panel before saving).
+// Document scan dialog — drop images → read → review ONE ENTRY PER IMAGE → confirm.
+//
+// Images are independent (a photo of two receipts is two transactions), so each
+// one is reviewed on its own screen: image on the left, its entry on the right,
+// "Next" for the following one. An image that cannot be read is reported with a
+// reason and skipped instead of being turned into an invented entry.
+//
+// Every save goes through POST /api/documents/{id}/confirm, which flips
+// reviewed=true and writes the transaction in one call (SKILL.md §4).
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TxForm } from "@/components/TxForm";
-import { confirmOcr, runOcr } from "@/lib/api";
-import type { OcrDraft, Transaction } from "@/lib/types";
+import { confirmOcr, runOcr, type SavedTransaction } from "@/lib/api";
+import { usd } from "@/lib/calc";
+import type { OcrEntry } from "@/lib/ocr-types";
+import type { Transaction } from "@/lib/types";
 
-const MAX_PAGES = 5;
+const MAX_IMAGES = 5;
 const MAX_EDGE = 1600;
 
-type Page = { file: File; preview: string | null; name: string };
+type Image = { file: File; preview: string | null; name: string };
+type Stage = "pick" | "review" | "done";
 
 async function compressImage(file: File): Promise<File> {
   // A 12MP phone photo is ~5MB; downscale so the request stays small.
@@ -34,15 +34,12 @@ async function compressImage(file: File): Promise<File> {
       el.src = url;
     });
     const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
-    if (scale === 1) {
-      URL.revokeObjectURL(url);
-      return file;
-    }
+    if (scale === 1) { URL.revokeObjectURL(url); return file; }
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.width * scale);
     canvas.height = Math.round(img.height * scale);
     canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+    const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/jpeg", 0.85));
     URL.revokeObjectURL(url);
     if (!blob) return file;
     return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
@@ -65,35 +62,32 @@ export function DocScanDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSaved: (t: Transaction) => void;
+  /** Returns the receivables this save settled, so the caller can report them. */
+  onSaved: (t: Transaction, settledIds?: string[]) => Transaction[];
 }) {
-  const [pages, setPages] = useState<Page[]>([]);
+  const [images, setImages] = useState<Image[]>([]);
   const [docType, setDocType] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState<OcrDraft | null>(null);
+  const [entries, setEntries] = useState<OcrEntry[]>([]);
+  const [step, setStep] = useState(0);
+  const [stage, setStage] = useState<Stage>("pick");
+  const [savedCount, setSavedCount] = useState(0);
+  const [skippedNames, setSkippedNames] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
-    setPages([]);
-    setDraft(null);
-    setError(null);
-    setDocType("");
+    setImages([]); setEntries([]); setStep(0); setStage("pick");
+    setSavedCount(0); setSkippedNames([]); setError(null); setDocType("");
   };
-  const close = (v: boolean) => {
-    onOpenChange(v);
-    if (!v) reset();
-  };
+  const close = (v: boolean) => { onOpenChange(v); if (!v) reset(); };
 
   const addFiles = async (list: FileList | null) => {
     if (!list?.length) return;
-    const room = MAX_PAGES - pages.length;
-    if (room <= 0) {
-      toast.error(`Maximum ${MAX_PAGES} pages.`);
-      return;
-    }
+    const room = MAX_IMAGES - images.length;
+    if (room <= 0) { toast.error(`Maximum ${MAX_IMAGES} images at a time.`); return; }
     const picked = Array.from(list).slice(0, room);
-    const next: Page[] = [];
+    const next: Image[] = [];
     for (const f of picked) {
       const compressed = await compressImage(f);
       next.push({
@@ -102,21 +96,20 @@ export function DocScanDialog({
         preview: compressed.type.startsWith("image/") ? URL.createObjectURL(compressed) : null,
       });
     }
-    setPages((p) => [...p, ...next]);
-    setDraft(null);
+    setImages(p => [...p, ...next]);
+    setEntries([]);
+    setStage("pick");
     setError(null);
   };
 
   const scan = async () => {
-    if (!pages.length) return;
-    setBusy(true);
-    setError(null);
+    if (!images.length) return;
+    setBusy(true); setError(null);
     try {
-      const d = await runOcr(
-        pages.map((p) => p.file),
-        docType,
-      );
-      setDraft(d);
+      const result = await runOcr(images.map(p => p.file), docType);
+      setEntries(result.entries);
+      setStep(0);
+      setStage("review");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Scan failed";
       setError(msg);
@@ -126,14 +119,38 @@ export function DocScanDialog({
     }
   };
 
-  const confirm = async (t: Transaction) => {
-    if (!draft?.document_id) return;
+  const current = entries[step];
+  const total = entries.length;
+  const isLast = step >= total - 1;
+
+  /** Move to the next image, or finish when this was the last one. */
+  const advance = (opts: { saved?: boolean; skippedName?: string } = {}) => {
+    const savedNow = savedCount + (opts.saved ? 1 : 0);
+    const skippedNow = opts.skippedName ? [...skippedNames, opts.skippedName] : skippedNames;
+    setSavedCount(savedNow);
+    setSkippedNames(skippedNow);
+    if (isLast) {
+      setStage("done");
+      setEntries(prev => prev);
+      const parts = [`${savedNow} ${savedNow === 1 ? "entry" : "entries"} saved`];
+      if (skippedNow.length) parts.push(`${skippedNow.length} skipped`);
+      toast.success(parts.join(" · "));
+    } else {
+      setStep(s => s + 1);
+    }
+  };
+
+  const confirmCurrent = async (t: Transaction) => {
+    if (!current?.document_id) return;
     setBusy(true);
     try {
-      const saved = await confirmOcr(draft.document_id, t);
-      onSaved({ ...t, id: saved.id ?? t.id });
-      toast.success("Reviewed and saved to ledger");
-      close(false);
+      const saved: SavedTransaction = await confirmOcr(current.document_id, t);
+      const closed = onSaved({ ...t, id: saved.id ?? t.id }, saved.settled_ar?.map(r => r.id));
+      if (closed.length > 0) {
+        const who = [...new Set(closed.map(r => r.vendor_or_customer))].join(", ");
+        toast.success(`Saved, and marked ${closed.length} invoice${closed.length > 1 ? "s" : ""} from ${who} as paid`);
+      }
+      advance({ saved: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
     } finally {
@@ -141,79 +158,53 @@ export function DocScanDialog({
     }
   };
 
+  const title = stage === "done"
+    ? "Scan finished"
+    : stage === "review"
+      ? `Entry ${step + 1} of ${total}`
+      : "Scan documents";
+
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] max-w-4xl overflow-y-auto rounded-3xl border-slate-200 bg-white p-5 shadow-2xl sm:p-7">
-        <DialogHeader className="mb-2">
-          <DialogTitle className="font-display text-3xl sm:text-4xl">
-            {draft ? "Check the extracted details" : "Scan a document"}
-          </DialogTitle>
+      <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto bg-background">
+        <DialogHeader>
+          <DialogTitle className="font-display text-3xl">{title}</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {draft
-              ? "Nothing is saved until you confirm. Edit anything the model got wrong."
-              : "Receipt, invoice or bank-statement line. Nothing is saved until you confirm."}
+            {stage === "done"
+              ? "Everything you confirmed is in the ledger."
+              : stage === "review"
+                ? "Each image is its own entry. Nothing is saved until you confirm it."
+                : "One entry per image — up to 5 at a time. Nothing is saved until you confirm."}
           </DialogDescription>
         </DialogHeader>
 
-        {!draft && (
+        {stage === "pick" && (
           <>
             <label
-              className="drop-target mt-2 flex h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={async (e) => {
-                e.preventDefault();
-                await addFiles(e.dataTransfer.files);
-              }}
+              className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center border border-dashed border-foreground/40 text-center hover:bg-secondary"
+              onDragOver={e => e.preventDefault()}
+              onDrop={async e => { e.preventDefault(); await addFiles(e.dataTransfer.files); }}
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
-                <FileScanIcon />
-              </span>
-              <p className="mt-3 font-display text-2xl">
-                {pages.length ? "Add another page" : "Drop a document here"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                or click to choose · images or PDF · up to {MAX_PAGES} pages
-              </p>
-              <input
-                ref={inputRef}
-                type="file"
-                multiple
-                accept="image/*,.pdf"
-                className="hidden"
-                onChange={async (e) => {
-                  await addFiles(e.target.files);
-                  if (inputRef.current) inputRef.current.value = "";
-                }}
-              />
+              <p className="font-display text-2xl">{images.length ? "Add more images" : "Drop images here"}</p>
+              <p className="eyebrow mt-1">or click to choose · images or PDF · up to {MAX_IMAGES} at a time</p>
+              <input ref={inputRef} type="file" multiple accept="image/*,.pdf" className="hidden"
+                     onChange={async e => { await addFiles(e.target.files); if (inputRef.current) inputRef.current.value = ""; }} />
             </label>
 
-            {pages.length > 0 && (
+            {images.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-3">
-                {pages.map((p, i) => (
-                  <div
-                    key={i}
-                    className="list-item-enter relative rounded-xl border border-slate-200 bg-slate-50 p-1"
-                    style={{ animationDelay: `${i * 55}ms` }}
-                  >
-                    {p.preview ? (
-                      <img
-                        src={p.preview}
-                        alt={p.name}
-                        className="h-24 w-24 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-24 w-24 items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
-                        {p.name}
-                      </div>
-                    )}
+                {images.map((p, i) => (
+                  <div key={i} className="relative border bg-secondary/40 p-1">
+                    {p.preview
+                      ? <img src={p.preview} alt={p.name} className="h-24 w-24 object-cover" />
+                      : <div className="flex h-24 w-24 items-center justify-center px-2 text-center text-[11px] text-muted-foreground">{p.name}</div>}
+                    <span className="absolute left-1 top-1 bg-foreground px-1 text-[10px] text-background">{i + 1}</span>
                     <button
                       type="button"
                       aria-label={`Remove ${p.name}`}
                       className="absolute -right-2 -top-2 border bg-background px-1 text-xs"
-                      onClick={() => setPages((prev) => prev.filter((_, j) => j !== i))}
-                    >
-                      ×
-                    </button>
+                      onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}
+                    >×</button>
                   </div>
                 ))}
               </div>
@@ -221,105 +212,133 @@ export function DocScanDialog({
 
             <label className="mt-4 block max-w-xs">
               <span className="eyebrow">Document type</span>
-              <select
-                className="field"
-                value={docType}
-                onChange={(e) => setDocType(e.target.value)}
-              >
-                {DOC_LABELS.map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
+              <select className="field" value={docType} onChange={e => setDocType(e.target.value)}>
+                {DOC_LABELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
+              {images.length > 1 && (
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Each image becomes its own entry. Leave on auto-detect unless they are all the same kind.
+                </span>
+              )}
             </label>
 
-            {error && (
-              <p className="message-enter mt-4 border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm">
-                {error}
-              </p>
-            )}
+            {error && <p className="mt-4 border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm">{error}</p>}
 
             <div className="mt-6 flex items-center gap-3">
-              <button
-                type="button"
-                className="btn btn-solid"
-                disabled={!pages.length || busy}
-                onClick={scan}
-              >
-                {busy ? "Reading document…" : "Scan document →"}
+              <button type="button" className="btn btn-solid" disabled={!images.length || busy} onClick={scan}>
+                {busy
+                  ? "Reading images…"
+                  : images.length > 1 ? `Read ${images.length} images →` : "Scan image →"}
               </button>
-              <button type="button" className="btn" onClick={() => close(false)}>
-                Cancel
-              </button>
-              {busy && <span className="eyebrow animate-pulse">vision model working…</span>}
+              <button type="button" className="btn" onClick={() => close(false)}>Cancel</button>
+              {busy && (
+                <span className="eyebrow animate-pulse">
+                  {images.length > 1 ? `vision model working through ${images.length} images…` : "vision model working…"}
+                </span>
+              )}
             </div>
           </>
         )}
 
-        {draft && (
-          <div className="message-enter mt-2 grid gap-6 md:grid-cols-[220px_1fr]">
-            <div className="space-y-3">
-              {pages.map((p, i) => (
-                <div key={i} className="border p-1">
-                  {p.preview ? (
-                    <img src={p.preview} alt={p.name} className="w-full object-contain" />
-                  ) : (
-                    <p className="p-2 text-xs text-muted-foreground">{p.name}</p>
-                  )}
-                </div>
-              ))}
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <p className="eyebrow">Detected</p>
-                <p className="num mt-1 text-sm">{draft.doc_type.replace("_", " ")}</p>
-                {draft.model && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">{draft.model}</p>
-                )}
+        {stage === "review" && current && (
+          <div className="mt-2 grid gap-6 md:grid-cols-[1fr_1fr]">
+            <div>
+              {images[step]?.preview
+                ? <img src={images[step].preview!} alt={images[step].name} className="w-full border object-contain" />
+                : <div className="flex h-56 items-center justify-center border text-xs text-muted-foreground">
+                    {images[step]?.name ?? current.name} · preview unavailable
+                  </div>}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {entries.map((e, i) => (
+                  <span
+                    key={e.index}
+                    className={`border px-2 py-1 text-xs ${i === step ? "border-foreground bg-foreground text-background" : ""} ${i < step ? "opacity-50" : ""}`}
+                  >
+                    {e.ok ? i + 1 : `✕ ${i + 1}`}
+                  </span>
+                ))}
+                <span className="eyebrow ml-auto">{images[step]?.name ?? current.name}</span>
               </div>
             </div>
 
             <div>
-              <p className="eyebrow mb-3 text-amber-700">
-                Review · {draft.doc_type.replace("_", " ")} · unconfirmed
-              </p>
-              {draft.notes && draft.notes.length > 0 && (
-                <ul className="mb-4 space-y-1 border-l-4 border-warning bg-warning-soft px-4 py-3 text-sm">
-                  {draft.notes.map((n) => (
-                    <li key={n}>• {n}</li>
-                  ))}
-                </ul>
+              {current.ok ? (
+                <>
+                  <p className="eyebrow mb-3 text-warning">
+                    Review · {(current.doc_type ?? "receipt").replace("_", " ")} · unconfirmed
+                  </p>
+                  {current.notes && current.notes.length > 0 && (
+                    <ul className="mb-4 space-y-1 border-l-4 border-warning bg-warning-soft px-4 py-3 text-sm">
+                      {current.notes.map(n => <li key={n}>• {n}</li>)}
+                    </ul>
+                  )}
+                  <TxForm
+                    key={current.document_id}
+                    initial={current.fields ?? {}}
+                    onSubmit={confirmCurrent}
+                    submitLabel={busy ? "Saving…" : isLast ? "Confirm & save entry" : "Confirm & save, next →"}
+                  />
+                </>
+              ) : (
+                <div className="border-l-4 border-destructive bg-destructive/10 px-4 py-3">
+                  <p className="eyebrow text-destructive">could not read this image</p>
+                  <p className="mt-2 text-sm">{current.reason ?? "This image is not a document."}</p>
+                  {current.detail && (
+                    <p className="mt-2 break-words text-xs text-muted-foreground">{current.detail}</p>
+                  )}
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Nothing was recorded for it. Skip it, or add the entry by hand.
+                  </p>
+                </div>
               )}
-              <TxForm
-                initial={draft.fields}
-                onSubmit={confirm}
-                submitLabel={busy ? "Saving…" : "Confirm & save"}
-                disabled={busy}
-              />
-              <button type="button" className="btn mt-4" onClick={() => setDraft(null)}>
-                Scan a different document
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                {current.ok ? (
+                  <button type="button" className="btn" disabled={busy}
+                          onClick={() => advance({ skippedName: current.name })}>
+                    Skip this image
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-solid" onClick={() => advance({ skippedName: current.name })}>
+                    {isLast ? "Finish" : "Next image →"}
+                  </button>
+                )}
+                <button type="button" className="btn" onClick={() => close(false)}>Cancel</button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {isLast ? "Last image." : `${total - 1 - step} more image${total - 1 - step > 1 ? "s" : ""} after this.`}
+                {savedCount > 0 && ` ${savedCount} saved so far.`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {stage === "done" && (
+          <div className="mt-2">
+            <p className="text-sm">
+              <span className="num text-2xl">{savedCount}</span> of {total} image
+              {total === 1 ? "" : "s"} saved to your ledger.
+            </p>
+            {skippedNames.length > 0 && (
+              <div className="mt-4 border-l-4 border-warning bg-warning-soft px-4 py-3 text-sm">
+                <p className="eyebrow">skipped</p>
+                <ul className="mt-1 space-y-1">
+                  {skippedNames.map(n => <li key={n}>• {n}</li>)}
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Unreadable or unwanted — nothing was recorded for these.
+                </p>
+              </div>
+            )}
+            <div className="mt-6 flex gap-3">
+              <button type="button" className="btn btn-solid" onClick={() => close(false)}>Done</button>
+              <button type="button" className="btn" onClick={() => { setImages([]); setEntries([]); setStage("pick"); setSavedCount(0); setSkippedNames([]); }}>
+                Scan more images
               </button>
             </div>
           </div>
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function FileScanIcon() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6M8 13h8M8 17h5" />
-    </svg>
   );
 }

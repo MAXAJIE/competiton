@@ -55,8 +55,8 @@ describe("insights presentation helpers", () => {
   });
 
   it("states how much of the book the risk queue shows", () => {
-    expect(topNStatement(6, 9)).toBe("Top 6 of 9 open rows — highest predicted risk first");
-    expect(topNStatement(4, 4)).toBe("All 4 open rows — highest predicted risk first");
+    expect(topNStatement(6, 9)).toBe("Top 6 of 9 open rows — money already late first, then predicted risk");
+    expect(topNStatement(4, 4)).toBe("All 4 open rows — money already late first, then predicted risk");
     expect(topNStatement(1, 1)).toBe("The single open row, scored");
     expect(topNStatement(0, 0)).toBe("No open rows to score");
   });

@@ -34,7 +34,7 @@ import {
   predictNextMonthRevenue,
   usd,
 } from "@/lib/calc";
-import { fetchMarketSnapshot } from "@/lib/api";
+import { fetchMarketSnapshot, fetchForecast, type ForecastResult } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -78,7 +78,30 @@ function Dashboard() {
   const cash = getCashBalance(tx);
   const runway = getRunwayMonths(tx);
   const arap = getArApSummary(tx);
-  const projection = predictNextMonthRevenue(tx);
+  // The trained regression is the forecast; the trailing average is only the
+  // offline/guest fallback, so both never disagree on screen.
+  const fallbackProjection = useMemo(() => predictNextMonthRevenue(tx), [tx]);
+  const [modelForecast, setModelForecast] = useState<ForecastResult | null>(null);
+  useEffect(() => {
+    let active = true;
+    if (tx.length === 0) {
+      setModelForecast(null);
+      return;
+    }
+    void fetchForecast(tx).then((f) => {
+      if (active) setModelForecast(f && f.value > 0 ? f : null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [tx]);
+  const projection = modelForecast
+    ? {
+        value: modelForecast.value,
+        method: modelForecast.method,
+        baseline: modelForecast.baseline_value,
+      }
+    : { value: fallbackProjection.value, method: fallbackProjection.method, baseline: null };
   const empty = loaded && mode !== null && tx.length === 0;
   const needsWorkspace = loaded && mode === null;
   const warning = risk.enabled && runway !== null && runway < risk.low_cash_threshold_months;
@@ -300,9 +323,18 @@ function Dashboard() {
                     )}
                   </p>
                   <p className="mt-auto pt-3 text-xs leading-relaxed text-muted-foreground">
-                    {projection.value > 0
-                      ? projection.method
-                      : "Record income to build a projection."}
+                    {projection.value > 0 ? (
+                      <>
+                        {projection.method}
+                        {projection.baseline != null && (
+                          <span className="mt-1 block text-[11px] text-muted-foreground/80">
+                            Trailing 3-month average: {usd(projection.baseline)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "Record income to build a projection."
+                    )}
                   </p>
                 </InteractiveCard>
               </div>

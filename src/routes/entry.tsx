@@ -32,13 +32,27 @@ export const Route = createFileRoute("/entry")({
   component: Entry,
 });
 
+
+/** Plain-word entry kinds, so the list never reads "Ap · 2025-07-30". */
+const KIND_LABEL: Record<Transaction["type"], string> = {
+  income: "income",
+  expense: "expense",
+  ar: "receivable",
+  ap: "payable",
+};
+
+/** When a row was recorded; falls back to its document date on old rows. */
+const recordedAt = (t: Transaction) => t.created_at ?? t.transaction_date + "T00:00:00";
+
 function Entry() {
   const { addTx, mode, tx } = useStore();
   const [tab, setTab] = useState<"manual" | "scan">("manual");
   const [scanOpen, setScanOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const recent = [...tx]
-    .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date))
+    // Recent = most recently RECORDED, not newest dated. A scan of a July invoice
+    // added today belongs at the top, otherwise it looks like nothing was saved.
+    .sort((a, b) => recordedAt(b).localeCompare(recordedAt(a)))
     .slice(0, 5);
 
   const saveManual = async (transaction: Transaction) => {
@@ -151,7 +165,7 @@ function Entry() {
                 </p>
               ) : (
                 <p className="mt-4 text-xs text-slate-500">
-                  Images or PDF · Up to 5 pages · Nothing saves without your confirmation
+                  Images or PDF · Up to 5 images, one entry each · Nothing saves without your confirmation
                 </p>
               )}
             </div>
@@ -224,7 +238,12 @@ function Entry() {
                           {item.vendor_or_customer || item.category}
                         </p>
                         <p className="mt-0.5 text-xs capitalize text-muted-foreground">
-                          {item.type} · {item.transaction_date}
+                          {KIND_LABEL[item.type]} · {item.transaction_date}
+                          {item.source === "ocr" && (
+                            <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
+                              scanned
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -236,16 +255,16 @@ function Entry() {
               </ul>
             )}
             <Link
-              to="/"
+              to="/history"
               className="motion-link mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
             >
-              Back to overview <ArrowRight className="h-3.5 w-3.5" />
+              View full history <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </InteractiveCard>
         </aside>
       </div>
 
-      <DocScanDialog open={scanOpen} onOpenChange={setScanOpen} onSaved={addTx} />
+      <DocScanDialog open={scanOpen} onOpenChange={setScanOpen} onSaved={(t, ids) => addTx(t, ids)} />
     </Page>
   );
 }

@@ -73,8 +73,19 @@ def _apply_arap_status(row: dict) -> dict:
     return row
 
 
+# Columns the database owns. `created_at` has a NOT NULL default, and the
+# response model carries the field, so a plain model_dump() sends an explicit
+# null and the insert dies with 23502. Every write path goes through write_row.
+SERVER_OWNED = ("created_at",)
+
+
+def write_row(t: Transaction) -> dict:
+    """Fields a client may write — id and server-owned columns stripped."""
+    return t.model_dump(exclude={"id", *SERVER_OWNED})
+
+
 def save_manual_transaction(user_id: str, t: Transaction) -> dict:
-    row = t.model_dump(exclude={"id"})
+    row = write_row(t)
     row["user_id"] = user_id
     # Every write path lands on the shared taxonomy (categories.py).
     row["category"] = categories.coerce(row.get("category", ""), row["type"],
@@ -125,7 +136,7 @@ def confirm_document_and_save(user_id: str, document_id: str,
         "source": "ocr",
         "document_id": document_id,
     })
-    row = _apply_arap_status({**t.model_dump(exclude={"id"}), "user_id": user_id})
+    row = _apply_arap_status({**write_row(t), "user_id": user_id})
     sb = _user_client(user_id)
     tx_row = sb.table("transactions").insert(row).execute().data[0]
     sb.table("documents").update({"reviewed": True}).eq("id", document_id).eq("user_id", user_id).execute()

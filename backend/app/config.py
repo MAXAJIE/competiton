@@ -35,13 +35,42 @@ def _models_list(primary: str, fallbacks: str) -> list[str]:
 # OCR must be vision-capable. Free/vision-limited models rate-limit or reject
 # images (verified: nemotron free = "no endpoints found that support image
 # input"), so a chain keeps scanning working when one provider misbehaves.
+
+def _reasoning_param(mode: str) -> dict | None:
+    """Map a readable mode onto OpenRouter's `reasoning` request field.
+
+    Measured on nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free with a receipt
+    image and the real OCR prompt:
+
+        no parameter      → 796 reasoning tokens, empty content (finish=error)
+        effort=low        → 530 reasoning tokens, then the JSON
+        effort=minimal    → 3000 reasoning tokens, still no content
+        enabled=false     →   0 reasoning tokens, 66 completion tokens, JSON
+
+    So extraction should not be paying for hidden thinking at all; it is a
+    classifier plus a form filler. "off" is the default.
+    """
+    mode = (mode or "").strip().lower()
+    if mode in ("off", "none", "false", "0"):
+        return {"enabled": False}
+    if mode in ("low", "medium", "high"):
+        return {"effort": mode}
+    return None
+
+
 OCR_MODEL = env("OCR_MODEL", "openai/gpt-4o-mini")
 OCR_FALLBACKS = env("OCR_FALLBACK_MODELS", "google/gemini-2.5-flash,google/gemini-2.5-flash-lite")
 OCR_MODELS = _models_list(OCR_MODEL, OCR_FALLBACKS)
+OCR_REASONING = env("OCR_REASONING", "off")
+OCR_REASONING_PARAM = _reasoning_param(OCR_REASONING)
 
 ADVISOR_MODEL = env("ADVISOR_MODEL", "google/gemini-2.5-flash")
 ADVISOR_FALLBACKS = env("ADVISOR_FALLBACK_MODELS", "openai/gpt-4o-mini,google/gemini-2.5-flash-lite")
 ADVISOR_MODELS = _models_list(ADVISOR_MODEL, ADVISOR_FALLBACKS)
+# The advisor picks a tool and phrase one short answer: low effort is enough, and
+# it stops a reasoning model from spending the whole budget before the tool call.
+ADVISOR_REASONING = env("ADVISOR_REASONING", "low")
+ADVISOR_REASONING_PARAM = _reasoning_param(ADVISOR_REASONING)
 
 # Questions about rates, markets, tax rules or law are answered from live search
 # results, not from the model's memory. OpenRouter exposes this as the ":online"
@@ -54,11 +83,12 @@ ADVISOR_WEB_MODELS = [m if m.endswith(":online") else f"{m}:online"
                       for m in _models_list(ADVISOR_WEB_MODEL, ADVISOR_WEB_FALLBACKS)
                       if ":free" not in m]
 
-# Reasoning models (nemotron-*\-reasoning, o-series…) spend the completion budget
-# on hidden reasoning FIRST, so a small max_tokens returns empty `content`
-# (finish_reason=length). Verified: 700 tokens → 0 chars of content, 2500 → valid
-# JSON. These budgets leave room for reasoning plus the actual answer.
-OCR_MAX_TOKENS = int(env("OCR_MAX_TOKENS", "3000"))
+# Completion budgets. With OCR_REASONING=off the extraction reply is tiny —
+# measured at 66 tokens for a full receipt row — so 800 is generous, and the
+# automatic 2x retry covers an unusually long bank statement. This is deliberately
+# NOT the old 3000: a budget that large only hid the fact that reasoning was
+# consuming it, and it made every "no answer" failure look like a limit problem.
+OCR_MAX_TOKENS = int(env("OCR_MAX_TOKENS", "800"))
 ADVISOR_MAX_TOKENS = int(env("ADVISOR_MAX_TOKENS", "2500"))
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"

@@ -2,7 +2,8 @@
 // backend/ (see backend/README.md). Guest mode (SKILL.md §8): no session →
 // no server calls for writes; data stays in the browser session store.
 import { supabase, sessionOrNull } from "./supabase";
-import type { AdvisorReply, OcrDraft, RiskSettings, Transaction } from "./types";
+import type { OcrScanResult } from "./ocr-types";
+import type { AdvisorReply, RiskSettings, Transaction } from "./types";
 
 const API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000";
 
@@ -60,8 +61,8 @@ export async function saveTransaction(t: Transaction): Promise<Transaction> {
 }
 
 /** POST /api/documents/ocr — extraction only, reviewed=false, nothing saved.
- *  Accepts multiple page images for one document. */
-export async function runOcr(files: File[], docType = ""): Promise<OcrDraft> {
+ *  Each image is read as its own entry; unreadable images come back with a reason. */
+export async function runOcr(files: File[], docType = ""): Promise<OcrScanResult> {
   const session = await sessionOrNull();
   if (!session) throw new Error("Sign in to scan documents — guest mode never uploads anything.");
   const form = new FormData();
@@ -76,13 +77,16 @@ export async function runOcr(files: File[], docType = ""): Promise<OcrDraft> {
     const body = await res.json().catch(() => ({}) as { detail?: string });
     throw new Error(typeof body.detail === "string" ? body.detail : "OCR failed");
   }
-  return res.json() as Promise<OcrDraft>;
+  return res.json() as Promise<OcrScanResult>;
 }
 
 /** POST /api/documents/{id}/confirm — the human-review gate: flips reviewed=true
  * and writes the transaction in one server-side call. */
-export async function confirmOcr(documentId: string, fields: Partial<Transaction>): Promise<Transaction> {
-  return api<Transaction>(`/api/documents/${documentId}/confirm`, {
+/** A saved row, plus the receivables this payment settled (backend contract). */
+export type SavedTransaction = Transaction & { settled_ar?: { id: string; vendor_or_customer: string; amount: number }[] };
+
+export async function confirmOcr(documentId: string, fields: Partial<Transaction>): Promise<SavedTransaction> {
+  return api<SavedTransaction>(`/api/documents/${documentId}/confirm`, {
     method: "POST",
     body: JSON.stringify(fields),
   });
@@ -149,6 +153,13 @@ export type ArRiskFlag = {
   customer_historical_late_rate: number;
   customer_prior_count: number;
   p_late: number;
+  /** True when due_date has passed unpaid: late is a fact, not a prediction. */
+  already_late?: boolean;
+  days_overdue?: number;
+  /** What the classifier alone said — kept for transparency, never displayed as risk. */
+  model_p_late?: number | null;
+  /** Ordering key: overdue rows by amount x days overdue, others by p_late x amount. */
+  priority?: number;
   at_risk: boolean;
   severity: ArRiskSeverity;
   threshold: number;
@@ -161,6 +172,12 @@ export type ArRiskSummary = {
   at_risk_amount: number;
   high_risk: number;
   high_risk_amount: number;
+  /** Already past due: certain, not forecast. */
+  overdue_count?: number;
+  overdue_amount?: number;
+  /** Not yet due, but the model expects a late payment. */
+  predicted_high_count?: number;
+  predicted_high_amount?: number;
   open_amount: number;
   top: ArRiskFlag[];
   method: string;

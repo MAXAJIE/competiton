@@ -116,3 +116,17 @@ def test_income_and_expense_cannot_be_saved_as_pending():
     assert db._apply_arap_status({"type": "income", "status": "pending"})["status"] == "paid"
     assert db._apply_arap_status({"type": "expense", "status": "pending"})["status"] == "paid"
     assert db._apply_arap_status({"type": "income"})["status"] == "paid"
+
+
+def test_writes_never_send_server_owned_columns():
+    """created_at is NOT NULL with a DB default: sending null breaks the insert."""
+    from app.db import write_row
+    from app.models import Transaction
+
+    row = write_row(Transaction(type="ar", amount=957, vendor_or_customer="Estelle Darcy",
+                                transaction_date="2025-07-30", source="ocr",
+                                document_id="d-1", created_at="2026-01-01T00:00:00Z"))
+    assert "created_at" not in row
+    assert "id" not in row
+    # everything the user actually chose still goes through
+    assert row["vendor_or_customer"] == "Estelle Darcy" and row["document_id"] == "d-1"

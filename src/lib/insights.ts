@@ -61,11 +61,11 @@ export function severityChipClass(severity: ArRiskSeverity): string {
 }
 
 /** The backend caps `top` at 6 rows; saying so prevents the list from reading
- *  as the whole book. */
+ *  as the whole book. Ordering is not purely predicted: an invoice that is
+ *  already late is certain, so it leads and is ranked by amount x days overdue. */
 export function topNStatement(shown: number, scored: number): string {
   if (scored <= 0) return "No open rows to score";
-  if (scored > shown) return `Top ${shown} of ${scored} open rows — highest predicted risk first`;
-  return scored === 1
-    ? "The single open row, scored"
-    : `All ${scored} open rows — highest predicted risk first`;
+  const order = "money already late first, then predicted risk";
+  if (scored > shown) return `Top ${shown} of ${scored} open rows — ${order}`;
+  return scored === 1 ? "The single open row, scored" : `All ${scored} open rows — ${order}`;
 }

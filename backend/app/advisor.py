@@ -27,8 +27,10 @@ TOOL_SET = [
         "name": "ar_risk_flags",
         "description": ("Which unpaid invoices/receivables are at risk of being paid late, "
                         "with a probability and a high/medium/low severity per item from the "
-                        "trained AR-risk model. Use for questions about late payers, bad debt, "
-                        "who to chase, or collections."),
+                        "trained AR-risk model. Rows that are already past due come back with "
+                        "already_late=true and p_late=1 (late is a fact, not a forecast). Use "
+                        "for questions about late payers, bad debt, who to chase, or "
+                        "collections."),
         "parameters": {"type": "object", "properties": {}},
     }},
     {"type": "function", "function": {
@@ -282,10 +284,19 @@ def _deterministic_answer(q: str, tx: list[Transaction],
             answer = (f"{summ['high_risk']} of {scored} open {noun} "
                       f"{'is' if summ['high_risk'] == 1 else 'are'} high risk for late payment, "
                       f"worth {calc.usd(summ['high_risk_amount'])}.")
+            overdue = summ.get("overdue_count") or 0
+            if overdue:
+                answer += (f" {overdue} {'is' if overdue == 1 else 'are'} already overdue "
+                           f"({calc.usd(summ.get('overdue_amount') or 0)}), so those are late by "
+                           f"definition rather than a forecast.")
             if top:
-                answer += (f" Most urgent: {top['vendor_or_customer']} "
-                           f"({calc.usd(top['amount'])}, {top['p_late']:.0%} chance of late "
-                           f"payment).")
+                if top.get("already_late"):
+                    answer += (f" Most urgent: {top['vendor_or_customer']} "
+                               f"({calc.usd(top['amount'])}, {top['days_overdue']} days late).")
+                else:
+                    answer += (f" Most urgent: {top['vendor_or_customer']} "
+                               f"({calc.usd(top['amount'])}, {top['p_late']:.0%} chance of late "
+                               f"payment).")
             nxt = "Send the oldest one a short written reminder today."
         figs = [Figure(label="High risk", value=calc.usd(summ["high_risk_amount"])),
                 Figure(label="Items flagged", value=f"{summ['high_risk']} of {summ['scored']}")]
@@ -353,7 +364,9 @@ def _complete(messages: list[dict], models: list[str]) -> dict | None:
                 # keep it generous or the tool call never materialises.
                 json={"model": model, "messages": messages, "tools": TOOL_SET,
                       "tool_choice": "auto", "max_tokens": config.ADVISOR_MAX_TOKENS,
-                      "temperature": 0.2},
+                      "temperature": 0.2,
+                      **({"reasoning": config.ADVISOR_REASONING_PARAM}
+                         if config.ADVISOR_REASONING_PARAM else {})},
                 timeout=120,
             )
             if r.status_code != 200:

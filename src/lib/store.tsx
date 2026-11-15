@@ -7,7 +7,8 @@ import { supabase } from "./supabase";
 type Mode = "guest" | "user" | null;
 interface S {
   tx: Transaction[];
-  addTx: (t: Transaction) => void;
+  /** Adds the row; any settled receivable ids flip to paid. Returns those rows. */
+  addTx: (t: Transaction, settledIds?: string[]) => Transaction[];
   setTx: (tx: Transaction[]) => void;
   risk: RiskSettings;
   setRisk: (r: RiskSettings) => void;
@@ -53,7 +54,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (mode === "guest" && tx.length === 0) setTx(makeSeed());
   }, [mode, tx.length]);
 
-  return <Ctx.Provider value={{ tx, addTx: t => setTx(p => [...p, t]), setTx, risk, setRisk, mode, setMode, loaded }}>{children}</Ctx.Provider>;
+    // A payment can settle one or more open receivables (backend settlement.py is
+  // the authority; the ids it returns are flipped here so the UI matches).
+  const addTx = (t: Transaction, settledIds?: string[]): Transaction[] => {
+    const ids = new Set(settledIds ?? []);
+    const closed = ids.size ? tx.filter(r => r.id && ids.has(r.id)) : [];
+    const row = t.created_at ? t : { ...t, created_at: new Date().toISOString() };
+    setTx(prev => [
+      ...prev.map(r => (r.id && ids.has(r.id) ? { ...r, status: "paid" as const } : r)),
+      row,
+    ]);
+    return closed;
+  };
+
+  return <Ctx.Provider value={{ tx, addTx, setTx, risk, setRisk, mode, setMode, loaded }}>{children}</Ctx.Provider>;
 }
 export const useStore = () => { const c = useContext(Ctx); if (!c) throw new Error("no store"); return c; };
 

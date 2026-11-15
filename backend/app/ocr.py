@@ -34,6 +34,38 @@ def _prompt(doc_type: str) -> str:
     same schema the UI and classifier use, and normalize_fields still coerces
     whatever it answers back into that schema.
     """
+    if doc_type not in _DOC_TYPES:
+        # No type was supplied: the page itself says what it is ("Invoice",
+        # "Billed to", an invoice number…), which the filename usually does not.
+        every = "\n".join(f"- {k}: {categories.prompt_list(k)}"
+                          for k in ("expense", "income", "ar", "ap"))
+        return (
+            "Read this document image, decide what kind of document it is, then "
+            "extract ONE transaction. Return ONE JSON object (never an array) and "
+            "nothing else. Keys: is_document, doc_type, transaction_date (YYYY-MM-DD), "
+            "vendor_or_customer, amount (a number), category, type, status, "
+            'due_date (YYYY-MM-DD or null).\n'
+            "is_document: false ONLY when the image is not a receipt, invoice or bank "
+            "statement at all (a logo, a product photo, an app screenshot). Then also "
+            "set reason to what it looks like. Otherwise true.\n"
+            'doc_type: "invoice" when the page is an invoice — it says Invoice, has '
+            "an invoice number, 'Billed to', line items with a total, or payment "
+            'terms; "receipt" for a till slip or proof of an already-paid purchase; '
+            '"bank_statement" when it lists many dated transactions for an account.\n'
+            'type: receipt -> "expense" (status "paid"); invoice -> "ar" if the '
+            'money is owed TO the business that issued it, "ap" if the reader owes '
+            'it (status "pending" unless the page shows it was settled); bank '
+            'statement -> "income" for money in, "expense" for money out.\n'
+            "amount: the FINAL TOTAL only, never a line item and never a tax "
+            "subtotal. vendor_or_customer: copy the other party exactly as printed.\n"
+            "due_date: only a date the page actually prints (\"Pay by\", \"Due date\", "
+            "\"Payment due\"); otherwise null — never infer net-30 terms.\n"
+            "For an invoice, category must be Customer Invoice (type ar) or "
+            "Supplier Bill (type ap) — never an expense category, even when the "
+            "line items are consumer goods.\n"
+            "Choose category from this list ONLY:\n" + every
+        )
+
     kinds = {"receipt": ["expense"],
              "invoice": ["ar", "ap"],
              "bank_statement": ["income", "expense"]}[doc_type]
@@ -72,14 +104,50 @@ _DATE_FORMATS = (
 )
 
 
-def detect_doc_type(filename: str = "", hint: str = "") -> str:
-    """Three document types only (SKILL.md §4). Extension/filename hint first."""
-    blob = f"{hint} {filename}".lower()
+def valid_doc_type(value: object) -> str | None:
+    """Normalise a type the model reported, or None when it is not one of ours."""
+    text = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {"receipts": "receipt", "sales_receipt": "receipt", "till_slip": "receipt",
+               "invoices": "invoice", "bill": "invoice", "billing": "invoice",
+               "bank_statements": "bank_statement", "statement": "bank_statement",
+               "bank": "bank_statement"}
+    text = aliases.get(text, text)
+    return text if text in _DOC_TYPES else None
+
+
+def filename_guess(filename: str = "") -> str | None:
+    """A type implied by the file name, or None when the name says nothing.
+
+    "image.png" and "IMG_4821.jpg" are photo names, not evidence, so they must not
+    decide the document type — that is exactly what made an invoice get read as a
+    receipt.
+    """
+    blob = (filename or "").lower()
     if re.search(r"statement|bank", blob):
         return "bank_statement"
-    if re.search(r"invoice|bill|receipt_invoice", blob):
+    if re.search(r"invoice|billed|billing", blob):
         return "invoice"
-    return "receipt"
+    if re.search(r"receipt|rcpt|till", blob):
+        return "receipt"
+    return None
+
+
+def resolve_doc_type(hint: str = "", filename: str = "", model_type: object = None) -> str:
+    """Final document type. A deliberate choice beats a reading, a reading beats a name.
+
+    1. The type the user picked in the dialog (they are telling us, not guessing).
+    2. What the vision model read on the page ("Invoice" in the heading).
+    3. A keyword in the file name.
+    4. "receipt" as the last resort.
+    """
+    if hint in _DOC_TYPES:
+        return hint
+    return valid_doc_type(model_type) or filename_guess(filename) or "receipt"
+
+
+def detect_doc_type(filename: str = "", hint: str = "") -> str:
+    """Back-compat wrapper: filename/hint only, when no page was read."""
+    return resolve_doc_type(hint, filename, None)
 
 
 def _image_data_url(filename: str, content_type: str, data: bytes) -> str:
@@ -207,10 +275,30 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
     resolved, changed, hits = categories.resolve(
         category, tx_type, fields["vendor_or_customer"],
         str(obj.get("description") or ""))
+    category_note: int | None = None
     if changed:
         matched = f" (matched: {', '.join(hits[:3])})" if hits else ""
         notes.append(f"Category '{category or 'none'}' set to '{resolved}'{matched}.")
+        category_note = len(notes) - 1
+    if doc_type == "invoice" and resolved in ("Other Payable", "Other Receivable"):
+        # The page IS an invoice, so the generic "Other" bucket is never the most
+        # informative answer — "Supplier Bill" / "Customer Invoice" is. One note
+        # replaces the earlier one instead of stacking two corrections.
+        invoice_default = "Supplier Bill" if tx_type == "ap" else "Customer Invoice"
+        combined = f"Category '{category or 'none'}' set to '{invoice_default}' — it is an invoice."
+        if category_note is not None:
+            notes[category_note] = combined
+        else:
+            notes.append(combined)
+        resolved = invoice_default
     fields["category"] = resolved
+
+    if doc_type == "invoice":
+        # Which side the money is on cannot be read off the page reliably (an
+        # invoice looks the same to the issuer and the payer), so say so instead
+        # of pretending the model's guess is a fact.
+        side = "owed to you (AR)" if tx_type == "ar" else "a bill you owe (AP)"
+        notes.append(f"Invoice read as {side} — switch the type above if that is backwards.")
 
     if tx_type in ("ar", "ap"):
         fields["due_date"] = _date(obj.get("due_date")) or fields["transaction_date"]
@@ -222,20 +310,31 @@ def normalize_fields(raw: object, doc_type: str, today: date | None = None) -> t
     return fields, notes
 
 
-def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
-                max_tokens: int) -> object:
-    """One extraction request. Returns parsed JSON or raises with a clear reason."""
+def build_payload(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
+                  max_tokens: int) -> dict:
+    """The request body for one extraction (kept separate so it can be asserted)."""
     content: list[dict] = [{"type": "text", "text": _prompt(doc_type)}]
     for filename, content_type, data in images:
         content.append({"type": "image_url",
                         "image_url": {"url": _image_data_url(filename, content_type, data)}})
+    payload: dict = {"model": model, "max_tokens": max_tokens, "temperature": 0,
+                     "messages": [{"role": "user", "content": content}]}
+    # Reading a receipt is classification plus form filling: hidden reasoning is
+    # wasted budget (and the usual cause of an empty reply), so it is switched off.
+    if config.OCR_REASONING_PARAM is not None:
+        payload["reasoning"] = config.OCR_REASONING_PARAM
+    return payload
+
+
+def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
+                max_tokens: int) -> object:
+    """One extraction request. Returns parsed JSON or raises with a clear reason."""
     r = httpx.post(
         f"{config.OPENROUTER_BASE}/chat/completions",
         headers={"Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
                  "HTTP-Referer": "https://cashmonitoring.app",
                  "X-Title": "CashMonitoring OCR"},
-        json={"model": model, "max_tokens": max_tokens, "temperature": 0,
-              "messages": [{"role": "user", "content": content}]},
+        json=build_payload(model, doc_type, images, max_tokens),
         timeout=180,
     )
     if r.status_code != 200:
@@ -258,8 +357,10 @@ def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
     if parsed is None:
         if finish == "length":
             raise RuntimeError(
-                f"{model} -> no answer: hit the {max_tokens}-token budget while reasoning "
-                f"(reasoning_tokens consumed first). Raise OCR_MAX_TOKENS or use a non-reasoning model.")
+                f"{model} -> no answer: used all {max_tokens} tokens without writing JSON. "
+                f"This model reasons first and the reasoning can eat the whole budget — set "
+                f"OCR_REASONING=off (the default), raise OCR_MAX_TOKENS, or pick a "
+                f"non-reasoning vision model.")
         if not text.strip():
             raise RuntimeError(f"{model} -> empty response (finish_reason={finish})")
         raise RuntimeError(f"{model} -> reply contained no JSON object: {text[:120]!r}")
@@ -282,98 +383,79 @@ def _extract(doc_type: str, images: list[tuple[str, str, bytes]]) -> tuple[objec
     raise RuntimeError("All OCR models failed: " + " | ".join(errors))
 
 
-def _merge_pages(pages: list[dict]) -> tuple[dict, list[str]]:
-    """Combine per-page extractions into the one row the reviewer confirms.
+def _unreadable(raw: object, fields: dict) -> str | None:
+    """Why this image cannot become an entry, or None when it can.
 
-    First non-empty value wins per field, because page 1 usually carries the
-    document header. When two pages disagree on the amount or the date, that is
-    exactly what a human should look at, so it becomes a note instead of a
-    silent pick.
+    Two ways an image is unusable: the model says it is not a document at all
+    (a logo, a photo, a screenshot), or it is a document whose amount and vendor
+    both failed to read — in which case there is no entry to confirm.
     """
-    merged: dict = {}
-    for page in pages:
-        for key, value in (page.get("fields") or {}).items():
-            if value in (None, "", []):
-                continue
-            if merged.get(key) in (None, "", []):
-                merged[key] = value
-
-    notes: list[str] = []
-    if len(pages) > 1:
-        notes.append(f"{len(pages)} pages read separately and merged — check each page.")
-    for page in pages:
-        for note in page.get("notes") or []:
-            notes.append(f"Page {page['index']}: {note}")
-
-    for key, label in (("amount", "amount"), ("transaction_date", "date")):
-        values = [(p["index"], (p.get("fields") or {}).get(key))
-                  for p in pages if (p.get("fields") or {}).get(key) not in (None, "", [])]
-        distinct = {v for _, v in values}
-        if len(distinct) > 1:
-            seen = ", ".join(f"page {i} says {v}" for i, v in values)
-            notes.append(f"Pages disagree on the {label} ({seen}) — keep the right one.")
-    return merged, notes
+    if isinstance(raw, dict) and raw.get("is_document") is False:
+        looks_like = str(raw.get("reason") or "").strip() or "not a receipt, invoice or statement"
+        return f"not a document ({looks_like})"
+    if float(fields.get("amount") or 0) <= 0 and not fields.get("vendor_or_customer"):
+        return "no amount or vendor could be read from this image"
+    return None
 
 
 def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
             doc_type_hint: str = "") -> dict:
-    """Extract fields → documents row (reviewed=false) → draft for the review form.
+    """Read each uploaded image as its OWN entry.
 
-    Accepts one or more page images (first page drives the doc_type hint).
+    Images are independent: two receipts photographed together are two
+    transactions, not one document with two pages, so nothing is merged and each
+    entry gets its own `documents` row (and therefore its own confirm — the human
+    gate in SKILL.md §4 stays per entry).
+
+    Returns {"entries": [...], "saved": 0, "skipped": n}. An image that cannot be
+    read comes back with ok=false and a reason, so the UI can say so instead of
+    inventing a transaction.
     """
     if not files:
         raise ValueError("No file supplied")
     if not config.OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY not configured; OCR unavailable")
 
-    doc_type = detect_doc_type(files[0][0], doc_type_hint)
-    if doc_type not in _DOC_TYPES:
-        doc_type = "receipt"
+    hint = doc_type_hint if doc_type_hint in _DOC_TYPES else ""
+    entries: list[dict] = []
 
-    # One page at a time, so each image can be checked against its own reading
-    # (the review dialog steps through them). A multi-page document still
-    # produces ONE draft and one confirm, so the human gate is unchanged.
-    pages: list[dict] = []
-    used_model: str | None = None
-    if len(files) == 1:
-        parsed, used_model = _extract(doc_type, files)
-        fields, notes = normalize_fields(parsed, doc_type)
-        pages = [{"index": 1, "fields": fields, "notes": notes, "model": used_model}]
-    else:
+    for index, (filename, content_type, data) in enumerate(files, start=1):
+        item: dict = {"index": index, "name": filename}
         try:
-            for index, page in enumerate(files, start=1):
-                parsed, model = _extract(doc_type, [page])
-                page_fields, page_notes = normalize_fields(parsed, doc_type)
-                pages.append({"index": index, "fields": page_fields,
-                              "notes": page_notes, "model": model})
-                used_model = model
-        except Exception:
-            # A single unreadable page must not lose the whole document: fall back
-            # to reading every page in one request, as before.
-            parsed, used_model = _extract(doc_type, files)
-            fields, notes = normalize_fields(parsed, doc_type)
-            pages = [{"index": 1, "fields": fields, "notes": notes, "model": used_model}]
-            notes = notes + ["Pages were read together after a single page failed — verify carefully."]
-        else:
-            fields, notes = _merge_pages(pages)
+            parsed, used_model = _extract(hint, [(filename, content_type, data)])
+        except Exception as e:  # every model refused this image
+            entries.append({**item, "ok": False,
+                            "reason": "the vision model could not read this image",
+                            "detail": str(e)[:200]})
+            continue
 
-    # Best-effort file retention in Supabase Storage; review does not depend on it.
-    file_url = None
-    try:
-        filename, content_type, data = files[0]
-        path = f"{user_id}/{_uuid.uuid4()}-{filename}"
-        res = db.client().storage.from_("documents").upload(
-            path, data, {"content-type": content_type or "application/octet-stream"})
-        file_url = f"documents/{path}" if res else None
-    except Exception:
+        model_type = parsed.get("doc_type") if isinstance(parsed, dict) else None
+        doc_type = resolve_doc_type(hint, filename, model_type)
+        fields, notes = normalize_fields(parsed, doc_type)
+        reason = _unreadable(parsed, fields)
+        if reason:
+            entries.append({**item, "ok": False, "reason": reason,
+                            "doc_type": doc_type, "model": used_model})
+            continue
+
+        # Keep the image when we can; review never depends on it.
         file_url = None
+        try:
+            path = f"{user_id}/{_uuid.uuid4()}-{filename}"
+            res = db.client().storage.from_("documents").upload(
+                path, data, {"content-type": content_type or "application/octet-stream"})
+            file_url = f"documents/{path}" if res else None
+        except Exception:
+            file_url = None
 
-    doc = db.insert_document(user_id, doc_type, file_url,
-                             {"fields": fields, "notes": notes, "model": used_model,
-                              "pages": pages})
+        doc = db.insert_document(user_id, doc_type, file_url,
+                                 {"fields": fields, "notes": notes, "model": used_model})
+        entries.append({**item, "ok": True, "doc_type": doc_type, "fields": fields,
+                        "notes": notes, "model": used_model,
+                        "document_id": doc["id"]})
 
-    return {"doc_type": doc_type, "fields": fields, "notes": notes,
-            "document_id": doc["id"], "model": used_model, "pages": pages}
+    saved = sum(1 for e in entries if e["ok"])
+    return {"entries": entries, "saved": saved, "skipped": len(entries) - saved}
 
 
 def confirm_and_save(user_id: str, document_id: str, fields: dict) -> dict:

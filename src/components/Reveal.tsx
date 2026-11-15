@@ -24,6 +24,23 @@ export function Page({ children }: { children: ReactNode }) {
         });
       };
       const motionReduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // Content must never depend on a tween finishing. A hidden/frozen tab
+      // pauses rAF, so a `from(opacity: 0)` stays at zero forever and the page
+      // looks empty (this is what blanked the risk-settings cards). Two rules:
+      // don't animate unless the document is actually visible, and finish any
+      // tween we started as soon as it becomes visible again.
+      const visible = () => document.visibilityState === "visible";
+      const settle = (targets: gsap.TweenTarget) => {
+        gsap.getTweensOf(targets).forEach((tween) => tween.progress(1, true));
+        gsap.set(targets, { opacity: 1 });
+      };
+      const animated: HTMLElement[] = [];
+      const onVisible = () => {
+        if (visible()) animated.forEach((el) => settle(el));
+      };
+      // Returning to the tab finishes anything that stalled while it was hidden;
+      // motion.ts also sweeps, in case no visibility event ever arrives.
+      document.addEventListener("visibilitychange", onVisible);
       const ribbons = gsap.utils.toArray<SVGSVGElement>(".widget-ribbon", root);
       ribbons.forEach(setRibbonMotion);
       const lines = gsap.utils.toArray<HTMLElement>("[data-line] > span", root);
@@ -39,7 +56,7 @@ export function Page({ children }: { children: ReactNode }) {
           root,
         )
         .filter((el) => !el.closest("[data-scroll]") && !el.classList.contains("widget-surface"));
-      if (lines.length || rules.length || reveals.length || widgets.length) {
+      if ((lines.length || rules.length || reveals.length || widgets.length) && visible()) {
         const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
         if (!motionReduced()) {
           if (lines.length) {
@@ -52,6 +69,7 @@ export function Page({ children }: { children: ReactNode }) {
             tl.from(reveals, { y: 18, opacity: 0, duration: 0.55, stagger: 0.06 }, 0.18);
           }
         }
+        animated.push(...lines, ...rules, ...reveals, ...widgets);
         if (widgets.length) {
           tl.fromTo(
             widgets,
@@ -85,6 +103,8 @@ export function Page({ children }: { children: ReactNode }) {
       gsap.utils.toArray<HTMLElement>("[data-scroll]", root).forEach((el, index) => {
         const isWidget = el.classList.contains("widget-surface");
         if (motionReduced() && !isWidget) return;
+        if (!visible()) return; // no scroll animation while hidden — nothing to rescue
+        animated.push(el);
         gsap.from(el, {
           x: isWidget ? (index % 2 === 0 ? -28 : 28) : 0,
           y: isWidget ? 30 : 24,
@@ -119,7 +139,11 @@ export function Page({ children }: { children: ReactNode }) {
             .querySelectorAll<SVGSVGElement>(".widget-ribbon")
             .forEach((ribbon) => setRibbonMotion(ribbon, nextRibbonIndex++));
           if (widget.hasAttribute("data-local-entrance")) return;
+          // Mounted after the page reveal (e.g. after /api/settings resolves):
+          // animate only if this tab can actually run the tween.
+          if (!visible()) return;
           const index = nextWidgetIndex++;
+          animated.push(widget);
           const isScrollWidget = Boolean(widget.closest("[data-scroll]"));
           gsap.fromTo(
             widget,
@@ -149,7 +173,10 @@ export function Page({ children }: { children: ReactNode }) {
         });
       });
       observer.observe(root, { childList: true, subtree: true });
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        document.removeEventListener("visibilitychange", onVisible);
+      };
     },
     { scope: ref },
   );
