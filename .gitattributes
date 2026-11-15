@@ -1,0 +1,2 @@
+# Shell scripts must stay LF so `bash setup.sh` works on a Windows clone.
+*.sh text eol=lf
