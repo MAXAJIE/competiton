@@ -53,20 +53,10 @@ export function InteractiveCard({
           },
         );
       }
-      if (card.dataset["entrance"] === "launcher") {
-        gsap.from(card, {
-          x: 22,
-          y: 20,
-          opacity: 0,
-          rotationX: 9,
-          rotationY: -10,
-          rotationZ: 6,
-          scale: 0.86,
-          duration: 0.72,
-          delay: 0.18,
-          ease: "back.out(1.25)",
-        });
-      }
+      // The launcher's entrance is a CSS keyframe (see .advisor-launcher-card in
+      // styles.css) rather than a gsap.from(): a `from` tween writes opacity:0
+      // inline and, if the tab was loaded in the background (rAF paused), the
+      // tween never advances — leaving the widget permanently invisible.
       if (tilt <= 0) return;
       rotateX.current = gsap.quickTo(card, "rotationX", {
         duration: 0.4,

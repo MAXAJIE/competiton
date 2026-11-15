@@ -10,7 +10,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Headline, Page } from "@/components/Reveal";
+import { ForcedEntrance } from "@/components/ForcedEntrance";
 import { usd } from "@/lib/calc";
 import {
   filterTransactions,
@@ -111,6 +112,9 @@ function HistoryPage() {
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
   const [filterOpen, setFilterOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const drawerEl = useRef<HTMLDivElement | null>(null);
+  const activeAnim = useRef<Animation | null>(null);
+  const closing = useRef(false);
 
   const visibleTransactions = useMemo(() => filterTransactions(tx, filters), [tx, filters]);
   const totals = useMemo(
@@ -131,10 +135,76 @@ function HistoryPage() {
   const zoomClass = ["text-xs", "text-sm", "text-base"][zoom] ?? "text-sm";
   const rowPadding = ["py-2.5", "py-4", "py-5"][zoom] ?? "py-4";
 
-  const openFilters = (open: boolean) => {
-    if (open) setDraftFilters(filters);
-    setFilterOpen(open);
-  };
+  // Forced slide. Script-driven Web Animations outrank CSS animations and are
+  // unaffected by the global `prefers-reduced-motion` reset, so the drawer always
+  // slides — the CSS keyframes are only a fallback. Closing is intercepted here
+  // so the exit animation plays before the dialog unmounts.
+  const slide = useCallback(async (el: HTMLElement, entering: boolean) => {
+    if (typeof el.animate !== "function") return;
+    const horizontal = window.matchMedia("(min-width: 640px)").matches;
+    const off = horizontal ? "translateX(100%)" : "translateY(100%)";
+    const rest = "translate3d(0, 0, 0)";
+    // Exactly one animation at a time: the mount callback and the open effect
+    // can both fire for the same open, and a cancelled duplicate would otherwise
+    // keep compositing the same property.
+    activeAnim.current?.cancel();
+    const anim = el.animate(
+      entering ? [{ transform: off }, { transform: rest }] : [{ transform: rest }, { transform: off }],
+      {
+        duration: entering ? 400 : 300,
+        easing: entering ? "cubic-bezier(0.22, 1, 0.36, 1)" : "cubic-bezier(0.4, 0, 0.2, 1)",
+        fill: entering ? "backwards" : "forwards",
+      },
+    );
+    activeAnim.current = anim;
+    await anim.finished.catch(() => undefined);
+  }, []);
+
+  const animateIn = useCallback(() => {
+    const el = drawerEl.current;
+    if (el) void slide(el, true);
+  }, [slide]);
+
+  // Radix mounts the portal content *after* the effect pass, so a plain
+  // useEffect would find a null ref and never animate. The callback ref fires
+  // exactly when the node attaches, which is when the entrance must start.
+  const setDrawerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      drawerEl.current = node;
+      if (node) {
+        closing.current = false;
+        animateIn();
+      }
+    },
+    [animateIn],
+  );
+
+  // Re-opening while the exit animation is still running: the node stayed
+  // mounted, so the callback ref does not fire again.
+  useEffect(() => {
+    if (filterOpen) animateIn();
+  }, [filterOpen, animateIn]);
+
+  const openFilters = useCallback(
+    (next: boolean) => {
+      if (next) {
+        setDraftFilters(filters);
+        setFilterOpen(true);
+        return;
+      }
+      const el = drawerEl.current;
+      if (!el || closing.current) {
+        setFilterOpen(false);
+        return;
+      }
+      closing.current = true;
+      void slide(el, false).then(() => {
+        closing.current = false;
+        setFilterOpen(false);
+      });
+    },
+    [filters, slide],
+  );
 
   return (
     <Page>
@@ -162,11 +232,11 @@ function HistoryPage() {
             ["ar", "Receivables", "text-sky-700", "bg-sky-50"],
             ["ap", "Payables", "text-amber-700", "bg-amber-50"],
           ] as const
-        ).map(([type, label, color, background]) => (
-          <div
+        ).map(([type, label, color, background], index) => (
+          <ForcedEntrance
             key={type}
+            index={index}
             className="surface rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5"
-            data-reveal
           >
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
@@ -183,7 +253,7 @@ function HistoryPage() {
             <p className={`num mt-3 text-xl font-semibold tracking-tight sm:text-2xl ${color}`}>
               {usd(totals[type])}
             </p>
-          </div>
+          </ForcedEntrance>
         ))}
       </section>
 
@@ -416,7 +486,11 @@ function HistoryPage() {
       </section>
 
       <Dialog open={filterOpen} onOpenChange={openFilters}>
-        <DialogContent className="!fixed !bottom-0 !left-0 !right-0 !top-auto !w-full !max-w-none !translate-x-0 !translate-y-0 max-h-[90dvh] overflow-y-auto rounded-t-3xl border-slate-200 bg-white p-5 shadow-2xl sm:!bottom-0 sm:!left-auto sm:!right-0 sm:!top-0 sm:!h-full sm:!w-[430px] sm:!max-w-[430px] sm:rounded-none sm:rounded-l-3xl sm:p-7">
+        <DialogContent
+          ref={setDrawerRef}
+          overlayClassName="filters-overlay bg-slate-900/35 backdrop-blur-[3px]"
+          className="filters-drawer !fixed !bottom-0 !left-0 !right-0 !top-auto !w-full !max-w-none !translate-x-0 !translate-y-0 max-h-[90dvh] overflow-y-auto rounded-t-3xl border-slate-200 bg-white p-5 shadow-2xl sm:!bottom-0 sm:!left-auto sm:!right-0 sm:!top-0 sm:!h-full sm:!w-[430px] sm:!max-w-[430px] sm:rounded-none sm:rounded-l-3xl sm:p-7"
+        >
           <div className="flex min-h-[min(78dvh,560px)] flex-col sm:min-h-full">
             <DialogHeader className="pr-10 text-left">
               <div className="flex items-center justify-between">
@@ -512,7 +586,7 @@ function HistoryPage() {
               type="button"
               onClick={() => {
                 setFilters((current) => ({ ...current, ...draftFilters }));
-                setFilterOpen(false);
+                openFilters(false);
               }}
               className="flex h-12 shrink-0 items-center justify-center rounded-xl bg-[#082c4d] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#103b61] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200"
             >

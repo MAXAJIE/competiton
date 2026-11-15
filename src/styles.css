@@ -545,3 +545,214 @@
     animation-iteration-count: infinite !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Motion fixes (launcher, advisor panel, filter drawer, category picker)
+
+   These entrances are pure CSS keyframes so an element can never get stranded
+   at opacity:0 — a JS-driven `from` tween writes opacity:0 inline and, in a
+   tab that was loaded in the background (rAF paused), never advances.
+--------------------------------------------------------------------------- */
+
+@keyframes launcher-in {
+  from {
+    opacity: 0;
+    transform: translate3d(22px, 20px, 0) rotate(6deg) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  }
+}
+
+@keyframes advisor-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes advisor-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+.advisor-launcher-card {
+  animation: launcher-in 620ms cubic-bezier(0.19, 1.06, 0.32, 1.02) 120ms both;
+  will-change: transform, opacity;
+}
+
+.advisor-panel[data-state="open"] {
+  animation: advisor-panel-in 240ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
+}
+
+.advisor-panel[data-state="closed"] {
+  animation: advisor-panel-out 170ms cubic-bezier(0.4, 0, 0.9, 0.5) both;
+  pointer-events: none;
+}
+
+/* --- history filter drawer ------------------------------------------------ */
+
+@keyframes filters-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes filters-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes filters-in-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes filters-out-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes filters-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes filters-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* animation-name AND duration are !important for two reasons:
+   1. the dialog's built-in `.animate-in` shorthand would otherwise win;
+   2. the global `@media (prefers-reduced-motion: reduce)` reset below sets
+      `animation-duration: .01ms !important` on `*`, which turned this slide
+      into an instant snap on machines with OS animations disabled.
+   The keyframes drive `transform`, not `translate`, because the drawer carries
+   Tailwind's `!translate-x-0 !translate-y-0` and !important beats keyframes.
+   history.tsx additionally drives this with the Web Animations API, which
+   outranks CSS animations entirely — so the slide is forced, not suggested. */
+.filters-drawer[data-state="open"] {
+  animation-name: filters-in-up !important;
+  animation-duration: 400ms !important;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+  animation-fill-mode: both !important;
+  will-change: transform;
+}
+
+.filters-drawer[data-state="closed"] {
+  animation-name: filters-out-up !important;
+  animation-duration: 300ms !important;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  animation-fill-mode: both !important;
+  will-change: transform;
+}
+
+@media (min-width: 640px) {
+  .filters-drawer[data-state="open"] {
+    animation-name: filters-in-right !important;
+  }
+
+  .filters-drawer[data-state="closed"] {
+    animation-name: filters-out-right !important;
+  }
+}
+
+.filters-overlay[data-state="open"] {
+  animation-name: filters-overlay-in !important;
+  animation-duration: 320ms !important;
+  animation-timing-function: ease-out !important;
+  animation-fill-mode: both !important;
+}
+
+.filters-overlay[data-state="closed"] {
+  animation-name: filters-overlay-out !important;
+  animation-duration: 240ms !important;
+  animation-timing-function: ease-in !important;
+  animation-fill-mode: both !important;
+}
+
+/* --- category picker ------------------------------------------------------ */
+
+@keyframes catpanel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes catpanel-out {
+  from {
+    opacity: 0.9;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@keyframes catoption-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cat-panel[data-state="open"] {
+  animation: catpanel-in 170ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
+  transform-origin: top center;
+}
+
+.cat-panel[data-state="closed"] {
+  animation: catpanel-out 130ms cubic-bezier(0.4, 0, 0.85, 0.5) both;
+  transform-origin: top center;
+  pointer-events: none;
+}
+
+.cat-option {
+  animation: catoption-in 220ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
+  animation-delay: var(--cat-delay, 0ms);
+}

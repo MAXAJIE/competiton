@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -6,6 +6,8 @@ import {
   CreditCard,
   ReceiptText,
 } from "lucide-react";
+import { CategoryPicker } from "@/components/CategoryPicker";
+import { suggestCategory, useCategories } from "@/lib/categories";
 import type { Transaction, TxType } from "@/lib/types";
 
 const types: { value: TxType; label: string; icon: typeof ArrowUpRight }[] = [
@@ -32,24 +34,75 @@ export function TxForm({
     transaction_date: new Date().toISOString().slice(0, 10),
     ...initial,
   });
+  const tax = useCategories();
+  const activeType = (fields.type ?? "expense") as TxType;
+  const [suggested, setSuggested] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState(false);
   const set = (key: keyof Transaction, value: string | number) =>
     setFields((current) => ({ ...current, [key]: value }));
   const isOpenItem = fields.type === "ar" || fields.type === "ap";
+
+  // Switching ledger type re-scopes the category: keep it only if it is valid
+  // for the new type, otherwise clear it so the picker re-suggests. An AR/AP
+  // entry also moves from "paid" to "pending" (it is an open item by nature).
+  const chooseType = (next: TxType) => {
+    setFields((current) => {
+      const options = tax[next] ?? [];
+      const keep = options.some((option) => option.label === current.category);
+      const wasOpen = current.type === "ar" || current.type === "ap";
+      const becomesOpen = next === "ar" || next === "ap";
+      const status = !wasOpen && becomesOpen && (current.status ?? "paid") === "paid"
+        ? "pending"
+        : becomesOpen
+          ? (current.status ?? "pending")
+          : "paid";
+      return { ...current, type: next, status, category: keep ? (current.category ?? "") : "" };
+    });
+    setSuggested(null);
+    setCategoryError(false);
+  };
+
+  // Classifier suggests the best-fit category once the vendor is known.
+  // Degrades silently when the backend is unreachable (guest/offline).
+  useEffect(() => {
+    const vendor = (fields.vendor_or_customer ?? "").trim();
+    if (vendor.length < 3) {
+      setSuggested(null);
+      return;
+    }
+    let alive = true;
+    const timer = window.setTimeout(() => {
+      void suggestCategory(vendor, activeType).then((result) => {
+        if (!alive) return;
+        setSuggested(result && result.category !== fields.category ? result.category : null);
+      });
+    }, 420);
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [fields.vendor_or_customer, fields.category, activeType]);
 
   return (
     <form
       className="space-y-7"
       onSubmit={(event) => {
         event.preventDefault();
+        const category = (fields.category ?? "").trim();
+        if (!category) {
+          setCategoryError(true);
+          return;
+        }
+        setCategoryError(false);
         onSubmit({
           id: `n${Date.now()}`,
           currency: "USD",
           source: "manual",
           due_date: isOpenItem ? (fields.due_date ?? null) : null,
-          category: "",
           vendor_or_customer: "",
           amount: 0,
           ...fields,
+          category,
         } as Transaction);
       }}
     >
@@ -63,7 +116,7 @@ export function TxForm({
                 type="button"
                 key={value}
                 aria-pressed={selected}
-                onClick={() => set("type", value)}
+                onClick={() => chooseType(value)}
                 className={`type-choice flex min-h-[76px] flex-col items-start justify-between rounded-xl border p-3 text-left transition-colors ${
                   selected
                     ? "border-indigo-300 bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200"
@@ -124,13 +177,20 @@ export function TxForm({
             />
           </FormField>
           <FormField label="Category">
-            <input
-              required
-              className="field"
-              placeholder="e.g. Sales, Rent, Software"
+            <CategoryPicker
               value={fields.category ?? ""}
-              onChange={(event) => set("category", event.target.value)}
+              onChange={(label) => {
+                set("category", label);
+                setCategoryError(false);
+              }}
+              type={activeType}
+              suggested={suggested}
             />
+            {categoryError && (
+              <span className="mt-1.5 block text-xs font-medium text-rose-600">
+                Pick a category for this {activeType === "ar" ? "receivable" : activeType === "ap" ? "payable" : activeType} entry.
+              </span>
+            )}
           </FormField>
           {isOpenItem && (
             <>

@@ -56,6 +56,19 @@ export function AdvisorWidget() {
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Keep the panel mounted for one animation frame after closing so the exit
+  // animation can play instead of the panel snapping out of existence.
+  const [panelMounted, setPanelMounted] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setPanelMounted(true);
+      return;
+    }
+    if (!panelMounted) return;
+    const timer = window.setTimeout(() => setPanelMounted(false), 180);
+    return () => window.clearTimeout(timer);
+  }, [open, panelMounted]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -93,7 +106,7 @@ export function AdvisorWidget() {
         ribbon={pathname !== "/entry" && pathname !== "/settings"}
         tilt={6}
         data-entrance="launcher"
-        className="fixed bottom-5 right-5 z-[60] h-14 w-14 rounded-2xl sm:bottom-7 sm:right-7"
+        className="advisor-launcher-card fixed bottom-5 right-5 z-[70] h-14 w-14 rounded-2xl sm:bottom-7 sm:right-7"
       >
         <button
           type="button"
@@ -113,11 +126,13 @@ export function AdvisorWidget() {
         </button>
       </InteractiveCard>
 
-      {open && (
+      {panelMounted && (
         <section
           role="dialog"
           aria-label="Cash advisor chat"
-          className="fixed bottom-24 right-4 z-[60] flex h-[min(600px,76vh)] w-[min(400px,calc(100vw-2rem))] animate-in fade-in zoom-in-95 slide-in-from-bottom-3 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(19,35,61,0.24)] duration-200 sm:bottom-28 sm:right-7"
+          data-state={open ? "open" : "closed"}
+          aria-hidden={!open}
+          className="advisor-panel fixed bottom-24 right-4 z-[70] flex h-[min(600px,76vh)] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(19,35,61,0.24)] sm:bottom-28 sm:right-7"
         >
           <header className="flex items-center gap-3 border-b border-slate-100 bg-white px-4 py-3.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">

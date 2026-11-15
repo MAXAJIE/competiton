@@ -34,7 +34,10 @@ export function Page({ children }: { children: ReactNode }) {
       );
       const animatedWidgets = new WeakSet<HTMLElement>(allWidgets);
       const reveals = gsap.utils
-        .toArray<HTMLElement>("[data-reveal], .surface:not([data-reveal]):not([data-scroll])", root)
+        .toArray<HTMLElement>(
+          "[data-reveal]:not([data-local-entrance]), .surface:not([data-reveal]):not([data-scroll]):not([data-local-entrance])",
+          root,
+        )
         .filter((el) => !el.closest("[data-scroll]") && !el.classList.contains("widget-surface"));
       if (lines.length || rules.length || reveals.length || widgets.length) {
         const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
