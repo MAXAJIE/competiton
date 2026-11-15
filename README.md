@@ -12,6 +12,20 @@ You can run the frontend **alone in guest mode** (demo data, nothing leaves the
 browser) and see the whole app. Supabase + the Python backend only add real
 login, persistence, OCR, advisor and email reports.
 
+### What you need, at a glance
+
+| Goal | Need |
+|---|---|
+| Website in guest mode (fastest) | **Node 20.19+ / 22.12+** + npm |
+| + real backend (login, saved data, OCR, advisor) | also **Python 3.11 – 3.13** (3.13 recommended) |
+
+> **Python version matters.** The backend pulls numpy / pandas / scikit-learn
+> from PyPI, and those publish wheels *after* a new Python release. On a brand
+> new Python, `pip` finds no wheel, tries to compile from source, and fails
+> without a C++ toolchain. Use **3.13** (the team's version — verified here on
+> 3.11 too) instead of whatever "latest" your machine offers. Details and fixes
+> in [§3](#3-optional--run-the-python-backend).
+
 ---
 
 ## 1. Quick start — run the website (2 commands)
@@ -145,13 +159,53 @@ Full backend and auth notes: [`backend/README.md`](backend/README.md).
 Needed for real accounts, saved ledgers, receipt OCR, live market headlines and
 email reports. The models are pre-trained, so no training step is required.
 
-**Requirements:** Python **3.11+** (tested on 3.14). Windows: install from
-<https://python.org> and tick "Add python.exe to PATH".
+**Requirements:** Python **3.11 – 3.13**. Anything newer (3.14+) is untested and
+breaks often — pin the version deliberately instead of using the newest one.
+
+| Python | Backend install | Why |
+|---|---|---|
+| 3.11 / 3.12 / 3.13 | ✅ supported | installed + 75 tests green on 3.11 here; 3.13 is the team's version |
+| 3.14+ | ⚠️ not supported | numpy / pandas / scikit-learn / cffi wheels land weeks-to-months after a Python release; until they do, pip builds from source and fails without a C/C++ toolchain |
+
+`backend/requirements.txt` uses `>=` pins, so pip always installs the newest
+numpy/pandas/scikit-learn. When those have no wheel for your interpreter, the
+install stops with something like:
+
+```
+Building wheel for scikit-learn (pyproject.toml) ... error
+  error: Microsoft Visual C++ 14.0 or greater is required.   # Windows
+ERROR: metadata-generation-failed
+```
+
+That is a **Python version** error, not a broken repo. Install 3.13 from
+<https://python.org> (Windows installer: tick **"Add python.exe to PATH"** and
+the **`py` launcher**), then create the venv **with that interpreter**:
 
 ```bash
-cd backend          # from the repo root (the folder with package.json)
-python -m venv .venv
+cd backend                    # from the repo root (the folder with package.json)
+
+py -3.13 -m venv .venv        # Windows (PowerShell / cmd / Git Bash)
+python3.13 -m venv .venv      # macOS / Linux
+
+.venv/Scripts/python -V       # Windows — must print Python 3.13.x
+.venv/bin/python -V           # macOS / Linux
 ```
+
+> **Changing the interpreter in VS Code is not enough.** "Python: Select
+> Interpreter" only changes what the editor runs — it does **not** rebuild
+> `backend/.venv`, which keeps the Python it was created with. If the venv was
+> made with the wrong version, delete it and recreate it:
+>
+> ```bash
+> rm -rf backend/.venv                      # Windows cmd: rmdir /s /q backend\.venv
+> cd backend && py -3.13 -m venv .venv
+> ```
+>
+> Then select `backend/.venv/Scripts/python` (macOS/Linux:
+> `backend/.venv/bin/python`) as the interpreter.
+
+Install the dependencies and start the API (both lines use the venv's Python,
+never a bare `python`):
 
 ```bash
 # Windows (PowerShell / cmd / Git Bash)
@@ -162,6 +216,10 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m uvicorn app.main:app --reload --port 8000
 ```
+
+The first install takes a few minutes (it downloads ~60 packages). A healthy
+run ends with `Application startup complete.` and `Uvicorn running on
+http://127.0.0.1:8000`.
 
 Then check <http://localhost:8000/docs> (interactive API docs) and
 <http://localhost:8000/api/models/info>. The frontend already talks to
@@ -187,6 +245,15 @@ authenticated writes return 401, which is the guest-mode rule working.
 cd backend
 .venv/Scripts/python -m pytest -q      # macOS/Linux: .venv/bin/python
 ```
+
+Expected: `75 passed`. They are pure calculation/OCR-parsing tests — no
+network, no Supabase keys, no OpenRouter credits needed. If collection fails
+with `ModuleNotFoundError: fastapi`, you are running the system Python instead
+of the venv (see the fix above).
+
+The two committed models (`backend/models/*.joblib`) load on 3.11 – 3.13 as-is,
+so no training step is required. An `InconsistentVersionWarning` on load is
+harmless; re-run the training commands below to silence it.
 
 ### Retrain the models (optional — artifacts are committed)
 
@@ -248,7 +315,12 @@ already-published history (see `AGENTS.md`).
 | Signed in but the ledger is empty | Correct: signed-in users start empty (only guest mode seeds demo rows) |
 | `Failed to fetch` when adding rows while signed in | Backend is not running — start it on port 8000, or stay in guest mode |
 | OCR says `rate-limited upstream` / `does not support image input` | Swap `OCR_MODEL` in `backend/.env` for a paid vision model — see the OCR table in `backend/README.md` |
+| `Building wheel for scikit-learn … error`, `metadata-generation-failed`, `Microsoft Visual C++ 14.0 or greater is required`, `Failed building wheel for numpy/pandas/cffi` | Python too new for the published wheels. Delete `backend/.venv`, recreate it with `py -3.13 -m venv .venv`, reinstall requirements |
+| Changed VS Code to Python 3.13 but install still fails | The `.venv` is still the old version — check `.venv/Scripts/python -V`, then remove and recreate `.venv` |
+| `py -3.13` says "Requested Python version (3.13) not installed" | Run `py -0` to list registered versions; install 3.13 from <https://python.org> with the **`py` launcher** option ticked, or create the venv from the full path: `"C:\Users\you\AppData\Local\Programs\Python\Python313\python.exe" -m venv .venv` |
 | Backend import errors on Windows | Use the venv paths (`.venv/Scripts/python`, not bare `python`) |
+| `No module named 'app'` / `ModuleNotFoundError: fastapi` | You are outside `backend/` or not using the venv: `cd backend && .venv/Scripts/python -m uvicorn app.main:app --reload --port 8000` |
+| `address already in use` for port 8000 | An old uvicorn is still running — stop it, or use `--port 8001` and set `VITE_API_URL` to match |
 
 ---
 

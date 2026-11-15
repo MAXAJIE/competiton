@@ -8,12 +8,20 @@ stubs in `src/lib/api.ts` to call these endpoints (see contract below).
 
 ## Run
 
+Python **3.11 – 3.13** required (3.13 recommended) — anything newer (3.14+) is
+untested and commonly fails because numpy, pandas, scikit-learn and cffi wheels
+lag behind new Python releases; `pip install` then tries to compile from source
+and stops without a C++ toolchain. Create the venv with the pinned interpreter
+so an editor's "Select Interpreter" cannot silently pick the wrong one:
+
 ```bash
-cd backend
-python -m venv .venv
+py -3.13 -m venv .venv                             # Windows (macOS/Linux: python3.13 -m venv .venv)
 .venv/Scripts/pip install -r requirements.txt      # (Linux/macOS: .venv/bin/pip)
 .venv/Scripts/uvicorn app.main:app --reload --port 8000
 ```
+
+If you already made `.venv` with a newer Python, delete it and recreate it —
+switching interpreter in your editor does not rebuild it.
 
 Tests (pure calc layer, no network):
 
