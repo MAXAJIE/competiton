@@ -120,3 +120,144 @@ export async function fetchMarketSnapshot(): Promise<{ fetched_at: string; indic
     return null; // guest/offline → fall back to bundled demo color
   }
 }
+
+// --- scored models (SKILL.md §11) -------------------------------------------
+// The ledger travels in the request body, so these work in guest mode too:
+// the backend only falls back to the stored ledger when the body is empty.
+
+export type ForecastSource = "model" | "fallback_trailing_average" | "none";
+
+export type ForecastResult = {
+  value: number;
+  method: string;
+  source: ForecastSource;
+  baseline_value: number | null;
+  target_month: string | null;
+};
+
+export type ArRiskSeverity = "high" | "medium" | "low";
+
+/** One open receivable scored for late-payment risk by the backend. */
+export type ArRiskFlag = {
+  id: string | null;
+  vendor_or_customer: string;
+  amount: number;
+  category: string;
+  due_date: string | null;
+  status: "pending" | "overdue";
+  days_until_due: number;
+  customer_historical_late_rate: number;
+  customer_prior_count: number;
+  p_late: number;
+  at_risk: boolean;
+  severity: ArRiskSeverity;
+  threshold: number;
+  source: string;
+};
+
+export type ArRiskSummary = {
+  scored: number;
+  at_risk: number;
+  at_risk_amount: number;
+  high_risk: number;
+  high_risk_amount: number;
+  open_amount: number;
+  top: ArRiskFlag[];
+  method: string;
+  source: string;
+};
+
+export type RevenueModelMetrics = {
+  model?: string;
+  rows?: { total: number; train: number; test: number };
+  features?: string[];
+  baseline?: { name: string; mae: number };
+  model_metrics?: { mae: number };
+  improvement_pct?: number;
+  coefficients?: Record<string, number>;
+  failure_case?: {
+    month: string;
+    actual: number;
+    predicted: number;
+    error: number;
+    hypothesis: string;
+  };
+};
+
+export type ArModelMetrics = {
+  model?: string;
+  rows?: { total: number; train: number; test: number };
+  baseline?: {
+    name: string;
+    accuracy: number;
+    late_caught: number;
+    late_actual: number;
+    note?: string;
+  };
+  model_metrics?: { accuracy: number; precision: number; recall: number; f1: number };
+  confusion_matrix?: {
+    labels: string[];
+    matrix: number[][];
+    true_negative: number;
+    false_positive: number;
+    false_negative: number;
+    true_positive: number;
+    late_actual: number;
+    late_caught: number;
+  };
+  threshold?: number;
+  threshold_tuned_on?: string;
+  features?: string[];
+  failure_case?: {
+    kind: string;
+    vendor_or_customer: string;
+    amount: number;
+    category: string;
+    days_until_due: number;
+    p_late: number;
+    hypothesis: string;
+  };
+};
+
+export type ModelInfo = {
+  ar_risk: boolean;
+  revenue_forecast: boolean;
+  metrics: {
+    generated_at?: string;
+    revenue?: RevenueModelMetrics;
+    ar_risk?: ArModelMetrics;
+  };
+};
+
+/** POST /api/forecast — next-month revenue from the trained regression. */
+export async function fetchForecast(tx: Transaction[]): Promise<ForecastResult | null> {
+  try {
+    return await api<ForecastResult>("/api/forecast", {
+      method: "POST",
+      body: JSON.stringify({ transactions: tx }),
+    });
+  } catch {
+    return null; // offline → the page shows the degraded state instead of guessing
+  }
+}
+
+/** POST /api/ar/risk — open AR rows scored by the trained classifier. */
+export async function fetchArRisk(tx: Transaction[]): Promise<ArRiskSummary | null> {
+  try {
+    return await api<ArRiskSummary>("/api/ar/risk", {
+      method: "POST",
+      body: JSON.stringify({ transactions: tx }),
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** GET /api/models/info — which artifacts loaded + the held-out metrics. */
+export async function fetchModelsInfo(): Promise<ModelInfo | null> {
+  try {
+    return await api<ModelInfo>("/api/models/info");
+  } catch {
+    return null;
+  }
+}

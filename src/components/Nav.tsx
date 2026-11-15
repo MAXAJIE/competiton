@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
+  BrainCircuit,
   History,
   LayoutDashboard,
   LogIn,
@@ -19,7 +20,7 @@ import { signOut } from "@/lib/api";
 import { useStore } from "@/lib/store";
 
 const links: {
-  to: "/" | "/advisor" | "/entry" | "/history" | "/settings";
+  to: "/" | "/advisor" | "/entry" | "/history" | "/insights" | "/settings";
   label: string;
   icon: LucideIcon;
 }[] = [
@@ -27,6 +28,7 @@ const links: {
   { to: "/advisor", label: "AI advisor", icon: MessageCircle },
   { to: "/entry", label: "Transactions", icon: ArrowLeftRight },
   { to: "/history", label: "History", icon: History },
+  { to: "/insights", label: "Model insights", icon: BrainCircuit },
   { to: "/settings", label: "Risk settings", icon: Settings2 },
 ];
 

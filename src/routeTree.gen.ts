@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as EntryRouteImport } from './routes/entry'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 
@@ -36,6 +37,11 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/advisor': typeof AdvisorRoute
   '/entry': typeof EntryRoute
   '/history': typeof HistoryRoute
+  '/insights': typeof InsightsRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/advisor': typeof AdvisorRoute
   '/entry': typeof EntryRoute
   '/history': typeof HistoryRoute
+  '/insights': typeof InsightsRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/advisor': typeof AdvisorRoute
   '/entry': typeof EntryRoute
   '/history': typeof HistoryRoute
+  '/insights': typeof InsightsRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/advisor' | '/entry' | '/history' | '/login' | '/settings'
+  fullPaths:
+    | '/'
+    | '/advisor'
+    | '/entry'
+    | '/history'
+    | '/insights'
+    | '/login'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/advisor' | '/entry' | '/history' | '/login' | '/settings'
+  to:
+    | '/'
+    | '/advisor'
+    | '/entry'
+    | '/history'
+    | '/insights'
+    | '/login'
+    | '/settings'
   id:
     | '__root__'
     | '/'
     | '/advisor'
     | '/entry'
     | '/history'
+    | '/insights'
     | '/login'
     | '/settings'
   fileRoutesById: FileRoutesById
@@ -92,6 +116,7 @@ export interface RootRouteChildren {
   AdvisorRoute: typeof AdvisorRoute
   EntryRoute: typeof EntryRoute
   HistoryRoute: typeof HistoryRoute
+  InsightsRoute: typeof InsightsRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -126,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -148,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdvisorRoute: AdvisorRoute,
   EntryRoute: EntryRoute,
   HistoryRoute: HistoryRoute,
+  InsightsRoute: InsightsRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
 }
