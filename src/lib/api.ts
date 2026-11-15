@@ -5,7 +5,23 @@ import { supabase, sessionOrNull, AUTH_CONFIGURED } from "./supabase";
 import type { OcrScanResult } from "./ocr-types";
 import type { AdvisorReply, RiskSettings, Transaction } from "./types";
 
-const API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000";
+/** Absolute base URL for the API.
+ *
+ * A value pasted without a scheme ("my-api.up.railway.app") makes fetch() treat
+ * it as a *relative* path, so every call silently hits the frontend origin
+ * instead of the backend — a 404 that looks like a broken API. Normalise here
+ * so a missing "https://" in a build variable cannot do that.
+ */
+export function normaliseApiBase(raw: string): string {
+  const value = raw.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(value)) return value;
+  const isLocal = /^(localhost|127\.0\.0\.1)(:|$)/i.test(value);
+  return `${isLocal ? "http" : "https"}://${value}`;
+}
+
+const API_URL = normaliseApiBase(
+  (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:8000",
+);
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const session = await sessionOrNull();

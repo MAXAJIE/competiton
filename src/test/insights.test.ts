@@ -61,3 +61,17 @@ describe("insights presentation helpers", () => {
     expect(topNStatement(0, 0)).toBe("No open rows to score");
   });
 });
+
+describe("normaliseApiBase", () => {
+  it("adds the scheme a pasted host is missing", async () => {
+    const { normaliseApiBase } = await import("@/lib/api");
+    // Without this, fetch() treats the value as a relative path and every API
+    // call hits the frontend origin instead — a 404 that reads as "backend down".
+    expect(normaliseApiBase("cashflow-67-production.up.railway.app"))
+      .toBe("https://cashflow-67-production.up.railway.app");
+    expect(normaliseApiBase("https://x.up.railway.app")).toBe("https://x.up.railway.app");
+    expect(normaliseApiBase("http://localhost:8000")).toBe("http://localhost:8000");
+    expect(normaliseApiBase("localhost:8000")).toBe("http://localhost:8000");
+    expect(normaliseApiBase("https://x.app/")).toBe("https://x.app");
+  });
+});
