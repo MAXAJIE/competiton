@@ -22,6 +22,9 @@ import {
   YAxis,
 } from "recharts";
 import { Page, Headline } from "@/components/Reveal";
+import { SkeletonBlock } from "@/components/Skeleton";
+import { OverviewSkeleton } from "@/components/skeletons/OverviewSkeleton";
+import { useSlowPending } from "@/lib/use-slow-pending";
 import { CountUp } from "@/components/CountUp";
 import { InteractiveCard } from "@/components/InteractiveCard";
 import { MovingWave } from "@/components/MovingWave";
@@ -102,6 +105,7 @@ function Dashboard() {
         baseline: modelForecast.baseline_value,
       }
     : { value: fallbackProjection.value, method: fallbackProjection.method, baseline: null };
+  const slowPending = useSlowPending(!loaded);
   const empty = loaded && mode !== null && tx.length === 0;
   const needsWorkspace = loaded && mode === null;
   const warning = risk.enabled && runway !== null && runway < risk.low_cash_threshold_months;
@@ -122,12 +126,10 @@ function Dashboard() {
           <p className="eyebrow mb-2">
             {today} <span className="mx-1.5 text-slate-300">/</span> Financial overview
           </p>
-          <h1 className="text-[2.65rem] leading-none sm:text-5xl">
+          <h1 className="text-[2.65rem] leading-[1.15] sm:text-5xl">
             Good to see you<span className="text-accent">.</span>
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-            Your cash position, without the guesswork.
-          </p>
+          <p className="mt-3 lede sm:text-base">Your cash position, without the guesswork.</p>
         </div>
         <Link to="/entry" className="btn btn-solid relative z-10" data-reveal>
           <Plus aria-hidden className="h-4 w-4" /> Add transaction
@@ -168,7 +170,7 @@ function Dashboard() {
             <h2 className="mt-1 text-2xl text-slate-900">
               Start with your own ledger or explore the demo.
             </h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            <p className="lede mt-1 max-w-2xl">
               Your dashboard is empty until you sign in or choose guest mode. No figures have been
               assumed.
             </p>
@@ -189,7 +191,7 @@ function Dashboard() {
             <h2 className="mt-1 text-2xl text-slate-900">
               Your ledger is ready for its first entry.
             </h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            <p className="lede mt-1 max-w-2xl">
               Add a transaction to see your cash position, runway and trends. Nothing is assumed.
             </p>
           </div>
@@ -200,18 +202,10 @@ function Dashboard() {
       )}
 
       {!loaded ? (
-        <div
-          className="grid gap-4 lg:grid-cols-12"
-          aria-label="Loading financial overview"
-          aria-busy="true"
-        >
-          <div className="h-64 animate-pulse rounded-3xl bg-slate-200/70 lg:col-span-5" />
-          <div className="grid gap-4 sm:grid-cols-3 lg:col-span-7">
-            {[0, 1, 2].map((item) => (
-              <div key={item} className="h-64 animate-pulse rounded-3xl bg-slate-200/70" />
-            ))}
-          </div>
-        </div>
+        // Only once the wait is real: a fast load goes straight to the numbers.
+        slowPending ? (
+          <OverviewSkeleton />
+        ) : null
       ) : (
         <>
           <section aria-label="Cash position" className="grid gap-4 lg:grid-cols-12">
@@ -237,14 +231,14 @@ function Dashboard() {
                   <Landmark aria-hidden className="h-[18px] w-[18px]" />
                 </span>
               </div>
-              <p className="relative mt-8 text-4xl font-medium tracking-tight sm:text-5xl">
+              <p className="kpi relative mt-8 text-4xl sm:text-5xl">
                 <CountUp value={cash} format={usd} delay={0.15} />
               </p>
               <div className="relative mt-8 border-t border-white/15 pt-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="eyebrow text-slate-400">Estimated runway</p>
-                    <p className={`num mt-1 text-2xl ${warning ? "text-amber-300" : "text-white"}`}>
+                    <p className={`kpi mt-1 text-2xl ${warning ? "text-amber-300" : "text-white"}`}>
                       {runway === null ? (
                         "—"
                       ) : (
@@ -315,7 +309,7 @@ function Dashboard() {
                       <Sparkles aria-hidden className="h-[18px] w-[18px]" />
                     </span>
                   </div>
-                  <p className="num mt-5 text-2xl font-medium text-slate-900">
+                  <p className="kpi mt-5 text-2xl text-slate-900">
                     {projection.value > 0 ? (
                       <CountUp value={projection.value} format={usd} delay={0.45} />
                     ) : (
@@ -352,9 +346,7 @@ function Dashboard() {
                 <div>
                   <p className="eyebrow">Cash movement</p>
                   <h2 className="mt-1 text-3xl">Income &amp; expenses</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Monthly totals from your recorded transactions
-                  </p>
+                  <p className="mt-1 lede">Monthly totals from your recorded transactions</p>
                 </div>
                 <div className="flex items-center gap-4 pt-1 text-xs text-slate-600">
                   <span className="inline-flex items-center gap-2">
@@ -375,7 +367,7 @@ function Dashboard() {
                   <p className="mt-3 font-semibold text-slate-800">
                     {monthly.length === 0 ? "Your cash story starts here" : "One month recorded"}
                   </p>
-                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  <p className="mt-1 max-w-sm lede">
                     {monthly.length === 0
                       ? "Once you record transactions, monthly cash movement will appear here."
                       : "Add another month of activity to reveal the trend."}
@@ -499,7 +491,7 @@ function Dashboard() {
                     <div key={bucket}>
                       <div className="mb-2 flex items-center justify-between gap-3 text-sm">
                         <span className="text-slate-600">{labels[bucket] ?? bucket}</span>
-                        <span className="num text-xs font-medium text-slate-800">
+                        <span className="tabular-nums text-xs font-medium text-slate-800">
                           {usd(amount)}
                         </span>
                       </div>
@@ -522,7 +514,7 @@ function Dashboard() {
               <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                 <span className="text-xs text-muted-foreground">Overdue receivables</span>
                 <span
-                  className={`num text-sm font-semibold ${arap.arOverdue > 0 ? "text-rose-600" : "text-slate-700"}`}
+                  className={`tabular-nums text-sm font-semibold ${arap.arOverdue > 0 ? "text-rose-600" : "text-slate-700"}`}
                 >
                   {usd(arap.arOverdue)}
                 </span>
@@ -541,7 +533,7 @@ function Dashboard() {
                   <Sparkles className="h-5 w-5" />
                 </span>
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              <p className="lede mt-3">
                 {arap.arOverdue > 0
                   ? `You have ${usd(arap.arOverdue)} in overdue receivables. A quick follow-up could help bring cash in sooner.`
                   : runway !== null && warning
@@ -562,7 +554,7 @@ function Dashboard() {
                 <div>
                   <p className="eyebrow">External context</p>
                   <h2 className="mt-1 text-3xl">Market snapshot</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 lede">
                     Qualitative context only — never used in cash calculations.
                   </p>
                 </div>
@@ -577,7 +569,7 @@ function Dashboard() {
                   aria-busy="true"
                 >
                   {[0, 1, 2, 3].map((item) => (
-                    <div key={item} className="h-[68px] animate-pulse rounded-xl bg-slate-100" />
+                    <SkeletonBlock key={item} className="h-[68px] rounded-xl" />
                   ))}
                 </div>
               ) : market === null || (!market.indicators.length && !market.headlines.length) ? (
@@ -601,7 +593,7 @@ function Dashboard() {
                         className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3"
                       >
                         <p className="eyebrow">{indicator.k}</p>
-                        <p className="num mt-1 text-base font-semibold text-slate-900">
+                        <p className="tabular-nums mt-1 text-base font-semibold text-slate-900">
                           {indicator.v}
                           <span className="ml-2 text-xs font-normal text-muted-foreground">
                             {indicator.d}
@@ -615,7 +607,7 @@ function Dashboard() {
                       {market.headlines.slice(0, 3).map((headline) => (
                         <li
                           key={headline}
-                          className="flex gap-2 text-sm leading-relaxed text-slate-600"
+                          className="lede flex gap-2"
                         >
                           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
                           {headline}
@@ -666,7 +658,7 @@ function MetricCard({
           <Icon aria-hidden className="h-[18px] w-[18px]" />
         </span>
       </div>
-      <p className="num mt-5 text-2xl font-medium text-slate-900">
+      <p className="kpi mt-5 text-2xl text-slate-900">
         <CountUp value={value} format={usd} delay={delay} />
       </p>
       <p

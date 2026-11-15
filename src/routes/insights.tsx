@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { ForcedEntrance } from "@/components/ForcedEntrance";
 import { Headline, Page } from "@/components/Reveal";
+import { SkeletonBlock } from "@/components/Skeleton";
+import { useSlowPending } from "@/lib/use-slow-pending";
 import { getMonthly, usd } from "@/lib/calc";
 import {
   fetchArRisk,
@@ -204,6 +206,8 @@ function ProjectionCard({
 }) {
   // "none" is not a fallback: it means there is no income to project from, and
   // labelling it as a rule would dress up missing data as a method.
+  // A quick answer shows the numbers only; placeholders wait for a real delay.
+  const slowPending = useSlowPending(status === "loading");
   const isFallback = forecast?.source === "fallback_trailing_average";
   const empty = forecast ? forecast.source === "none" || !forecast.target_month : false;
   const sourceLabel = forecast?.source === "model"
@@ -241,7 +245,26 @@ function ProjectionCard({
       </div>
 
       {status === "loading" ? (
-        <Skeleton className="mt-5 h-12 w-48" />
+        !slowPending ? null : (
+          <div aria-busy="true">
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <Skeleton className="h-12 w-44" />
+              <Skeleton className="h-7 w-16 rounded-full" />
+            </div>
+            <ul className="mt-6 space-y-3">
+              {[0, 1, 2].map((bar) => (
+                <li key={bar} className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2 w-full rounded-full" />
+                  <Skeleton className="h-3 w-16" />
+                </li>
+              ))}
+            </ul>
+            <span className="sr-only" role="status">
+              Loading the revenue projection
+            </span>
+          </div>
+        )
       ) : !forecast ? (
         <Unavailable text="The forecast endpoint did not respond." />
       ) : empty ? (
@@ -318,6 +341,7 @@ function DeltaPill({ value, baseline }: { value: number; baseline: number | null
 /* -------------------------------------------------------------------------- */
 
 function RiskCard({ status, risk }: { status: Status; risk: ArRiskSummary | null }) {
+  const slowPending = useSlowPending(status === "loading");
   const threshold = risk?.top[0]?.threshold ?? null;
   const flaggedShare = risk && risk.open_amount > 0 ? risk.at_risk_amount / risk.open_amount : 0;
 
@@ -333,11 +357,19 @@ function RiskCard({ status, risk }: { status: Status; risk: ArRiskSummary | null
       </div>
 
       {status === "loading" ? (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {[0, 1, 2, 3].map((key) => (
-            <Skeleton key={key} className="h-[76px]" />
-          ))}
-        </div>
+        !slowPending ? null : (
+          <div className="mt-4 grid grid-cols-2 gap-3" aria-busy="true">
+            {[0, 1, 2, 3].map((key) => (
+              <div key={key} className="rounded-xl border border-slate-100 px-3 py-2.5">
+                <Skeleton className="h-2.5 w-16" />
+                <Skeleton className="mt-2 h-5 w-12" />
+              </div>
+            ))}
+            <span className="sr-only" role="status">
+              Loading receivable risk scores
+            </span>
+          </div>
+        )
       ) : !risk ? (
         <Unavailable text="The risk endpoint did not respond." />
       ) : risk.scored === 0 ? (
@@ -422,6 +454,7 @@ function Tile({
 /* -------------------------------------------------------------------------- */
 
 function RiskQueue({ status, risk }: { status: Status; risk: ArRiskSummary | null }) {
+  const slowPending = useSlowPending(status === "loading");
   const rows = risk?.top ?? [];
 
   return (
@@ -437,11 +470,16 @@ function RiskQueue({ status, risk }: { status: Status; risk: ArRiskSummary | nul
       </div>
 
       {status === "loading" ? (
-        <div className="space-y-3 p-5">
-          {[0, 1, 2].map((key) => (
-            <Skeleton key={key} className="h-14" />
-          ))}
-        </div>
+        !slowPending ? null : (
+          <div className="space-y-3 p-5" aria-busy="true">
+            {[0, 1, 2].map((key) => (
+              <Skeleton key={key} className="h-14" />
+            ))}
+            <span className="sr-only" role="status">
+              Loading the risk queue
+            </span>
+          </div>
+        )
       ) : !risk || rows.length === 0 ? (
         <div className="px-5 py-14 text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
@@ -450,7 +488,7 @@ function RiskQueue({ status, risk }: { status: Status; risk: ArRiskSummary | nul
           <h3 className="mt-4 text-lg font-semibold text-slate-800">
             {risk ? "No open receivables" : "Scores unavailable"}
           </h3>
-          <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-slate-500">
+          <p className="lede mx-auto mt-1 max-w-md">
             {risk
               ? "Only open rows are scored — settled invoices have nothing left to chase."
               : "The risk endpoint did not respond, so nothing is ranked rather than ranked wrongly."}
@@ -890,8 +928,9 @@ function ModelBadge({
   );
 }
 
+/** Placeholder block: same shimmer as the rest of the app (see components/Skeleton). */
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl bg-slate-100 ${className}`} aria-hidden />;
+  return <SkeletonBlock className={`rounded-xl ${className}`} />;
 }
 
 function Unavailable({ text }: { text: string }) {

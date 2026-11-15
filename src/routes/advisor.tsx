@@ -115,7 +115,7 @@ function Advisor() {
                   <Sparkles className="h-6 w-6" />
                 </span>
                 <h2 className="mt-4 text-3xl">What would you like to understand?</h2>
-                <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                <p className="mt-1 max-w-md lede">
                   Ask about cash flow, runway, receivables, payables or a revenue projection.
                 </p>
                 {tx.length === 0 && (
@@ -251,7 +251,7 @@ function Advisor() {
           <InteractiveCard tilt={0} className="surface p-5 sm:p-6">
             <p className="eyebrow">Ledger context</p>
             <p className="num mt-2 text-3xl font-semibold text-slate-900">{tx.length}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 lede">
               {tx.length === 1 ? "transaction available" : "transactions available"} to analyze
             </p>
             {tx.length === 0 && (

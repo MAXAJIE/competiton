@@ -200,10 +200,16 @@ export function Headline({ eyebrow, lines }: { eyebrow: string; lines: string[] 
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           {eyebrow}
         </p>
-        <h1 className="max-w-3xl text-[2.65rem] leading-[0.98] tracking-tight sm:text-5xl lg:text-[3.6rem]">
+        <h1 className="max-w-3xl text-[2.65rem] leading-[1.12] tracking-[-0.02em] sm:text-5xl lg:text-[3.6rem]">
           {lines.map((l, i) => (
-            <span key={i} data-line className="block overflow-hidden pb-1">
-              <span className={`block ${i === lines.length - 1 ? "italic text-accent" : ""}`}>
+            // The mask that hides each line before it slides up would also crop
+            // Fraunces' descenders (y, g, p) on the italic line, so the padding
+            // sits on the inner span: it extends the masked box instead of
+            // letting the glyph tails fall outside it.
+            <span key={i} data-line className="block overflow-hidden">
+              <span
+                className={`block pb-[0.16em] ${i === lines.length - 1 ? "italic text-accent" : ""}`}
+              >
                 {l}
               </span>
             </span>

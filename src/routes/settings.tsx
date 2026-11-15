@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { BellRing, CircleGauge, Mail, Save, ShieldCheck } from "lucide-react";
 import { Page, Headline } from "@/components/Reveal";
 import { InteractiveCard } from "@/components/InteractiveCard";
+import { SettingsSkeleton } from "@/components/skeletons/SettingsSkeleton";
+import { useSlowPending } from "@/lib/use-slow-pending";
 import { useStore } from "@/lib/store";
 import { getRiskSettings, saveRiskSettings, sendTestReport } from "@/lib/api";
 import { getRunwayMonths } from "@/lib/calc";
@@ -22,16 +24,25 @@ export const Route = createFileRoute("/settings")({
 });
 
 function Settings() {
-  const { risk, setRisk, mode, tx } = useStore();
+  const { risk, setRisk, mode, tx, loaded } = useStore();
   const [values, setValues] = useState(risk);
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(mode === "user");
+  // Distinguishes "nothing to load" (guest) from "not fetched yet" (signed in),
+  // so the first paint is a skeleton instead of a flash of default numbers.
+  const [hydrated, setHydrated] = useState(mode !== "user");
   const runway = getRunwayMonths(tx);
+  // One flag for "settings are not on screen yet": the ledger is still loading,
+  // or the signed-in settings request is still in flight. It drives both the
+  // skeleton and the action row, so the two can never appear together.
+  const pending = !loaded || !hydrated || loading;
+  const slowPending = useSlowPending(pending);
 
   useEffect(() => {
     if (mode !== "user") {
       setValues(risk);
       setLoading(false);
+      setHydrated(true);
       return;
     }
     let active = true;
@@ -49,7 +60,9 @@ function Settings() {
           );
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setLoading(false);
+        setHydrated(true);
       });
     return () => {
       active = false;
@@ -98,9 +111,7 @@ function Settings() {
       <div data-reveal className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl">Risk settings</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose when you want a nudge about your cash position.
-          </p>
+          <p className="mt-1 lede">Choose when you want a nudge about your cash position.</p>
         </div>
         <span
           className={`hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium sm:inline-flex ${mode === "user" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
@@ -112,16 +123,10 @@ function Settings() {
         </span>
       </div>
 
-      {loading ? (
-        <div
-          className="grid gap-5 lg:grid-cols-2"
-          aria-label="Loading risk settings"
-          aria-busy="true"
-        >
-          {[0, 1].map((item) => (
-            <div key={item} className="h-[380px] animate-pulse rounded-3xl bg-slate-200/70" />
-          ))}
-        </div>
+      {pending ? (
+        slowPending ? (
+          <SettingsSkeleton />
+        ) : null
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-12">
           <InteractiveCard ribbon={false} className="surface p-5 sm:p-7 lg:col-span-7">
@@ -132,9 +137,7 @@ function Settings() {
               <div>
                 <p className="eyebrow">Runway threshold</p>
                 <h3 className="mt-1 text-2xl">When should we raise a flag?</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Your dashboard will highlight runway below this level.
-                </p>
+                <p className="mt-1 lede">Your dashboard will highlight runway below this level.</p>
               </div>
             </div>
 
@@ -186,9 +189,7 @@ function Settings() {
               <div>
                 <p className="eyebrow">Alerts &amp; reports</p>
                 <h3 className="mt-1 text-2xl">Stay in the loop</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Tune overdue invoice warnings and report delivery.
-                </p>
+                <p className="mt-1 lede">Tune overdue invoice warnings and report delivery.</p>
               </div>
             </div>
 
@@ -258,7 +259,7 @@ function Settings() {
         </div>
       )}
 
-      {!loading && (
+      {!pending && (
         <div
           data-reveal
           className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between"

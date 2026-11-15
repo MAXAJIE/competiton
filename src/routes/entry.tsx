@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Page, Headline } from "@/components/Reveal";
+import { RecentEntriesSkeleton } from "@/components/skeletons/RecentEntriesSkeleton";
+import { useSlowPending } from "@/lib/use-slow-pending";
 import { InteractiveCard } from "@/components/InteractiveCard";
 import { TxForm } from "@/components/TxForm";
 import { DocScanDialog } from "@/components/DocScanDialog";
@@ -45,7 +47,8 @@ const KIND_LABEL: Record<Transaction["type"], string> = {
 const recordedAt = (t: Transaction) => t.created_at ?? t.transaction_date + "T00:00:00";
 
 function Entry() {
-  const { addTx, mode, tx } = useStore();
+  const { addTx, mode, tx, loaded } = useStore();
+  const slowPending = useSlowPending(!loaded);
   const [tab, setTab] = useState<"manual" | "scan">("manual");
   const [scanOpen, setScanOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,9 +99,7 @@ function Entry() {
       >
         <div>
           <h2 className="text-3xl">Add a transaction</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Keep your financial picture clear and up to date.
-          </p>
+          <p className="mt-1 lede">Keep your financial picture clear and up to date.</p>
         </div>
         <div
           role="tablist"
@@ -146,7 +147,7 @@ function Entry() {
               </span>
               <p className="eyebrow mt-5 text-indigo-700">AI-assisted capture</p>
               <h3 className="mt-2 text-3xl">Read it. Review it. Save it.</h3>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              <p className="lede mt-2 max-w-md">
                 Scan a receipt, invoice or bank-statement page. Extracted details stay a draft until
                 you review and confirm them.
               </p>
@@ -208,7 +209,11 @@ function Entry() {
                 <ReceiptText className="h-4 w-4" />
               </span>
             </div>
-            {recent.length === 0 ? (
+            {!loaded ? (
+              slowPending ? (
+                <RecentEntriesSkeleton />
+              ) : null
+            ) : recent.length === 0 ? (
               <div className="mt-5 rounded-xl bg-slate-50 px-4 py-5 text-center">
                 <p className="text-sm font-medium text-slate-700">No entries yet</p>
                 <p className="mt-1 text-xs text-muted-foreground">
