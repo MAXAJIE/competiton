@@ -80,6 +80,22 @@ def health() -> dict:
     return {"ok": True}
 
 
+@app.get("/")
+def root() -> dict:
+    """Hitting the bare domain should explain what this is, not 404.
+
+    A deployed backend URL gets pasted into build settings and checked by hand,
+    so it answers like a service, not a broken site.
+    """
+    return {
+        "service": "CashMonitoring backend",
+        "health": "/api/health",
+        "docs": "/docs",
+        "note": "This is the API. The app itself is the deployed frontend, "
+                "which must point VITE_API_URL at this origin.",
+    }
+
+
 # --- auth (C1) ---------------------------------------------------------------
 
 class LoginBody(BaseModel):
