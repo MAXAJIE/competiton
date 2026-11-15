@@ -57,7 +57,7 @@ export const Route = createFileRoute("/insights")({
 type Status = "loading" | "ready" | "error";
 
 function InsightsPage() {
-  const { tx, loaded } = useStore();
+  const { tx, loaded, mode } = useStore();
   const [status, setStatus] = useState<Status>("loading");
   const [forecast, setForecast] = useState<ForecastResult | null>(null);
   const [risk, setRisk] = useState<ArRiskSummary | null>(null);
@@ -65,7 +65,11 @@ function InsightsPage() {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!loaded) return;
+    // No workspace chosen (mode === null) means nobody has signed in or opted
+    // into the guest demo yet. /api/models/info is public, so without this gate
+    // the page filled itself with model metrics behind the "Choose a workspace"
+    // sidebar — real content on an unclaimed session.
+    if (!loaded || mode === null) return;
     let alive = true;
     setStatus("loading");
     void Promise.all([fetchForecast(tx), fetchArRisk(tx), fetchModelsInfo()]).then(
@@ -80,7 +84,7 @@ function InsightsPage() {
     return () => {
       alive = false;
     };
-  }, [tx, loaded, attempt]);
+  }, [tx, loaded, mode, attempt]);
 
   // Context bars only — read from the ledger, never presented as model output.
   const monthly = useMemo(() => getMonthly(tx), [tx]);
@@ -93,6 +97,30 @@ function InsightsPage() {
 
   const revenueMetrics = info?.metrics.revenue ?? null;
   const arMetrics = info?.metrics.ar_risk ?? null;
+
+  // Nothing here is shown until a workspace exists: model metrics are public,
+  // but presenting them on an unclaimed session reads as leaked data.
+  if (loaded && mode === null) {
+    return (
+      <Page>
+        <Headline eyebrow="Scored models" lines={["Forecast & risk,", "with the receipts."]} />
+        <div className="surface rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8" data-reveal>
+          <p className="eyebrow">Workspace required</p>
+          <h2 className="mt-2 text-3xl">Scores appear after you pick a workspace.</h2>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Both models score <em>your</em> ledger, so nothing is calculated until there is one.
+            Sign in to use your own records, or open a guest workspace to try the demo data — it
+            stays in this browser session and is never saved.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/login" className="btn btn-solid">
+              Choose a workspace
+            </Link>
+          </div>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page>
