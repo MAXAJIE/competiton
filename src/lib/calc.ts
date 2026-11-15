@@ -13,6 +13,36 @@ export function getMonthly(tx: Transaction[]) {
   });
   return [...map.values()].sort((a, b) => a.month.localeCompare(b.month));
 }
+/**
+ * The chart's monthly series: `getMonthly` with the empty months put back.
+ *
+ * `getMonthly` returns only the months that have rows, so a ledger with gaps
+ * drew Mar, Jun and Jul as three touching points — a trend that never happened.
+ * This walks the calendar from the first recorded month to the last, fills any
+ * gap with zero, and keeps the most recent `months` entries. Nothing is invented
+ * outside the recorded range, and the ledger stays the only source.
+ */
+export function getMonthlySeries(tx: Transaction[], months = 12) {
+  const raw = getMonthly(tx);
+  if (!raw.length) return [];
+  const byMonth = new Map(raw.map((row) => [row.month, row]));
+  const [startYear, startMonth] = raw[0]!.month.split("-").map(Number) as [number, number];
+  const [endYear, endMonth] = raw[raw.length - 1]!.month.split("-").map(Number) as [number, number];
+  const end = Date.UTC(endYear, endMonth - 1, 1);
+  const first = Date.UTC(startYear, startMonth - 1, 1);
+  const windowStart = Date.UTC(endYear, endMonth - 1 - (Math.max(months, 1) - 1), 1);
+  const next = (ts: number) => {
+    const d = new Date(ts);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+  };
+  const series: { month: string; income: number; expense: number }[] = [];
+  for (let ts = Math.max(first, windowStart); ts <= end; ts = next(ts)) {
+    const d = new Date(ts);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    series.push(byMonth.get(key) ?? { month: key, income: 0, expense: 0 });
+  }
+  return series;
+}
 export function getCashBalance(tx: Transaction[]) {
   // Cash on hand = paid income − paid expense. No opening balance is assumed:
   // the schema has no opening-balance column, so an empty ledger reads 0.

@@ -1,6 +1,8 @@
 """Pinned configuration. Model IDs are pinned here, never chosen per-call (SKILL.md §1)."""
 import os
 
+from . import security
+
 try:
     from dotenv import load_dotenv
     # Loads backend/.env if present (uvicorn doesn't do this automatically).
@@ -20,6 +22,17 @@ SUPABASE_SERVICE_KEY = env("SUPABASE_SERVICE_KEY")
 
 # One vision-capable model for OCR, one for the advisor — both via OpenRouter.
 OPENROUTER_API_KEY = env("OPENROUTER_API_KEY")
+
+# BYOK: users may send their own key per request (X-OpenRouter-Key). It is used
+# for that request only and never written anywhere — the schema is
+# Lovable-managed, and a customer's key does not belong in our database.
+SERVER_KEY_AVAILABLE = bool(OPENROUTER_API_KEY)
+
+
+def request_key(supplied: str | None) -> str:
+    """The key to use for one request: the caller's own, else the server's."""
+    supplied = (supplied or "").strip()
+    return supplied or OPENROUTER_API_KEY
 
 
 def _models_list(primary: str, fallbacks: str) -> list[str]:
@@ -106,3 +119,35 @@ NEWS_FEEDS = [
     "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",
     "https://www.cnbc.com/id/100003114/device/rss/rss.html",
 ]
+
+# --- legal gate --------------------------------------------------------------
+# Bump either version when the text changes. The backend rejects a signup that
+# accepted an older version, so a stale tab cannot accept terms it never showed.
+TERMS_VERSION = env("TERMS_VERSION", "1.0")
+PRIVACY_VERSION = env("PRIVACY_VERSION", "1.0")
+MIN_AGE = int(env("MIN_AGE", "18") or 18)
+
+# --- retention (the "no hoarding" rule) --------------------------------------
+# These are enforced by db.enforce_retention: old rows and images are deleted
+# automatically and a per-user cap keeps a runaway import from growing forever.
+RETENTION_DAYS_TRANSACTIONS = int(env("RETENTION_DAYS_TRANSACTIONS", "1095") or 1095)
+RETENTION_DAYS_DOCUMENTS = int(env("RETENTION_DAYS_DOCUMENTS", "180") or 180)
+RETENTION_MAX_TRANSACTIONS = int(env("RETENTION_MAX_TRANSACTIONS", "5000") or 5000)
+RETENTION_MAX_DOCUMENTS = int(env("RETENTION_MAX_DOCUMENTS", "500") or 500)
+
+# --- transport / abuse limits ------------------------------------------------
+# CORS is an allowlist; "*" stays the fallback so a fresh local clone works.
+ALLOWED_ORIGINS = security.allowed_origins(env("ALLOWED_ORIGINS", ""))
+# Per-route budgets live in security.RULES; this switch exists so the test suite
+# (and a debugging session) can run without tripping them.
+RATE_LIMIT_ENABLED = env("RATE_LIMIT_ENABLED", "1") not in ("0", "false", "no")
+# Behind Railway/Render the real client IP is in X-Forwarded-For. Only trust it
+# when the deploy actually sits behind a proxy — otherwise it is spoofable.
+TRUST_PROXY_HEADERS = env("TRUST_PROXY_HEADERS", "1") not in ("0", "false", "no")
+# Uploads: bounded before a byte reaches the model.
+MAX_UPLOAD_BYTES = int(env("MAX_UPLOAD_BYTES", str(8 * 1024 * 1024)) or 8 * 1024 * 1024)
+MAX_UPLOAD_FILES = int(env("MAX_UPLOAD_FILES", "5") or 5)
+ALLOWED_UPLOAD_TYPES = tuple(x.strip() for x in env(
+    "ALLOWED_UPLOAD_TYPES",
+    "image/png,image/jpeg,image/jpg,image/webp,image/heic,application/pdf",
+).split(",") if x.strip())

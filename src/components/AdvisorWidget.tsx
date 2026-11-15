@@ -44,7 +44,10 @@ function RobotIcon({ className = "" }: { className?: string }) {
 
 export function AdvisorWidget() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const { tx } = useStore();
+  const { tx, mode, loaded } = useStore();
+  // Same rule as the advisor page: do not ask with a ledger that is still
+  // arriving, or the answer is a false "no transactions recorded yet".
+  const ready = loaded && !(mode === "guest" && tx.length === 0);
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([
     {
@@ -79,7 +82,7 @@ export function AdvisorWidget() {
 
   const send = async (text: string) => {
     const q = text.trim();
-    if (!q || sending) return;
+    if (!q || sending || !ready) return;
     setInput("");
     setMsgs((m) => [...m, { role: "user", text: q }]);
     setSending(true);
@@ -170,8 +173,11 @@ export function AdvisorWidget() {
                   <p className="whitespace-pre-wrap">{m.text}</p>
                   {m.figures && m.figures.length > 0 && (
                     <div className="mt-2 space-y-1 border-t pt-2">
-                      {m.figures.map((f) => (
-                        <div key={f.label} className="flex items-baseline justify-between gap-3">
+                      {m.figures.map((f, i) => (
+                        <div
+                          key={`${i}-${f.label}`}
+                          className="flex items-baseline justify-between gap-3"
+                        >
                           <span className="eyebrow">{f.label}</span>
                           <span className="num text-sm">{f.value}</span>
                         </div>
@@ -222,14 +228,20 @@ export function AdvisorWidget() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={tx.length ? "Ask about your cash…" : "Add an entry first…"}
+              placeholder={
+                !ready
+                  ? "Loading your ledger…"
+                  : tx.length
+                    ? "Ask about your cash…"
+                    : "Add an entry first…"
+              }
               className="field rounded-xl border-slate-200 bg-slate-50 text-sm"
               aria-label="Message the cash advisor"
             />
             <button
               type="submit"
               className="btn btn-solid h-11 min-h-0 px-3 py-2"
-              disabled={sending || !input.trim()}
+              disabled={sending || !ready || !input.trim()}
               aria-label="Send"
             >
               ↑

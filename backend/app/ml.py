@@ -361,3 +361,99 @@ def ar_risk_summary(tx: Iterable, today: date | None = None) -> dict:
                    "Only invoices resolved before the scoring moment count as history."),
         "source": flags[0]["source"] if flags else "none",
     }
+
+
+SEVERITY_RANK = {"high": 3, "medium": 2, "low": 1}
+
+
+def party_balances(tx: Iterable, side: str = "ar", today: date | None = None,
+                   limit: int = 40) -> dict:
+    """One row per party: who owes you (`ar`) or who you owe (`ap`).
+
+    "Who owes me money" is a naming question, and a total cannot answer it. This
+    groups the open rows by counterparty so the advisor can name each party with
+    the money and the risk attached to it.
+
+    Receivables reuse the AR risk model through `ar_risk_flags`, so a party's
+    rating is the worst rating among their open invoices. Payables have no model
+    (nothing was trained for them), so their risk is the due date as a fact:
+    already late, due within a week, or later — labelled `risk_basis: "due_date"`
+    rather than dressed up as a prediction.
+    """
+    tx = list(tx)
+    today = today or date.today()
+    if side not in ("ar", "ap"):
+        raise ValueError("side must be 'ar' or 'ap'")
+
+    rows: list[dict] = []
+    if side == "ar":
+        for f in ar_risk_flags(tx, today=today, limit=1000):
+            rows.append({
+                "party": f["vendor_or_customer"], "invoice_id": f["id"],
+                "amount": f["amount"], "due_date": f["due_date"], "status": f["status"],
+                "days_overdue": f["days_overdue"], "already_late": f["already_late"],
+                "days_until_due": None if f["already_late"] else f["days_until_due"],
+                "p_late": f["p_late"], "severity": f["severity"],
+                "risk_basis": "model" if f["source"] == "model" else "rule",
+            })
+    else:
+        for t in tx:
+            if t.type != "ap" or t.status not in ("pending", "overdue"):
+                continue
+            days_until = ((date.fromisoformat(str(t.due_date)) - today).days
+                          if t.due_date else 30)
+            already_late = t.status == "overdue" or days_until < 0
+            rows.append({
+                "party": t.vendor_or_customer, "invoice_id": t.id,
+                "amount": round(float(t.amount), 2), "due_date": t.due_date,
+                "status": t.status, "days_overdue": max(0, -days_until),
+                "days_until_due": days_until, "already_late": already_late,
+                "p_late": None, "severity": ("high" if already_late
+                                             else "medium" if days_until <= 7 else "low"),
+                "risk_basis": "due_date",
+            })
+
+    groups: dict[str, list[dict]] = {}
+    for row in rows:
+        groups.setdefault(row["party"], []).append(row)
+
+    parties: list[dict] = []
+    for party, items in groups.items():
+        worst = max(items, key=lambda i: SEVERITY_RANK.get(i["severity"], 0))
+        late = [i for i in items if i["already_late"]]
+        dues = [i["due_date"] for i in items if i["due_date"]]
+        upcoming = [i["days_until_due"] for i in items if not i["already_late"] and "days_until_due" in i]
+        p_lates = [i["p_late"] for i in items if i["p_late"] is not None]
+        parties.append({
+            "party": party,
+            "open_amount": round(sum(i["amount"] for i in items), 2),
+            "invoice_count": len(items),
+            "late_invoice_count": len(late),
+            "max_days_overdue": max((i["days_overdue"] for i in items), default=0),
+            "oldest_due_date": min(dues) if dues else None,
+            "days_until_due": min(upcoming) if upcoming else None,
+            "severity": worst["severity"],
+            "p_late": round(max(p_lates), 3) if p_lates else None,
+            "risk_basis": "model" if any(i["risk_basis"] == "model" for i in items)
+                          else items[0]["risk_basis"],
+            "invoices": [{k: i[k] for k in
+                          ("invoice_id", "amount", "due_date", "status",
+                           "days_overdue", "severity")} for i in items],
+        })
+
+    # Whoever is already late leads (a fact before a forecast), then exposure.
+    parties.sort(key=lambda p: (not p["late_invoice_count"], -p["open_amount"]))
+    shown = parties[:limit]
+    return {
+        "side": "receivable" if side == "ar" else "payable",
+        "party_count": len(parties),
+        "shown": len(shown),
+        "truncated": len(parties) > len(shown),
+        "total_open": round(sum(p["open_amount"] for p in parties), 2),
+        "parties": shown,
+        "method": ("Receivables come from the AR risk model (an existing late invoice is "
+                   "100% late by fact, a not-yet-due one gets the model's probability). "
+                   "Payables carry no model: their rating is the due date itself, so "
+                   "'already late' and 'due within 7 days' are stated as facts, not "
+                   "predictions."),
+    }

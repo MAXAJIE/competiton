@@ -14,4 +14,19 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("routes the AI setup step and Settings, where the key can be changed", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    expect(router.matchRoutes("/setup").at(-1)?.routeId).toBe("/setup");
+    expect(router.matchRoutes("/settings").at(-1)?.routeId).toBe("/settings");
+  });
+
+  it("serves the legal pages and the consent screen without a session", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    for (const path of ["/terms", "/privacy", "/welcome"]) {
+      expect(router.matchRoutes(path).at(-1)?.routeId).toBe(path);
+    }
+  });
 });

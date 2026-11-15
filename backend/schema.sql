@@ -66,3 +66,57 @@ create policy "own documents"     on documents     for all using (auth.uid() = u
 create policy "own risk settings" on risk_settings for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own profile"       on profiles      for all using (auth.uid() = id) with check (auth.uid() = id);
 create policy "read market snapshot" on market_snapshot for select using (true);
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security: the database's own copy of the ownership rule
+-- ---------------------------------------------------------------------------
+-- The backend talks to Postgres with the service key, so its queries are
+-- already filtered by user_id in db.py. RLS is the second lock: it is what makes
+-- the anon key in the browser harmless. Every table that holds user data must
+-- have RLS enabled and an owner policy — tests/test_schema_rls.py fails the
+-- build if a table is added without one.
+--
+-- market_snapshot is the one deliberate exception: it holds public market
+-- numbers and is readable by anyone, but only the service role can write it.
+
+drop policy if exists "own transactions: select" on transactions;
+drop policy if exists "own transactions: insert" on transactions;
+drop policy if exists "own transactions: update" on transactions;
+drop policy if exists "own transactions: delete" on transactions;
+drop policy if exists "own documents: select" on documents;
+drop policy if exists "own documents: insert" on documents;
+drop policy if exists "own documents: update" on documents;
+drop policy if exists "own documents: delete" on documents;
+drop policy if exists "own risk settings: select" on risk_settings;
+drop policy if exists "own risk settings: insert" on risk_settings;
+drop policy if exists "own risk settings: update" on risk_settings;
+drop policy if exists "own risk settings: delete" on risk_settings;
+drop policy if exists "own profile: select" on profiles;
+drop policy if exists "own profile: update" on profiles;
+
+create policy "own transactions: select" on transactions for select using (auth.uid() = user_id);
+create policy "own transactions: insert" on transactions for insert with check (auth.uid() = user_id);
+create policy "own transactions: update" on transactions for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own transactions: delete" on transactions for delete using (auth.uid() = user_id);
+
+create policy "own documents: select" on documents for select using (auth.uid() = user_id);
+create policy "own documents: insert" on documents for insert with check (auth.uid() = user_id);
+create policy "own documents: update" on documents for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own documents: delete" on documents for delete using (auth.uid() = user_id);
+
+create policy "own risk settings: select" on risk_settings for select using (auth.uid() = user_id);
+create policy "own risk settings: insert" on risk_settings for insert with check (auth.uid() = user_id);
+create policy "own risk settings: update" on risk_settings for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own risk settings: delete" on risk_settings for delete using (auth.uid() = user_id);
+
+create policy "own profile: select" on profiles for select using (auth.uid() = id);
+create policy "own profile: update" on profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- Retention sweeps and the "recent first" ordering both read created_at.
+create index if not exists transactions_user_created_idx on transactions (user_id, created_at desc);
+create index if not exists documents_user_created_idx on documents (user_id, created_at desc);
+
+-- Storage: uploaded scans live under <user_id>/… in the `documents` bucket.
+-- Configure the equivalent policy in the Supabase dashboard (Storage → Policies):
+--   select/insert/delete for authenticated where (storage.foldername(name))[1] = auth.uid()::text
+-- The backend deletes objects on account deletion and on retention expiry.

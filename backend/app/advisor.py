@@ -24,6 +24,26 @@ TOOL_SET = [
         "parameters": {"type": "object", "properties": {}},
     }},
     {"type": "function", "function": {
+        "name": "who_owes_me",
+        "description": ("Every customer who still owes money, one row per person/company: "
+                        "what they owe in total, how many open invoices, how many days "
+                        "overdue, and a risk rating (high/medium/low) with the reason. "
+                        "Call this for ANY question that asks who — 'who owes me money', "
+                        "'who should I chase', 'which customers are late', 'who is my "
+                        "biggest debtor', 'list my outstanding invoices by customer'. "
+                        "Never answer a who-question from ar_ap_summary: a total cannot "
+                        "name anybody."),
+        "parameters": {"type": "object", "properties": {}},
+    }},
+    {"type": "function", "function": {
+        "name": "who_i_owe",
+        "description": ("Every supplier/bill you still have to pay, one row per party: "
+                        "how much, how many days overdue or until due, and a rating. Use "
+                        "for 'who do I owe', 'what bills are due', 'which suppliers are "
+                        "waiting on me', 'list my payables by vendor'."),
+        "parameters": {"type": "object", "properties": {}},
+    }},
+    {"type": "function", "function": {
         "name": "ar_risk_flags",
         "description": ("Which unpaid invoices/receivables are at risk of being paid late, "
                         "with a probability and a high/medium/low severity per item from the "
@@ -35,7 +55,7 @@ TOOL_SET = [
     }},
     {"type": "function", "function": {
         "name": "ar_ap_summary",
-        "description": "Open receivables and payables totals, overdue AR, and aging buckets.",
+        "description": "Open receivables and payables totals, overdue AR, and aging buckets. Totals only — for named parties use who_owes_me / who_i_owe.",
         "parameters": {"type": "object", "properties": {}},
     }},
     {"type": "function", "function": {
@@ -122,6 +142,18 @@ SYSTEM_PROMPT = (
     "prediction tool is different: state its method and call it a projection.\n\n"
     "LEGAL/TAX — give general information and point to a qualified professional "
     "for their specific case. Never assert that a filing is correct or compliant.\n\n"
+    "NAMED QUESTIONS — when the question asks who (who owes me money, who do I owe, "
+    "which customers are late, who should I chase), the answer is a list of names, "
+    "not a total. Call who_owes_me (or who_i_owe) and give every party it returns its "
+    "own line, most urgent first: name, amount, how late or when due, and the risk "
+    "rating. Each party in the result already carries a ready-made `summary` and the "
+    "result carries `figure_lines`: copy those strings after the name exactly as "
+    "given, one '- <name>: <summary>' line each, then the total line. Do not "
+    "reformat them, drop separators or add raw field names. "
+    "If one party has several invoices, they are already summed: say so instead of "
+    "listing invoices separately. Never invent a name, and never answer a who "
+    "question with a sum alone. In the Answer sentences, name the two or three that "
+    "matter most and why.\n\n"
     "FORMAT — plain text, exactly these four sections in this order, each label "
     "on its own line, a blank line before each label:\n"
     "Answer\n<two to four plain sentences>\n\n"
@@ -131,6 +163,29 @@ SYSTEM_PROMPT = (
     "Never use asterisks, hashes, underscores, backticks, pipes, tables or emoji. "
     "Use '-' for lists. Keep it short and concrete."
 )
+
+
+ASKS_WHO = re.compile(r"\b(who|whom|whose)\b|\bwhich (of my |of the )?"
+                      r"(customers?|clients?|people|debtors?|suppliers?|vendors?)\b"
+                      r"|\blist (my|the|all)\b|\bname (the|my|each)\b")
+ASKS_MONEY = re.compile(r"\b(owe|owes|owed|owing|outstanding|unpaid|overdue|late|"
+                        r"chase|collect|debt|receivables?|payables?|bills?|money)\b")
+ASKS_PAYABLE = re.compile(r"\b(i|we) owe\b|\bdo (i|we) owe\b|\bpayables?\b|"
+                          r"\bsuppliers?\b|\bvendors?\b|\bbills?\b|\bmust pay\b|"
+                          r"\bto pay\b|\bpay (them|him|her|it)\b")
+
+
+def party_side(question: str) -> str | None:
+    """Is this a "who" question, and about which side of the ledger?
+
+    Needed so the no-key fallback can answer "who owes me money" with names
+    instead of a total, and so a who-question never drifts to the summary tool.
+    """
+    q = " ".join(re.findall(r"[a-z']+", question.lower()))
+    if not ASKS_WHO.search(q) or not ASKS_MONEY.search(q):
+        return None
+    # "who do I owe" is the payable side; anything else that names a party is AR.
+    return "ap" if ASKS_PAYABLE.search(q) else "ar"
 
 
 def out_of_scope(question: str) -> bool:
@@ -147,6 +202,19 @@ def needs_web(question: str) -> bool:
 
 MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
+# Models like typographic punctuation: non-breaking hyphens, narrow no-break
+# spaces, curly quotes. They render as tofu in some clients and make text
+# comparisons ("$5,000" vs "$5,000") fail, so every reply is normalised to
+# ASCII. Keyed by code point so no invisible character sits in this source.
+TYPOGRAPHY = {
+    **{cp: "-" for cp in range(0x2010, 0x2016)}, 0x2212: "-",
+    **{cp: "'" for cp in (0x2018, 0x2019, 0x201A)},
+    **{cp: '"' for cp in (0x201C, 0x201D)},
+    0x2026: "...",
+    **{cp: " " for cp in (0x00A0, 0x2009, 0x202F, 0x205F)},
+    **{cp: "" for cp in (0x200B, 0x200C, 0x200D, 0xFEFF)},
+}
+
 
 def tidy(text: str) -> str:
     """Strip markdown the model adds anyway, so replies read as plain text.
@@ -155,7 +223,8 @@ def tidy(text: str) -> str:
     "[label](url)" in a plain-text bubble reads as noise.
     """
     out: list[str] = []
-    for raw in (text or "").splitlines():
+    normalised = str(text or "").translate(TYPOGRAPHY)
+    for raw in normalised.splitlines():
         line = raw.rstrip()
         while line.startswith("#"):
             line = line[1:].lstrip()
@@ -172,6 +241,30 @@ def tidy(text: str) -> str:
     return cleaned.strip()
 
 
+def _party_figure(party: dict) -> Figure:
+    """One party, one line: the money, how late it is, and the rating.
+
+    Kept in the same "label: value" shape as every other figure, so a named
+    answer still reads as a table instead of a paragraph.
+    """
+    bits = [calc.usd(party["open_amount"])]
+    if party["invoice_count"] > 1:
+        bits.append(f"{party['invoice_count']} invoices")
+    if party["late_invoice_count"]:
+        bits.append(f"{party['max_days_overdue']} days late")
+    elif isinstance(party.get("days_until_due"), int):
+        days = party["days_until_due"]
+        bits.append("due today" if days == 0 else
+                    f"due in {days} days" if days > 0 else f"{abs(days)} days late")
+    elif party.get("oldest_due_date"):
+        bits.append(f"due {party['oldest_due_date']}")
+    p_late = party.get("p_late")
+    if p_late is not None and party["risk_basis"] == "model" and not party["late_invoice_count"]:
+        bits.append(f"{p_late:.0%} chance of late payment")
+    bits.append(f"{party['severity']} risk")
+    return Figure(label=party["party"], value=" · ".join(bits))
+
+
 def _run_tool(name: str, args: dict, tx: list[Transaction]) -> tuple[dict, list[Figure]]:
     """Execute a named calc function over real transaction rows (§3: figures
     are only ever attached here)."""
@@ -183,6 +276,19 @@ def _run_tool(name: str, args: dict, tx: list[Transaction]) -> tuple[dict, list[
             figures.append(Figure(label="Runway", value=f"{runway:.1f} months"))
         return ({"cash_balance": bal, "avg_monthly_burn": calc.get_avg_monthly_burn(tx),
                  "runway_months": runway}, figures)
+    if name in ("who_owes_me", "who_i_owe"):
+        side = "ar" if name == "who_owes_me" else "ap"
+        data = ml.party_balances(tx, side=side)
+        figures = [_party_figure(p) for p in data["parties"][:12]]
+        if data["party_count"]:
+            figures.append(Figure(label="Total open", value=calc.usd(data["total_open"])))
+        # Pre-formatted lines: the model copies them instead of reformatting raw
+        # fields, so replies keep "$5,000" and "32 days late" instead of
+        # "5000.0 severity=high p_late=1".
+        for party, figure in zip(data["parties"], figures):
+            party["summary"] = figure.value
+        data["figure_lines"] = [f"- {f.label}: {f.value}" for f in figures]
+        return (data, figures)
     if name == "ar_ap_summary":
         a = calc.get_ar_ap_summary(tx)
         return (a, [Figure(label="Open AR", value=calc.usd(a["ar"])),
@@ -241,6 +347,121 @@ def _frame(answer: str, figures: list[Figure] | None = None,
     return "\n".join(parts)
 
 
+def _party_answer(data: dict) -> AdvisorReply:
+    """Names, money and risk per party — the shape both paths share."""
+    ar = data["side"] == "receivable"
+    parties = data["parties"]
+    figures = [_party_figure(p) for p in parties[:12]]
+    tool = "who_owes_me" if ar else "who_i_owe"
+    if data["party_count"]:
+        figures.append(Figure(label="Total open", value=calc.usd(data["total_open"])))
+    if not parties:
+        return AdvisorReply(tool=tool, text=_frame(
+            f"Nobody {'owes you money' if ar else 'is waiting to be paid'} right now — "
+            f"every {'invoice' if ar else 'bill'} in your ledger is settled.",
+            next_step=(f"Record an invoice when you issue one, and I will track who owes what."
+                       if ar else "Record a bill when it arrives, and I will track what is due."),
+            caveat=f"Based on the {len(parties)} open rows in this ledger."))
+    late = [p for p in parties if p["late_invoice_count"]]
+    high = [p for p in parties if p["severity"] == "high"]
+    noun = "customer" if ar else "supplier"
+    noun += "" if data["party_count"] == 1 else "s"
+    total = calc.usd(data["total_open"])
+    if ar:
+        answer = (f"{data['party_count']} {noun} {'owes' if data['party_count'] == 1 else 'owe'} "
+                  f"you {total} across {sum(p['invoice_count'] for p in parties)} open "
+                  f"invoice{'' if sum(p['invoice_count'] for p in parties) == 1 else 's'}.")
+    else:
+        answer = (f"You still owe {data['party_count']} {noun} {total} in "
+                  f"{sum(p['invoice_count'] for p in parties)} open "
+                  f"bill{'' if sum(p['invoice_count'] for p in parties) == 1 else 's'}.")
+    if late:
+        answer += (f" {len(late)} {'is' if len(late) == 1 else 'are'} already late, led by "
+                   f"{late[0]['party']} ({calc.usd(late[0]['open_amount'])}, "
+                   f"{late[0]['max_days_overdue']} days overdue).")
+    elif high:
+        answer += (f" Nothing is late yet, but {high[0]['party']} is rated high risk on "
+                   f"{calc.usd(high[0]['open_amount'])}.")
+    else:
+        answer += " Nothing is overdue, and none of it is rated high risk."
+    urgent = late[0] if late else (high[0] if high else parties[0])
+    next_step = ((f"Send {urgent['party']} a short written reminder today — "
+                  f"{calc.usd(urgent['open_amount'])} is the most exposed.")
+                 if ar else
+                 (f"Pay or renegotiate {urgent['party']} first — "
+                  f"{calc.usd(urgent['open_amount'])} is the most exposed."))
+    caveat = ("Late invoices are facts, the rest are the AR model's probability — "
+              "a prompt to look closer, not a credit decision." if ar else
+              "Payable ratings come from the due date, not from a model.")
+    return AdvisorReply(tool=tool, text=_frame(answer, figures, next_step, caveat),
+                        figures=figures)
+
+
+SECTION_LABELS = ("Answer", "Figures", "Next step", "Caveat")
+
+
+def _sections(text: str) -> dict[str, str]:
+    """Split a reply into the four labelled parts, dropping anything unlabelled."""
+    out: dict[str, str] = {}
+    current: str | None = None
+    for line in text.splitlines():
+        label = line.strip().rstrip(":").strip()
+        if label in SECTION_LABELS:
+            current = label
+            out.setdefault(current, "")
+            continue
+        if current:
+            out[current] += line.rstrip() + "\n"
+    return {k: v.strip() for k, v in out.items()}
+
+
+def _with_figures(text: str, figures: list[Figure] | None) -> str:
+    """The attached figures are authoritative; the text must show them.
+
+    A model writes good sentences and copies lists badly: it drops the party
+    lines, folds them into the Answer, or restyles "$5,000". So the Figures
+    section is rebuilt from the tool result whenever the model's own version is
+    missing a line. Same trick as `_frame` — one shape, whoever wrote it.
+    """
+    if not figures:
+        return text
+    lines = [f"- {f.label}: {f.value}" for f in figures]
+    parts = _sections(text)
+    original = parts.get("Answer") or text.strip()
+    answer = original
+    # The model sometimes copies the table into the Answer anyway, either as the
+    # figure line or as "<name>" followed by its own bullet. Both are dropped, as
+    # long as some prose survives.
+    labels = {f.label for f in figures}
+    kept: list[str] = []
+    skip_bullet = False
+    for line in answer.splitlines():
+        text_line = line.strip()
+        if text_line in labels:
+            skip_bullet = True
+            continue
+        if skip_bullet and text_line.startswith("- "):
+            skip_bullet = False
+            continue
+        skip_bullet = False
+        if text_line in set(lines):
+            continue
+        kept.append(line)
+    if any(ln.strip() for ln in kept):
+        answer = "\n".join(kept).strip()
+    while "\n\n\n" in answer:
+        answer = answer.replace("\n\n\n", "\n\n")
+    shown = [ln.strip() for ln in parts.get("Figures", "").splitlines() if ln.strip()]
+    if answer == original and all(l in shown for l in lines) and shown and shown[-1] == lines[-1]:
+        return text  # already correct, total last: do not touch what the model got right
+    out = ["Answer", answer, "", "Figures", "\n".join(lines)]
+    if parts.get("Next step"):
+        out += ["", "Next step", parts["Next step"]]
+    if parts.get("Caveat"):
+        out += ["", "Caveat", parts["Caveat"]]
+    return "\n".join(out)
+
+
 def _deterministic_answer(q: str, tx: list[Transaction],
                           settings: RiskSettings | None = None) -> AdvisorReply:
     """Fallback when no OpenRouter key is configured (dev/demo on flaky wifi):
@@ -268,6 +489,9 @@ def _deterministic_answer(q: str, tx: list[Transaction],
                                           "you commit to new spending.",
                                 caveat="A projection, not a guarantee."),
                             figures=figs)
+    side = party_side(q)
+    if side:
+        return _party_answer(ml.party_balances(tx, side=side))
     if any(k in s for k in ("at risk", "late", "chase", "collect", "bad debt")):
         summ = ml.ar_risk_summary(tx)
         top = summ["top"][0] if summ["top"] else None
@@ -346,7 +570,8 @@ def _deterministic_answer(q: str, tx: list[Transaction],
     return AdvisorReply(text=REFUSAL)
 
 
-def _complete(messages: list[dict], models: list[str]) -> dict | None:
+def _complete(messages: list[dict], models: list[str],
+              api_key: str | None = None) -> dict | None:
     """One chat completion, walking the given model chain on provider errors.
 
     `models` is either the plain chain or the ":online" chain, which makes
@@ -357,7 +582,7 @@ def _complete(messages: list[dict], models: list[str]) -> dict | None:
         try:
             r = httpx.post(
                 f"{config.OPENROUTER_BASE}/chat/completions",
-                headers={"Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
+                headers={"Authorization": f"Bearer {config.request_key(api_key)}",
                          "HTTP-Referer": "https://cashmonitoring.app",
                          "X-Title": "CashMonitoring Advisor"},
                 # Reasoning models spend this budget on hidden reasoning first, so
@@ -393,7 +618,20 @@ def _sources(msg: dict) -> list[dict]:
     return out[:4]
 
 
-def ask(question: str, tx: list[Transaction], settings: RiskSettings | None = None) -> AdvisorReply:
+def _fallback(question: str, tx: list[Transaction],
+              settings: RiskSettings | None = None) -> AdvisorReply:
+    """The rules answer, or the standard refusal if the rules cannot help.
+
+    Used whenever the model produces nothing usable (unreachable, empty message,
+    no tool call). It keeps the "no figure without a tool" guarantee — the rules
+    call the same calc/model functions — and turns a dead end into an answer.
+    """
+    rule = _deterministic_answer(question, tx, settings)
+    return rule if rule.text != REFUSAL else AdvisorReply(text=REFUSAL)
+
+
+def ask(question: str, tx: list[Transaction], settings: RiskSettings | None = None,
+        api_key: str | None = None) -> AdvisorReply:
     # Out-of-scope asks are refused deterministically: no model call, no search,
     # no cost, and no chance of the advisor drifting into general chit-chat.
     if out_of_scope(question):
@@ -404,7 +642,7 @@ def ask(question: str, tx: list[Transaction], settings: RiskSettings | None = No
         # Nothing recorded yet and nothing external to look up: say so rather
         # than computing over an empty set.
         return AdvisorReply(text=NO_DATA)
-    if not config.OPENROUTER_API_KEY:
+    if not config.request_key(api_key):
         return _deterministic_answer(question, tx, settings)
 
     def to_llm(t: Transaction) -> dict:
@@ -427,8 +665,12 @@ def ask(question: str, tx: list[Transaction], settings: RiskSettings | None = No
     called_tools: list[str] = []
     figures: list[Figure] = []
     for _ in range(3):
-        msg = _complete(messages, models)
+        msg = _complete(messages, models, api_key)
         if msg is None:
+            if not web:
+                # No model, but the rules still answer from the ledger with real
+                # figures. A plainer answer beats a dead end.
+                return _fallback(question, tx, settings)
             return AdvisorReply(text=tidy(
                 "Answer\nThe advisor is unavailable right now (no model reachable). "
                 "Nothing was guessed.\n\nNext step\nTry again in a moment, or read the "
@@ -436,17 +678,23 @@ def ask(question: str, tx: list[Transaction], settings: RiskSettings | None = No
         sources = _sources(msg)
         tool_calls = msg.get("tool_calls") or []
         if not tool_calls:
-            content = msg.get("content") or ""
-            if called_tools:
-                return AdvisorReply(text=tidy(content), tool=called_tools[-1],
+            content = (msg.get("content") or "").strip()
+            # A reasoning model occasionally emits tool calls and then an empty
+            # final message. An empty bubble is not an answer, so fall through to
+            # the rules rather than shipping "".
+            if called_tools and content:
+                return AdvisorReply(text=_with_figures(tidy(content), figures),
+                                    tool=called_tools[-1],
                                     figures=figures, sources=sources or None)
             # No tool and no ledger claim: acceptable only when the question was
             # about external facts, where the answer rests on search citations
-            # rather than on the owner's data. Ledger questions still refuse.
-            if web and content.strip():
+            # rather than on the owner's data. Ledger questions still refuse —
+            # but the rules can usually answer them with real figures, which is
+            # better than a dead end.
+            if web and content:
                 return AdvisorReply(text=tidy(content), tool="web_search",
                                     sources=sources or None)
-            return AdvisorReply(text=REFUSAL)  # no tool -> no figures, ever
+            return _fallback(question, tx, settings)
         messages.append({"role": "assistant", "content": msg.get("content") or "", "tool_calls": tool_calls})
         for call in tool_calls:
             name = call["function"]["name"]
@@ -456,4 +704,4 @@ def ask(question: str, tx: list[Transaction], settings: RiskSettings | None = No
             figures = figs
             messages.append({"role": "tool", "tool_call_id": call["id"], "name": name,
                              "content": json.dumps(result)})
-    return AdvisorReply(text=REFUSAL)
+    return _fallback(question, tx, settings)

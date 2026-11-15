@@ -4,15 +4,25 @@ Key rule enforced at this layer (SKILL.md §4): no OCR row reaches
 `transactions` unless its document has reviewed = true, and confirm flips
 reviewed and writes the transaction together. Guests never get a write
 capable path at all (§8) — auth is checked by the routes before calling in.
+
+Account lifecycle lives here too, because "delete my data" has to mean the
+rows *and* the uploaded images: erasure that leaves a receipt PDF in Storage
+is not erasure. The same file holds the retention sweep, which is what keeps
+this app from hoarding data it no longer needs.
 """
 from __future__ import annotations
 
+import logging
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from supabase import Client, create_client
 
-from . import categories, config, settlement
-from .models import RiskSettings, Transaction
+from . import cache, categories, config, settlement
+from .models import RiskSettings, Transaction, transaction_from_row
+
+log = logging.getLogger(__name__)
+BUCKET = "documents"
 
 
 def client(service: bool = True) -> Client:
@@ -39,7 +49,7 @@ def _settle_receivables(user_id: str, payment: Transaction) -> list[dict]:
     'paid' on the matching invoice rows and leaves their original date intact;
     the income row the user just recorded is the record of when money arrived.
     """
-    rows = [Transaction(**r) for r in list_transactions(user_id)]
+    rows = [transaction_from_row(r) for r in list_transactions(user_id)]
     to_close = settlement.settleable(rows, payment)
     sb = _user_client(user_id)
     closed: list[dict] = []
@@ -94,7 +104,8 @@ def save_manual_transaction(user_id: str, t: Transaction) -> dict:
     saved = _user_client(user_id).table("transactions").insert(row).execute().data[0]
     # A payment from a customer who owes you closes that invoice automatically,
     # instead of leaving a receivable that is already paid.
-    settled = _settle_receivables(user_id, Transaction(**saved))
+    settled = _settle_receivables(user_id, transaction_from_row(saved))
+    enforce_retention_soon(user_id)
     return {**saved, "settled_ar": settled}
 
 
@@ -108,7 +119,9 @@ def insert_document(user_id: str, doc_type: str, file_url: Optional[str],
                     ocr_raw_json: dict) -> dict:
     row = {"user_id": user_id, "doc_type": doc_type, "file_url": file_url,
            "ocr_raw_json": ocr_raw_json, "reviewed": False}
-    return _user_client(user_id).table("documents").insert(row).execute().data[0]
+    saved = _user_client(user_id).table("documents").insert(row).execute().data[0]
+    enforce_retention_soon(user_id)
+    return saved
 
 
 def confirm_document_and_save(user_id: str, document_id: str,
@@ -142,7 +155,7 @@ def confirm_document_and_save(user_id: str, document_id: str,
     sb.table("documents").update({"reviewed": True}).eq("id", document_id).eq("user_id", user_id).execute()
     # Same settlement rule as manual entry — a scanned "paid" receipt for a
     # customer who owes you closes that receivable too.
-    settled = _settle_receivables(user_id, Transaction(**tx_row))
+    settled = _settle_receivables(user_id, transaction_from_row(tx_row))
     return {**tx_row, "settled_ar": settled}
 
 
@@ -215,3 +228,186 @@ def wipe_user_data(user_id: str) -> None:
     sb = client()
     for table in ("transactions", "documents", "risk_settings"):
         sb.table(table).delete().eq("user_id", user_id).execute()
+
+
+# --- account lifecycle: signup consent, deletion, retention ------------------
+
+def sign_up(email: str, password: str) -> dict:
+    """Create an account through Supabase's own signup (anon key, no service role).
+
+    Supabase decides whether a confirmation email is required; when it does,
+    there is no session yet and the caller must say "check your email" rather
+    than pretending the user is signed in.
+    """
+    res = client(service=False).auth.sign_up({"email": email, "password": password})
+    user = getattr(res, "user", None)
+    session = getattr(res, "session", None)
+    if not user:
+        raise ValueError("Supabase did not create the account")
+    return {
+        "user_id": user.id,
+        "email": user.email,
+        "needs_confirmation": session is None,
+        "access_token": getattr(session, "access_token", None) if session else None,
+        "refresh_token": getattr(session, "refresh_token", None) if session else None,
+    }
+
+
+def save_consent(user_id: str, terms_version: str, privacy_version: str,
+                 ip_hash: str = "") -> dict:
+    """Record the legal acceptance on the auth user's metadata.
+
+    Stored on the user record itself (admin metadata) rather than in a new table:
+    it is private, it is erased when the account is deleted, and it needs no
+    schema migration — the Supabase schema is managed elsewhere.
+    """
+    record = {
+        "terms_version": terms_version,
+        "privacy_version": privacy_version,
+        "age_confirmed": True,
+        "accepted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "ip_hash": ip_hash,
+    }
+    client().auth.admin.update_user_by_id(user_id, {"user_metadata": record})
+    return record
+
+
+def get_consent(user_id: str) -> dict | None:
+    """The acceptance this account recorded, for the Settings screen."""
+    try:
+        user = client().auth.admin.get_user_by_id(user_id).user
+    except Exception:
+        return None
+    meta = getattr(user, "user_metadata", None) or {}
+    if not meta.get("accepted_at"):
+        return None
+    return {k: meta.get(k) for k in
+            ("terms_version", "privacy_version", "age_confirmed", "accepted_at")}
+
+
+def _remove_uploads(user_id: str, names: list[str] | None = None) -> int:
+    """Delete this user's uploaded images/PDFs from Storage. Best effort.
+
+    Uploads are a cache of what OCR already read, never the source of truth, so
+    a Storage hiccup must not abort the row deletion the user asked for.
+    """
+    sb = client()
+    try:
+        entries = sb.storage.from_(BUCKET).list(user_id) or []
+    except Exception:
+        return 0
+    paths = [f"{user_id}/{e.get('name')}" for e in entries if e.get("name")]
+    if names is not None:
+        wanted = set(names)
+        paths = [p for p in paths if p.split("/", 1)[-1] in wanted]
+    removed = 0
+    for chunk_start in range(0, len(paths), 50):
+        chunk = paths[chunk_start:chunk_start + 50]
+        try:
+            sb.storage.from_(BUCKET).remove(chunk)
+            removed += len(chunk)
+        except Exception:
+            continue
+    return removed
+
+
+def purge_user_content(user_id: str) -> dict:
+    """Erase everything this user stored, keeping the account itself.
+
+    Order matters for the audit trail in the response: count first, delete
+    second, and report exactly what went — "deleted" with no numbers is a claim
+    nobody can check.
+    """
+    sb = client()
+    counts = {"transactions": 0, "documents": 0, "risk_settings": 0, "uploads": 0}
+
+    def counted(table: str) -> int:
+        r = sb.table(table).select("id", count="exact").eq("user_id", user_id).execute()
+        return int(getattr(r, "count", None) or len(r.data or []))
+
+    counts["transactions"] = counted("transactions")
+    counts["documents"] = counted("documents")
+    counts["risk_settings"] = counted("risk_settings")
+    counts["uploads"] = _remove_uploads(user_id)
+    for table in ("transactions", "documents", "risk_settings"):
+        sb.table(table).delete().eq("user_id", user_id).execute()
+    cache.invalidate(f"prune:{user_id}")
+    return counts
+
+
+def delete_account(user_id: str) -> dict:
+    """Full erasure: content, uploads, and the auth user (cascades profiles)."""
+    counts = purge_user_content(user_id)
+    client().auth.admin.delete_user(user_id)
+    cache.invalidate(f"prune:{user_id}")
+    return {**counts, "account": "deleted"}
+
+
+def enforce_retention(user_id: str) -> dict:
+    """Delete rows older than the retention window and above the row caps.
+
+    Two independent guards, because they catch different hoarding: age (a
+    three-year-old ledger is not needed to monitor cash) and volume (a script
+    that imports a million rows stops at the cap).
+    """
+    sb = _user_client(user_id)
+    removed = {"transactions": 0, "documents": 0, "uploads": 0}
+    today = date.today()
+
+    tx_cutoff = (today - timedelta(days=config.RETENTION_DAYS_TRANSACTIONS)).isoformat()
+    r = sb.table("transactions").delete().eq("user_id", user_id) \
+        .lt("transaction_date", tx_cutoff).execute()
+    removed["transactions"] += len(r.data or [])
+
+    doc_cutoff = (datetime.now(timezone.utc)
+                  - timedelta(days=config.RETENTION_DAYS_DOCUMENTS)).isoformat()
+    old_docs = sb.table("documents").select("id,file_url").eq("user_id", user_id) \
+        .lt("created_at", doc_cutoff).execute().data or []
+    if old_docs:
+        names = [str(d.get("file_url") or "").rsplit("/", 1)[-1] for d in old_docs]
+        removed["uploads"] += _remove_uploads(user_id, [n for n in names if n])
+        ids = [d["id"] for d in old_docs]
+        for start in range(0, len(ids), 100):
+            sb.table("documents").delete().eq("user_id", user_id) \
+                .in_("id", ids[start:start + 100]).execute()
+        removed["documents"] += len(ids)
+
+    # Volume caps: newest rows are kept, the tail beyond the cap goes.
+    removed["transactions"] += _trim_table(
+        sb, "transactions", user_id, config.RETENTION_MAX_TRANSACTIONS)
+    removed["documents"] += _trim_table(
+        sb, "documents", user_id, config.RETENTION_MAX_DOCUMENTS)
+    return removed
+
+
+def _trim_table(sb: Client, table: str, user_id: str, keep: int) -> int:
+    """Delete rows beyond `keep`, oldest first. Returns how many went."""
+    if keep <= 0:
+        return 0
+    try:
+        rows = (sb.table(table).select("id").eq("user_id", user_id)
+                .order("created_at", desc=True).range(keep, keep + 499).execute().data or [])
+    except Exception:
+        return 0
+    ids = [r["id"] for r in rows]
+    if not ids:
+        return 0
+    for start in range(0, len(ids), 100):
+        sb.table(table).delete().eq("user_id", user_id).in_("id", ids[start:start + 100]).execute()
+    return len(ids)
+
+
+def enforce_retention_soon(user_id: str, ttl: int = 3600) -> None:
+    """Run the sweep at most once an hour per user, and never break a write.
+
+    Retention is housekeeping: if Postgres is briefly unhappy, the row the user
+    just saved still has to succeed.
+    """
+    key = f"prune:{user_id}"
+    if cache.get(key) is not None:
+        return
+    cache.put(key, True, ttl)
+    try:
+        enforce_retention(user_id)
+    except Exception as e:  # pragma: no cover - logged, not fatal
+        log.warning("retention sweep failed for a user: %s", type(e).__name__)

@@ -30,7 +30,7 @@ const links: {
   { to: "/entry", label: "Transactions", icon: ArrowLeftRight },
   { to: "/history", label: "History", icon: History },
   { to: "/insights", label: "Model insights", icon: BrainCircuit },
-  { to: "/settings", label: "Risk settings", icon: Settings2 },
+  { to: "/settings", label: "Settings", icon: Settings2 },
 ];
 
 function NavigationLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -181,6 +181,24 @@ export function Nav() {
                 <LogIn aria-hidden className="h-4 w-4" />
               </Link>
             )}
+          </div>
+          <div className="mt-3 space-y-1 px-2 text-[0.65rem] leading-relaxed text-slate-500">
+            <p>Research &amp; educational use only — not financial advice.</p>
+            <p className="flex items-center gap-1.5">
+              <Link
+                to="/terms"
+                className="text-slate-400 underline-offset-2 hover:text-white hover:underline"
+              >
+                Terms
+              </Link>
+              <span aria-hidden>·</span>
+              <Link
+                to="/privacy"
+                className="text-slate-400 underline-offset-2 hover:text-white hover:underline"
+              >
+                Privacy
+              </Link>
+            </p>
           </div>
         </div>
       </aside>

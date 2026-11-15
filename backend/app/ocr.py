@@ -20,7 +20,7 @@ from typing import Optional
 
 import httpx
 
-from . import categories, config, db
+from . import categories, config, db, security
 
 # Valid transaction vocabulary (SKILL.md §9).
 _TYPES = {"income", "expense", "ar", "ap"}
@@ -327,11 +327,11 @@ def build_payload(model: str, doc_type: str, images: list[tuple[str, str, bytes]
 
 
 def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
-                max_tokens: int) -> object:
+                max_tokens: int, api_key: str | None = None) -> object:
     """One extraction request. Returns parsed JSON or raises with a clear reason."""
     r = httpx.post(
         f"{config.OPENROUTER_BASE}/chat/completions",
-        headers={"Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
+        headers={"Authorization": f"Bearer {config.request_key(api_key)}",
                  "HTTP-Referer": "https://cashmonitoring.app",
                  "X-Title": "CashMonitoring OCR"},
         json=build_payload(model, doc_type, images, max_tokens),
@@ -367,7 +367,8 @@ def _call_model(model: str, doc_type: str, images: list[tuple[str, str, bytes]],
     return parsed
 
 
-def _extract(doc_type: str, images: list[tuple[str, str, bytes]]) -> tuple[object, str]:
+def _extract(doc_type: str, images: list[tuple[str, str, bytes]],
+             api_key: str | None = None) -> tuple[object, str]:
     """Run the model chain over one page set. Returns (parsed, model)."""
     errors: list[str] = []
     for model in config.OCR_MODELS:
@@ -375,7 +376,7 @@ def _extract(doc_type: str, images: list[tuple[str, str, bytes]]) -> tuple[objec
         # hidden reasoning (finish_reason=length) gets one retry with double room.
         for budget in (config.OCR_MAX_TOKENS, config.OCR_MAX_TOKENS * 2):
             try:
-                return _call_model(model, doc_type, images, budget), model
+                return _call_model(model, doc_type, images, budget, api_key), model
             except Exception as e:  # rate limits, missing vision support, bad JSON
                 errors.append(str(e))
                 if "hit the" not in str(e):  # only the budget error is worth a retry
@@ -398,8 +399,23 @@ def _unreadable(raw: object, fields: dict) -> str | None:
     return None
 
 
+def _safe_filename(name: str, limit: int = 60) -> str:
+    """A storage-safe tail of a client filename.
+
+    Storage keys are built from this, so path separators, dot-dot segments and
+    control characters must not survive. The extension is kept because Storage
+    infers a content type from it on some clients.
+    """
+    base = str(name or "upload").replace("\\", "/").rsplit("/", 1)[-1]
+    base = re.sub(r"[^A-Za-z0-9._-]", "_", base).lstrip(".") or "upload"
+    stem, dot, ext = base.rpartition(".")
+    if dot and len(ext) <= 5:
+        return f"{(stem or 'file')[:limit - len(ext) - 1]}.{ext.lower()}"
+    return base[:limit]
+
+
 def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
-            doc_type_hint: str = "") -> dict:
+            doc_type_hint: str = "", api_key: str | None = None) -> dict:
     """Read each uploaded image as its OWN entry.
 
     Images are independent: two receipts photographed together are two
@@ -413,8 +429,9 @@ def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
     """
     if not files:
         raise ValueError("No file supplied")
-    if not config.OPENROUTER_API_KEY:
-        raise RuntimeError("OPENROUTER_API_KEY not configured; OCR unavailable")
+    if not config.request_key(api_key):
+        raise RuntimeError("No OpenRouter key available: send one from Settings or set "
+                           "OPENROUTER_API_KEY on the server")
 
     hint = doc_type_hint if doc_type_hint in _DOC_TYPES else ""
     entries: list[dict] = []
@@ -422,11 +439,11 @@ def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
     for index, (filename, content_type, data) in enumerate(files, start=1):
         item: dict = {"index": index, "name": filename}
         try:
-            parsed, used_model = _extract(hint, [(filename, content_type, data)])
+            parsed, used_model = _extract(hint, [(filename, content_type, data)], api_key)
         except Exception as e:  # every model refused this image
             entries.append({**item, "ok": False,
                             "reason": "the vision model could not read this image",
-                            "detail": str(e)[:200]})
+                            "detail": security.redact(e, 200)})
             continue
 
         model_type = parsed.get("doc_type") if isinstance(parsed, dict) else None
@@ -441,7 +458,10 @@ def run_ocr(user_id: str, files: list[tuple[str, str, bytes]],
         # Keep the image when we can; review never depends on it.
         file_url = None
         try:
-            path = f"{user_id}/{_uuid.uuid4()}-{filename}"
+            # The filename is client-controlled: keep only a short, safe tail so
+            # a path like "../../other-user/x.png" cannot escape this folder.
+            safe = _safe_filename(filename)
+            path = f"{user_id}/{_uuid.uuid4()}-{safe}"
             res = db.client().storage.from_("documents").upload(
                 path, data, {"content-type": content_type or "application/octet-stream"})
             file_url = f"documents/{path}" if res else None

@@ -40,7 +40,11 @@ const advisorTools: { icon: LucideIcon; label: string }[] = [
 type Message = { id: number; question: string; answer?: AdvisorReply };
 
 function Advisor() {
-  const { tx } = useStore();
+  const { tx, mode, loaded } = useStore();
+  // Guest demo rows are seeded in an effect just after the mode flips, so an
+  // Ask sent in that first frame would carry an empty ledger and be answered
+  // with "no transactions recorded yet". Wait for the ledger to exist.
+  const ready = loaded && !(mode === "guest" && tx.length === 0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState("");
   const [sending, setSending] = useState(false);
@@ -52,7 +56,7 @@ function Advisor() {
 
   const ask = async (text: string) => {
     const prompt = text.trim();
-    if (!prompt || sending) return;
+    if (!prompt || sending || !ready) return;
     const id = Date.now();
     setQuestion("");
     setMessages((current) => [...current, { id, question: prompt }]);
@@ -164,9 +168,9 @@ function Advisor() {
                         )}
                         {message.answer.figures && message.answer.figures.length > 0 && (
                           <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-2">
-                            {message.answer.figures.map((figure) => (
+                            {message.answer.figures.map((figure, i) => (
                               <div
-                                key={figure.label}
+                                key={`${i}-${figure.label}`}
                                 className="rounded-xl bg-slate-50 px-3 py-2.5"
                               >
                                 <p className="eyebrow">{figure.label}</p>
@@ -191,7 +195,7 @@ function Advisor() {
                 <button
                   key={prompt}
                   type="button"
-                  disabled={sending}
+                  disabled={sending || !ready}
                   onClick={() => ask(prompt)}
                   className="suggestion-chip rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
                 >
@@ -218,7 +222,7 @@ function Advisor() {
             <button
               type="submit"
               className="btn btn-solid shrink-0 px-3 sm:px-4"
-              disabled={sending || !question.trim()}
+              disabled={sending || !ready || !question.trim()}
               aria-label="Send question"
             >
               <Send className="h-4 w-4" />

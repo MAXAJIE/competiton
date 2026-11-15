@@ -12,15 +12,6 @@ import {
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { Page, Headline } from "@/components/Reveal";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { OverviewSkeleton } from "@/components/skeletons/OverviewSkeleton";
@@ -28,11 +19,13 @@ import { useSlowPending } from "@/lib/use-slow-pending";
 import { CountUp } from "@/components/CountUp";
 import { InteractiveCard } from "@/components/InteractiveCard";
 import { MovingWave } from "@/components/MovingWave";
+import { CashMovementChart } from "@/components/CashMovementChart";
 import { useStore } from "@/lib/store";
 import {
   getArApSummary,
   getCashBalance,
   getMonthly,
+  getMonthlySeries,
   getRunwayMonths,
   predictNextMonthRevenue,
   usd,
@@ -53,6 +46,9 @@ export const Route = createFileRoute("/")({
 });
 
 type MarketSnapshot = Awaited<ReturnType<typeof fetchMarketSnapshot>>;
+
+// Months drawn by the cash-movement panel. Older rows still count everywhere else.
+const MONTH_WINDOW = 12;
 
 function Dashboard() {
   const { tx, risk, mode, loaded } = useStore();
@@ -77,7 +73,8 @@ function Dashboard() {
     return () => query.removeEventListener("change", update);
   }, []);
 
-  const monthly = useMemo(() => getMonthly(tx).slice(-6), [tx]);
+  const monthly = useMemo(() => getMonthlySeries(tx, MONTH_WINDOW), [tx]);
+  const monthCount = useMemo(() => getMonthly(tx).length, [tx]);
   const cash = getCashBalance(tx);
   const runway = getRunwayMonths(tx);
   const arap = getArApSummary(tx);
@@ -359,108 +356,12 @@ function Dashboard() {
                   </span>
                 </div>
               </div>
-              {monthly.length < 2 ? (
-                <div className="mt-6 flex h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 text-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
-                    <Clock3 className="h-5 w-5" />
-                  </span>
-                  <p className="mt-3 font-semibold text-slate-800">
-                    {monthly.length === 0 ? "Your cash story starts here" : "One month recorded"}
-                  </p>
-                  <p className="mt-1 max-w-sm lede">
-                    {monthly.length === 0
-                      ? "Once you record transactions, monthly cash movement will appear here."
-                      : "Add another month of activity to reveal the trend."}
-                  </p>
-                  <Link
-                    to="/entry"
-                    className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
-                  >
-                    Add a transaction <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              ) : (
-                <div
-                  className="mt-6 h-[280px] w-full"
-                  aria-label="Monthly income and expense chart"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthly} margin={{ top: 8, right: 6, left: -16, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#4968e8" stopOpacity={0.18} />
-                          <stop offset="95%" stopColor="#4968e8" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#22a58b" stopOpacity={0.14} />
-                          <stop offset="95%" stopColor="#22a58b" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid vertical={false} stroke="#edf0f5" strokeDasharray="4 5" />
-                      <XAxis
-                        dataKey="month"
-                        tickFormatter={(value) =>
-                          new Date(`${value}-01T12:00:00`).toLocaleDateString("en-US", {
-                            month: "short",
-                          })
-                        }
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#64748b", fontSize: 11 }}
-                        dy={10}
-                      />
-                      <YAxis
-                        tickFormatter={(value) =>
-                          value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${value}`
-                        }
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#64748b", fontSize: 11 }}
-                        width={52}
-                      />
-                      <Tooltip
-                        cursor={{ stroke: "#d9dfeb", strokeDasharray: "4 4" }}
-                        contentStyle={{
-                          border: "1px solid #e3e8f0",
-                          borderRadius: 14,
-                          boxShadow: "0 10px 24px rgba(22,37,63,.10)",
-                          fontSize: 12,
-                        }}
-                        labelFormatter={(value) =>
-                          new Date(`${value}-01T12:00:00`).toLocaleDateString("en-US", {
-                            month: "long",
-                            year: "numeric",
-                          })
-                        }
-                        formatter={(value, name) => [
-                          usd(Number(value)),
-                          name === "income" ? "Income" : "Expenses",
-                        ]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="income"
-                        stroke="#4968e8"
-                        strokeWidth={2.5}
-                        fill="url(#incomeFill)"
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                        isAnimationActive={!reduceMotion}
-                        animationDuration={800}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="expense"
-                        stroke="#22a58b"
-                        strokeWidth={2}
-                        fill="url(#expenseFill)"
-                        activeDot={{ r: 4, strokeWidth: 0 }}
-                        isAnimationActive={!reduceMotion}
-                        animationDuration={800}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              {monthCount > MONTH_WINDOW ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Showing the last {MONTH_WINDOW} months of {monthCount} recorded.
+                </p>
+              ) : null}
+              <CashMovementChart data={monthly} reduceMotion={reduceMotion} />
             </InteractiveCard>
 
             <InteractiveCard

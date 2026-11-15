@@ -314,15 +314,28 @@ reasoning was competing with the tool call. Both knobs take
 
 ## 9. Advisor (`advisor.py`)
 
-Five tools, all backed by the calc layer — the model picks, it never computes:
+Seven tools, all backed by the calc/model layer — the model picks, it never
+computes:
 
 | Tool | Answers | Backed by |
 |---|---|---|
 | `analyze_cash_flow` | balance, burn, runway | `calc.get_*` |
-| `ar_risk_flags` | who pays late, who to chase | `ml.ar_risk_flags` |
-| `ar_ap_summary` | open receivables/payables, aging | `calc.get_ar_ap_summary` |
+| `who_owes_me` | **who** owes you, how much, how late, a risk per party | `ml.party_balances("ar")` |
+| `who_i_owe` | **who** you owe, how much, when it is due | `ml.party_balances("ap")` |
+| `ar_risk_flags` | per-invoice late-payment risk | `ml.ar_risk_flags` |
+| `ar_ap_summary` | open receivables/payables totals, aging | `calc.get_ar_ap_summary` |
 | `generate_financial_statement` | income statement for a period | `calc.generate_financial_statement` |
 | `predict_next_month_revenue` | next month's revenue | `ml.predict_next_month_revenue` |
+
+**A "who" question gets names, not a total.** "Who owes me money" is answered
+from `who_owes_me`, which groups open rows by counterparty (`ml.party_balances`):
+one line per party with the summed amount, the invoice count, days overdue (or
+days until due) and a high/medium/low rating — receivables rated by the AR
+model, payables by the due date itself, labelled `risk_basis` so the two are
+never confused. Each party carries a ready-made `summary` string and the result
+carries `figure_lines`, and `_with_figures` rebuilds the reply's Figures block
+from the attached figures, so a reply cannot drop a name, restyle `$5,000`, or
+show the same table twice.
 
 * **Scope** is limited to: your own ledger, small-business finance/bookkeeping,
   tax and company law as general information, and market context that affects
@@ -335,7 +348,11 @@ Five tools, all backed by the calc layer — the model picks, it never computes:
   with the latest recorded value instead.
 * **Reply shape** — `Answer` / `Figures` / `Next step` / `Caveat`, plain text.
 * **No API key** → `_deterministic_answer` answers through the same templates
-  and refuses external questions rather than reciting remembered numbers.
+  and refuses external questions rather than reciting remembered numbers. The
+  rules recognise a who-question (`party_side`) and list the same named parties.
+* **The rules are also the safety net** — if the model is unreachable, returns
+  an empty message, or calls no tool on a ledger question, `_fallback` answers
+  from `calc`/`ml` with real figures instead of an empty bubble or a dead end.
 * Empty ledger → says there is nothing to calculate (`NO_DATA`), rather than
   erroring or inventing rows.
 
@@ -468,6 +485,13 @@ Sending uses Resend's HTTP API. With no `RESEND_API_KEY` the endpoint returns
 | `GET /api/categories` | — | the taxonomy for the form |
 | `POST /api/categories/classify` | — | best-fit label for vendor/text |
 | `POST /api/auth/login` | — | Supabase email/password → tokens |
+| `POST /api/auth/signup` | — | create an account — refuses without the 18+ affirmation and Terms/Privacy acceptance |
+| `GET /api/legal` | — | current document versions, minimum age, retention numbers |
+| `GET /api/account/consent` | user | what this account accepted (and what is current) |
+| `POST /api/account/consent` | user | record acceptance for OAuth sign-ins |
+| `DELETE /api/account/data` | user | erase rows + uploads, keep the account |
+| `DELETE /api/account` | user | erase everything, including the auth user |
+| `POST /api/account/retention` | user | run the retention sweep now |
 | `GET /api/transactions` | user | the ledger |
 | `POST /api/transactions` | user | manual entry (returns `settled_ar`) |
 | `POST /api/documents/ocr` | user | up to 5 images → draft entries, nothing saved |
@@ -486,7 +510,8 @@ for everyone, which is what makes guest mode possible.
 
 ## 15. Tests
 
-`pytest` runs the pure layers — no network, no keys, 75 tests.
+`pytest` runs the pure layers and the route middleware — no network, no keys,
+143 tests.
 
 | File | Locks down |
 |---|---|
@@ -496,6 +521,38 @@ for everyone, which is what makes guest mode possible.
 | `test_ml.py` | ranking, overdue = 1.0, leakage guards, fallbacks, F1 ceiling |
 | `test_advisor.py` | scope guard, reply shape, markdown stripping |
 | `test_categories.py` | taxonomy integrity + classifier behaviour |
+| `test_security.py` | redaction of keys/tokens, input cleaning, limiter windows, cache headers, strict models |
+| `test_api_hardening.py` | the legal gate, 429 + `Retry-After`, security headers, deletion routes, upload signature checks, injected fields refused |
+| `test_schema_rls.py` | every table has RLS + an owner policy, public tables are read-only, ownership cascades |
+
+## 15a. Security, privacy and legal controls
+
+Five layers, each of which assumes the one above it may be wrong:
+
+1. **The browser** never computes money for a signed-in user, never renders
+   user text as HTML, and keeps a BYOK key in local storage only
+   (`src/lib/ai.ts`). A CSP (`src/server.ts`) forbids third-party scripts and
+   framing.
+2. **Strict request models** (`models.py`) reject unknown keys, cap lengths and
+   ranges, validate real calendar dates, reject NaN, and clean control
+   characters — so a request cannot inject `user_id`, park a megabyte in a
+   column, or smuggle markup into a field.
+3. **The API** authenticates every user-scoped route, filters every query by
+   `user_id`, enforces the legal gate at signup, applies per-route rate limits
+   (`security.py`), and redacts secrets from every message it returns or logs.
+4. **The database** enforces the same ownership rule twice: `db.py` filters, and
+   RLS (`schema.sql`) makes the anon key harmless. `test_schema_rls.py` fails if
+   a table is added without RLS and a policy.
+5. **Housekeeping**: `db.enforce_retention` deletes data older than the window
+   and above the row caps (transactions 1095 days / 5000 rows, scans 180 days /
+   500 documents), and both delete endpoints remove the uploaded objects from
+   Storage, not just the rows.
+
+The legal side is data, not markup (`src/lib/legal.ts`): the Terms and Privacy
+Policy are rendered from the same structure the signup form links to, and a
+frontend test compares their version numbers and retention numbers with
+`app/config.py` so the two cannot drift. The gate itself is enforced
+server-side, so a hand-rolled request that skips the checkboxes is refused.
 
 ## 16. Deliberate limits
 

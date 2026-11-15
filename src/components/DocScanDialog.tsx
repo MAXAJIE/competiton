@@ -18,6 +18,9 @@ import type { Transaction } from "@/lib/types";
 
 const MAX_IMAGES = 5;
 const MAX_EDGE = 1600;
+// Matches the backend's MAX_UPLOAD_BYTES: a PDF is not re-compressed here, so a
+// huge one is refused with a sentence instead of after a slow upload.
+const MAX_UPLOAD_MB = 8;
 
 type Image = { file: File; preview: string | null; name: string };
 type Stage = "pick" | "review" | "done";
@@ -87,6 +90,11 @@ export function DocScanDialog({
     const room = MAX_IMAGES - images.length;
     if (room <= 0) { toast.error(`Maximum ${MAX_IMAGES} images at a time.`); return; }
     const picked = Array.from(list).slice(0, room);
+    const tooBig = picked.filter(f => f.size > MAX_UPLOAD_MB * 1024 * 1024);
+    if (tooBig.length) {
+      toast.error(`${tooBig[0]?.name ?? "That file"} is larger than ${MAX_UPLOAD_MB} MB. Compress it or split it up.`);
+      return;
+    }
     const next: Image[] = [];
     for (const f of picked) {
       const compressed = await compressImage(f);

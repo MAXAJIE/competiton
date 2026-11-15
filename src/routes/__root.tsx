@@ -3,7 +3,9 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useNavigate,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -11,7 +13,9 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Nav } from "../components/Nav";
-import { StoreProvider } from "../lib/store";
+import { StoreProvider, useStore } from "../lib/store";
+import { getAiSettings } from "../lib/ai";
+import { fetchConsent } from "../lib/api";
 import { AdvisorWidget } from "../components/AdvisorWidget";
 import { Toaster } from "../components/ui/sonner";
 import appCss from "../styles.css?url";
@@ -111,6 +115,43 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/**
+ * One guard for the two things a signed-in account must settle before the
+ * workspace is usable: the legal acceptance, and where AI keys come from.
+ *
+ * Consent is checked first, and only a *definite* "no consent on record" asks
+ * for it — when the backend is unreachable the answer is unknown, and locking
+ * someone out of their own ledger because a health check failed would be worse
+ * than letting them keep working offline. Paths that are themselves about
+ * consent, sign-in or the AI choice are exempt, or the redirects would loop.
+ */
+function AccountGuard() {
+  const { mode, loaded } = useStore();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loaded || mode !== "user") return;
+    if (pathname === "/welcome" || pathname === "/login") return;
+    let cancelled = false;
+    (async () => {
+      const state = await fetchConsent();
+      if (cancelled) return;
+      if (state && !state.consent) {
+        navigate({ to: "/welcome", replace: true });
+        return;
+      }
+      if (pathname === "/setup") return;
+      if (!getAiSettings()) navigate({ to: "/setup", replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loaded, mode, pathname, navigate]);
+
+  return null;
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -132,6 +173,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <StoreProvider>
+        <AccountGuard />
         <Nav />
         <main className="min-h-screen lg:pl-[264px]">
           <Outlet />
