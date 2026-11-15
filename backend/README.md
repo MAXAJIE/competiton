@@ -67,6 +67,33 @@ The two implementations are deliberately mirrored — `calc.ts` ↔ `calc.py`,
 disagree about what "runway" or "overdue" means. If you change one, change the
 other.
 
+### Google sign-in setup (Supabase dashboard)
+
+Google login needs no backend code: the browser completes the PKCE flow with
+`@supabase/supabase-js` and the backend only validates the resulting access
+token (`supabase.auth.get_user`), so it stays provider-agnostic.
+
+1. Google Cloud Console → APIs & Services → Credentials → create an **OAuth
+   client ID** (type: *Web application*).
+2. Authorized redirect URI: `https://<project>.supabase.co/auth/v1/callback`.
+3. Supabase → Authentication → Providers → Google: enable it, paste the client
+   ID + secret.
+4. Supabase → Authentication → URL Configuration: set Site URL to your dev
+   origin (`http://localhost:8080`) and add every origin you actually use to
+   Redirect URLs — the dev port is whatever Vite prints (`8080`, sometimes
+   `5199`).
+
+Two failures land on `ERR_CONNECTION_REFUSED` at `localhost:54321` (the Supabase
+CLI port), and neither is a Google problem:
+
+- **The build had no `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`.** Both are
+  baked in at build time. A build without them used to create a client pointing
+  at the CLI port; it now refuses instead — the button reports "Google sign-in is
+  not configured in this build…" and the console names the missing variable. On
+  Cloudflare, set them in the **build** settings (with `VITE_API_URL`) and
+  redeploy; runtime variables are not enough.
+- The origin you sign in from is missing from Supabase → URL Configuration.
+
 ## 3. Three walkthroughs
 
 ### 3a. Manual entry (`POST /api/transactions`)
@@ -445,7 +472,64 @@ These are decisions, not gaps — each keeps a number honest:
   prediction.
 * **A missing email key is a 503**, never a fake success.
 
-## 17. Layout
+## 17. Deploying it
+
+### Backend container
+
+A tunnel dies with your laptop, so an always-on backend is a container:
+`backend/Dockerfile` binds the host-assigned `PORT` and runs uvicorn, and
+`.dockerignore` keeps `.env`, `.venv`, caches and tests out of the image.
+
+Railway is the fastest path:
+
+1. Push the repo — the model artifacts are committed, so scoring works on first
+   boot with no training step on the host.
+2. New project → Deploy from repository; it detects `backend/Dockerfile` (set the
+   service root directory to `backend/` if asked).
+3. Add the variables from `backend/.env` in the dashboard: `SUPABASE_URL`,
+   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `OPENROUTER_API_KEY`, plus the
+   model pins for non-defaults. Generate a domain → a permanent
+   `https://…up.railway.app` URL.
+4. Point the frontend at it (next subsection).
+
+Render (new Web Service → Docker → root directory `backend`) works the same; its
+free tier sleeps, so the first request after a pause waits ~30–60 s. Wire the
+host's health check to `GET /api/health`, which answers `{"ok": true}`.
+
+Secrets stay in the host dashboard. `backend/.env` is git- and docker-ignored on
+purpose: `app/config.py` calls `load_dotenv()` only as a local convenience, and
+real environment variables win when no file is present.
+
+### Frontend build variables (Cloudflare Workers / Pages)
+
+"Failed to fetch" and the app's own "Could not reach the backend at
+http://localhost:8000" have one cause: the browser is calling a URL it cannot
+reach. Vite bakes `VITE_API_URL` into the bundle at **build** time and falls back
+to `localhost:8000`, which on a deployed `https://` site is both mixed content
+and the visitor's own machine.
+
+1. The backend must be reachable over HTTPS — deploy it as above (a
+   `cloudflared tunnel --url http://localhost:8000` URL is fine for a quick
+   test while your machine is on).
+2. Set `VITE_API_URL` to that `https://` URL in Cloudflare's **build** settings,
+   together with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` — without the
+   last two, auth is disabled by design — then rebuild and redeploy. Runtime
+   variables do not apply; only a rebuild bakes them in.
+3. CORS needs nothing: the API answers with `allow_origins=["*"]`.
+
+Both `.env` files follow the site they belong to: the frontend's `.env.local`
+(`VITE_*`, public by design, baked into the bundle) and `backend/.env`
+(server-only keys that never ship to the browser).
+
+### Build fails with "lockfile had changes, but lockfile is frozen"
+
+Cloudflare picks a package manager by lockfile. This repo is npm
+(`package-lock.json`); a stale `bun.lock` makes Cloudflare choose bun, and
+`bun install --frozen-lockfile` then refuses to resolve. Keep only the lockfile
+you actually use, and commit any regeneration together with the `package.json`
+change that caused it.
+
+## 18. Layout
 
 ```
 backend/

@@ -1,7 +1,7 @@
 // Real backend client. Every function maps 1:1 to the FastAPI endpoints in
 // backend/ (see backend/README.md). Guest mode (SKILL.md §8): no session →
 // no server calls for writes; data stays in the browser session store.
-import { supabase, sessionOrNull } from "./supabase";
+import { supabase, sessionOrNull, AUTH_CONFIGURED } from "./supabase";
 import type { OcrScanResult } from "./ocr-types";
 import type { AdvisorReply, RiskSettings, Transaction } from "./types";
 
@@ -9,14 +9,24 @@ const API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const session = await sessionOrNull();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-      ...init.headers,
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    // fetch() rejects here for: backend down, wrong VITE_API_URL, mixed
+    // content (an https site calling http://localhost), or CORS. Say which URL
+    // failed so a deployed site diagnoses itself.
+    throw new Error(
+      `Could not reach the backend at ${API_URL}. A deployed site needs VITE_API_URL set to a https:// backend URL at build time — localhost only works when the site runs on the same machine.`,
+    );
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}) as { detail?: string });
     throw new Error(typeof body.detail === "string" ? body.detail : `Request failed (${res.status})`);
@@ -33,6 +43,11 @@ export async function signIn(email: string, password: string) {
 
 /** Google OAuth via Supabase (redirects away and back; PKCE flow). */
 export async function signInWithGoogle() {
+  if (!AUTH_CONFIGURED) {
+    throw new Error(
+      "Google sign-in is not configured in this build: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are missing. Set them in the deploy platform's build settings and redeploy.",
+    );
+  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: `${window.location.origin}/login` },
@@ -72,6 +87,10 @@ export async function runOcr(files: File[], docType = ""): Promise<OcrScanResult
     method: "POST",
     headers: { Authorization: `Bearer ${session.access_token}` },
     body: form,
+  }).catch(() => {
+    throw new Error(
+      `Could not reach the backend at ${API_URL}. A deployed site needs VITE_API_URL set to a https:// backend URL at build time.`,
+    );
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}) as { detail?: string });
