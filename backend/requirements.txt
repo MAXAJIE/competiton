@@ -1,4 +1,11 @@
-fastapi>=0.110
+# Pinned pair. fastapi 0.114.2 declares starlette<0.39.0,>=0.37.2. Left unpinned, a
+# newer starlette (1.x) dropped the `on_startup` kwarg FastAPI still passes, and
+# every route test dies at import with "Router.__init__() got an unexpected
+# keyword argument 'on_startup'" — 29 failures with no hint that a version is the
+# cause. These two lines are what make `pip install -r requirements.txt`
+# reproduce the documented 163-pass result.
+fastapi==0.114.2
+starlette>=0.37.2,<0.39.0
 uvicorn[standard]>=0.29
 supabase>=2.4
 httpx>=0.27

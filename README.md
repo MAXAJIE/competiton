@@ -220,9 +220,9 @@ Full write-up, ablations and failure cases:
 | Split | **chronological** 80/20 → 1,120 train / 280 test (**79 late in test**) |
 | Decision threshold | 0.18, tuned on the last 20% of the *training* window — the test rows were never seen |
 | Labels | realistic payment rule with **8% random noise**, so outcomes are not separable by construction |
-| Revenue | **47 usable months** (37 train / 10 test), mean $12,316.44 |
+| Revenue | **47 usable months** (37 train / 10 test), mean $12,316.44 — Feb 2023 → Dec 2026. That is one month more than the receivables range: the generator spans 48 months and the first is consumed as the `prev_month` lag, so 46 AR months and 47 revenue months are both correct |
 | Committed copies | `backend/data/ar_training.csv`, `revenue_training.csv`, `fusion_training.csv` |
-| Fitted metrics | `backend/models/metrics.json` — the shipped model, the v1/v2 ablation and the confusion matrix. The benchmark rows below were re-run on these same committed CSVs and the same chronological split (see the report) |
+| Fitted metrics | `backend/models/metrics.json` — the shipped model, the v1/v2 ablation, the confusion matrix, and the revenue bootstrap interval below. The benchmark rows below were re-run on these same committed CSVs and the same chronological split (see the report) |
 
 Why synthetic: public invoice datasets strip customer IDs and payment dates —
 exactly the field that carries the real signal — so a repeat-customer history
@@ -263,9 +263,13 @@ resolved invoice count, and category one-hots.
 
 Features: prior month, 3-month rolling average, prior month's overdue-AR share,
 seasonal sin/cos. **28.6% lower MAE than persistence** — but only **8.4%** better
-than seasonal naive (bootstrap 90% CI −$345 … +$579: statistically
-indistinguishable). `lag_12` is not in the feature set; that is the cheapest
-real win, and we say so rather than quoting the flattering baseline.
+than seasonal naive. A 20,000-resample bootstrap over the 10 held-out months
+puts the gain at **+$97.72/month, CI −$344.94 … +$579.45**: it straddles zero, so
+the improvement is statistically indistinguishable from noise. That interval is
+committed in `backend/models/metrics.json` (`revenue.bootstrap`), so it is a
+reproducible number rather than a one-off run. `lag_12` is not in the feature
+set; that is the cheapest real win, and we say so rather than quoting the
+flattering baseline.
 
 ### The leak we found and chose not to hide
 
@@ -341,7 +345,7 @@ Enforced in code, not just promised in the policy text.
 | Command | What it does |
 |---|---|
 | `npm run dev` | dev server with hot reload, port 8080 |
-| `npm test` | vitest — 70 tests (routing, ledger/history, insights, legal, privacy, AI access, dialogs) |
+| `npm test` | vitest — **79 tests** (routing, ledger/history, insights, legal, privacy, AI access, dialogs, monthly series, skeletons) |
 | `npm run lint` / `npm run format` | eslint / prettier |
 | `npm run build` | production bundle in `.output/` (Cloudflare Workers target) |
 | `cd backend && .venv/Scripts/python -m pytest -q` | backend suite — **163 tests** (macOS: `.venv/bin/python`) |

@@ -18,7 +18,6 @@ assumes the app is already running.
 │  lib/calc.ts       money math (guest mode)                │
 │  lib/store.tsx     in-memory ledger + auth state          │
 │  lib/api.ts        the only network door                  │
-│  lib/settlement.ts payment → invoice matching (guest)     │
 └───────────────┬───────────────────────────────────────────┘
                 │  fetch JSON  (Bearer <Supabase access token> when signed in)
 ┌───────────────▼───────────────────────────────────────────┐
@@ -62,10 +61,16 @@ Supabase token. Only the advisor (with client-supplied transactions), the
 cached market snapshot and the model/registry endpoints are reachable by a
 guest.
 
-The two implementations are deliberately mirrored — `calc.ts` ↔ `calc.py`,
-`settlement.ts` ↔ `settlement.py` — so the demo and the real account never
-disagree about what "runway" or "overdue" means. If you change one, change the
-other.
+`calc.ts` ↔ `calc.py` are deliberately mirrored, so the demo and the real
+account never disagree about what "runway" or "overdue" means. If you change
+one, change the other.
+
+Settlement is **not** mirrored: it lives only on the server
+(`app/settlement.py`), because the decision needs the stored ledger and must be
+the same for a manual entry and an OCR confirm. The browser does not re-implement
+it — `POST /api/transactions` and the OCR confirm gate return `settled_ar`, the
+list of invoices the payment closed, and `store.addTx()` flips exactly those ids
+to `paid`. Server decides, UI displays.
 
 ### Google sign-in setup (Supabase dashboard)
 
@@ -142,7 +147,7 @@ files[] ─► per image: vision model ─► resolve type ─► normalize fiel
 2. `needs_web()` decides the model chain: ledger questions use
    `ADVISOR_MODELS`; rates, tax rules, deadlines and market questions use
    `ADVISOR_WEB_MODELS` (`:online`), which returns URL citations.
-3. The model may call one of five tools (below). Up to three rounds.
+3. The model may call one of seven tools (below). Up to three rounds.
 4. **No tool call → no figures.** The reply is the standard refusal, so a
    plausible number can never be hallucinated onto the screen.
 5. `tidy()` strips markdown the model adds anyway; replies always read
@@ -511,7 +516,9 @@ for everyone, which is what makes guest mode possible.
 ## 15. Tests
 
 `pytest` runs the pure layers and the route middleware — no network, no keys,
-143 tests.
+**163 tests**. (137 of them never import `app.main`, so they also run on a
+machine without the FastAPI stack; the remaining 26 are the route-middleware
+suite.)
 
 | File | Locks down |
 |---|---|
@@ -653,7 +660,7 @@ backend/
     train_models.py             reads CSVs, fits, evaluates → models/*
   data/             committed training CSVs
   models/           ar_risk.joblib, revenue_forecast.joblib, metrics.json
-  tests/            pure-layer test suite (87 tests)
+  tests/            pure-layer + route suite (163 tests)
   schema.sql        Supabase schema + RLS policies
   demo_assets/      sample_receipt.png for manual testing
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T16:26:00.080930+00:00",
+  "generated_at": "2026-11-19T03:42:07.217638+00:00",
   "data_files": [
     "data/ar_training.csv",
     "data/revenue_training.csv",
@@ -148,10 +148,15 @@
       "name": "persistence (next month = this month)",
       "mae": 1498.08
     },
+    "baseline_seasonal_naive": {
+      "name": "seasonal naive (same month last year)",
+      "mae": 1166.71
+    },
     "model_metrics": {
       "mae": 1068.98
     },
     "improvement_pct": 28.6,
+    "improvement_vs_seasonal_naive_pct": 8.4,
     "coefficients": {
       "prev_month": 0.0915,
       "trailing_3mo_avg": 0.7884,
@@ -160,6 +165,18 @@
       "cos": 221.5586
     },
     "intercept": 2284.51,
+    "bootstrap": {
+      "comparison": "seasonal naive (same month last year) - shipped model",
+      "unit": "dollars of MAE per held-out month",
+      "point": 97.72,
+      "p05": -344.94,
+      "p95": 579.45,
+      "ci": "5-95%",
+      "resamples": 20000,
+      "months": 10,
+      "straddles_zero": true,
+      "note": "an interval that straddles 0 means the improvement is indistinguishable from noise on this test slice"
+    },
     "failure_case": {
       "month": "2026-12",
       "actual": 14965.05,

@@ -50,6 +50,12 @@ AR_CATEGORIES = features.AR_CATEGORIES
 # training window made MAE worse than the baseline.
 REVENUE_FEATURES = ["prev_month", "trailing_3mo_avg", "ar_overdue_ratio_prev", "sin", "cos"]
 
+# Revenue ablation: is the model actually better than "same month last year"?
+# The AR bootstrap resamples ROWS; this one resamples the held-out MONTHS, which
+# is the only unit available — and the reason the interval is wide.
+REVENUE_BOOTSTRAP_RESAMPLES = 20_000
+REVENUE_BOOTSTRAP_CI = (5, 95)
+
 TEST_FRACTION = 0.2         # chronological: latest 20% held out
 EXPECTED_F1_CEILING = 0.85  # decided BEFORE training (§11.4) — see README
 # Severity band above the flag threshold, so the UI can separate "watch" from
@@ -109,8 +115,10 @@ def _fit_and_score_ar(df: pd.DataFrame, numeric: list[str]) -> dict:
     y_fit, y_val = y_train.iloc[:val_start], y_train.iloc[val_start:]
 
     # No class_weight="balanced": it inflates probabilities (mean p ≈ 0.47 vs the
-    # true 25.6% base rate), which would make the app's "p(late)" misleading.
-    # Calibrated scores + a tuned threshold give the same F1 but honest numbers.
+    # true 21.6% base rate of the training window; 22.9% is the whole-dataset
+    # rate and 28.2% the test slice), which would make the app's "p(late)"
+    # misleading. Calibrated scores + a tuned threshold give the same F1 but
+    # honest numbers.
     model = make_pipeline(
         StandardScaler(),
         LogisticRegression(max_iter=2000, random_state=0),
@@ -305,6 +313,60 @@ def _add_seasonal(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _seasonal_naive(df: pd.DataFrame, test_view: pd.DataFrame) -> np.ndarray:
+    """Same month last year, read from the committed CSV.
+
+    `lag_12` is deliberately NOT a model feature (see the write-up), but it is
+    the strongest naive revenue baseline, so every comparison has to include it
+    read straight from the data rather than from the design matrix.
+    """
+    by_index = {int(r.month_index): float(r.revenue) for r in df.itertuples()}
+    return np.array([by_index.get(int(mi) - 12, np.nan) for mi in test_view["month_index"]],
+                    dtype=float)
+
+
+def _bootstrap_revenue_delta(model_ae: np.ndarray, naive_ae: np.ndarray) -> dict:
+    """90% interval on (seasonal-naive MAE - model MAE), resampling test months.
+
+    "+$98/month better" over ten months is not a result on its own: a couple of
+    unlucky months can carry it. Resampling the ten months with replacement and
+    reporting the 5th/95th percentile says whether the improvement survives that
+    wobble. If the interval straddles zero, the honest statement is "inside
+    sampling noise", and the write-up has to say so — which is exactly why this
+    number is committed alongside the flattering one.
+
+    Seeded, so the interval in models/metrics.json is stable across runs.
+    """
+    keep = ~np.isnan(naive_ae)
+    model_ae, naive_ae = model_ae[keep], naive_ae[keep]
+    n = len(model_ae)
+    if n < 2:
+        return {"resamples": 0, "note": "too few held-out months to resample"}
+
+    rng = np.random.default_rng(0)
+    deltas = np.empty(REVENUE_BOOTSTRAP_RESAMPLES)
+    for i in range(REVENUE_BOOTSTRAP_RESAMPLES):
+        idx = rng.integers(0, n, n)
+        deltas[i] = naive_ae[idx].mean() - model_ae[idx].mean()
+
+    lo, hi = REVENUE_BOOTSTRAP_CI
+    p05 = float(np.percentile(deltas, lo))
+    p95 = float(np.percentile(deltas, hi))
+    return {
+        "comparison": "seasonal naive (same month last year) - shipped model",
+        "unit": "dollars of MAE per held-out month",
+        "point": round(float(naive_ae.mean() - model_ae.mean()), 2),
+        "p05": round(p05, 2),
+        "p95": round(p95, 2),
+        "ci": f"{lo}-{hi}%",
+        "resamples": REVENUE_BOOTSTRAP_RESAMPLES,
+        "months": n,
+        "straddles_zero": bool(p05 <= 0.0 <= p95),
+        "note": ("an interval that straddles 0 means the improvement is "
+                 "indistinguishable from noise on this test slice"),
+    }
+
+
 def train_revenue() -> dict:
     df = _add_seasonal(_load("revenue_training").sort_values("month_index").reset_index(drop=True))
     X = df[REVENUE_FEATURES].astype(float)
@@ -322,6 +384,12 @@ def train_revenue() -> dict:
     pred = model.predict(X_test)
     model_mae = float(mean_absolute_error(y_test, pred))
 
+    # Two baselines, because persistence is the flattering one: the seasonal
+    # naive (same month last year) is the strongest naive rule and the model's
+    # real competitor.
+    naive_pred = _seasonal_naive(df, df.iloc[split:])
+    naive_mae = float(np.nanmean(np.abs(y_test.to_numpy(dtype=float) - naive_pred)))
+
     result = {
         "task": "next_month_revenue",
         "model": "LinearRegression",
@@ -329,11 +397,21 @@ def train_revenue() -> dict:
         "features": REVENUE_FEATURES,
         "baseline": {"name": "persistence (next month = this month)",
                      "mae": round(baseline_mae, 2)},
+        "baseline_seasonal_naive": {"name": "seasonal naive (same month last year)",
+                                    "mae": round(naive_mae, 2)},
         "model_metrics": {"mae": round(model_mae, 2)},
         "improvement_pct": round((baseline_mae - model_mae) / baseline_mae * 100, 1) if baseline_mae else None,
+        "improvement_vs_seasonal_naive_pct": (round((naive_mae - model_mae) / naive_mae * 100, 1)
+                                             if naive_mae else None),
         "coefficients": {f: round(float(c), 4) for f, c in zip(REVENUE_FEATURES, model.coef_)},
         "intercept": round(float(model.intercept_), 2),
     }
+
+    # Committed so the write-up's interval is reproducible, not a one-off run.
+    result["bootstrap"] = _bootstrap_revenue_delta(
+        np.abs(y_test.to_numpy(dtype=float) - pred),
+        np.abs(y_test.to_numpy(dtype=float) - naive_pred),
+    )
 
     test_view = df.iloc[split:].copy()
     test_view["prediction"] = pred
