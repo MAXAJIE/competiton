@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { suggestCategory, useCategories } from "@/lib/categories";
+import { asPayment } from "@/lib/settlement";
 import type { Transaction, TxType } from "@/lib/types";
 
 const types: { value: TxType; label: string; icon: typeof ArrowUpRight }[] = [
@@ -51,11 +52,12 @@ export function TxForm({
       const keep = options.some((option) => option.label === current.category);
       const wasOpen = current.type === "ar" || current.type === "ap";
       const becomesOpen = next === "ar" || next === "ap";
-      const status = !wasOpen && becomesOpen && (current.status ?? "paid") === "paid"
-        ? "pending"
-        : becomesOpen
-          ? (current.status ?? "pending")
-          : "paid";
+      const status =
+        !wasOpen && becomesOpen && (current.status ?? "paid") === "paid"
+          ? "pending"
+          : becomesOpen
+            ? (current.status ?? "pending")
+            : "paid";
       return { ...current, type: next, status, category: keep ? (current.category ?? "") : "" };
     });
     setSuggested(null);
@@ -94,16 +96,18 @@ export function TxForm({
           return;
         }
         setCategoryError(false);
-        onSubmit({
-          id: `n${Date.now()}`,
-          currency: "USD",
-          source: "manual",
-          due_date: isOpenItem ? (fields.due_date ?? null) : null,
-          vendor_or_customer: "",
-          amount: 0,
-          ...fields,
-          category,
-        } as Transaction);
+        onSubmit(
+          asPayment({
+            id: `n${Date.now()}`,
+            currency: "USD",
+            source: "manual",
+            due_date: isOpenItem ? (fields.due_date ?? null) : null,
+            vendor_or_customer: "",
+            amount: 0,
+            ...fields,
+            category,
+          } as Transaction),
+        );
       }}
     >
       <fieldset disabled={disabled} className="space-y-6 disabled:opacity-70">
@@ -188,7 +192,9 @@ export function TxForm({
             />
             {categoryError && (
               <span className="mt-1.5 block text-xs font-medium text-rose-600">
-                Pick a category for this {activeType === "ar" ? "receivable" : activeType === "ap" ? "payable" : activeType} entry.
+                Pick a category for this{" "}
+                {activeType === "ar" ? "receivable" : activeType === "ap" ? "payable" : activeType}{" "}
+                entry.
               </span>
             )}
           </FormField>

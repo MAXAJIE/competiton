@@ -350,9 +350,9 @@ export async function fetchTransactions(): Promise<Transaction[]> {
 }
 
 /** POST /api/transactions (manual rows only). Guest mode: local only. */
-export async function saveTransaction(t: Transaction): Promise<Transaction> {
+export async function saveTransaction(t: Transaction): Promise<SavedTransaction> {
   if (!(await sessionOrNull())) return t; // guest — never touches the server
-  return api<Transaction>("/api/transactions", { method: "POST", body: JSON.stringify(t) });
+  return api<SavedTransaction>("/api/transactions", { method: "POST", body: JSON.stringify(t) });
 }
 
 /** POST /api/documents/ocr — extraction only, reviewed=false, nothing saved.

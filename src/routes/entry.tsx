@@ -34,7 +34,6 @@ export const Route = createFileRoute("/entry")({
   component: Entry,
 });
 
-
 /** Plain-word entry kinds, so the list never reads "Ap · 2025-07-30". */
 const KIND_LABEL: Record<Transaction["type"], string> = {
   income: "income",
@@ -62,8 +61,24 @@ function Entry() {
     setBusy(true);
     try {
       const saved = await saveTransaction({ ...transaction, source: "manual" });
-      addTx({ ...transaction, id: saved.id ?? transaction.id });
-      toast.success("Entry added to your ledger");
+      // The saved row is authoritative: the server may coerce type/category.
+      const { settled_ar, ...savedRow } = saved;
+      // Signed in: the server decides, even when it settled nothing. Guest (or
+      // not signed in): no server call happened, so pass undefined and let the
+      // store apply the mirrored rule (lib/settlement.ts).
+      const settledIds = mode === "user" ? (settled_ar ?? []).map((r) => r.id) : undefined;
+      const closed = addTx(
+        { ...transaction, ...savedRow, id: saved.id ?? transaction.id },
+        settledIds,
+      );
+      if (closed.length > 0) {
+        const who = [...new Set(closed.map((r) => r.vendor_or_customer))].join(", ");
+        toast.success(
+          `Entry added, and marked ${closed.length} invoice${closed.length > 1 ? "s" : ""} from ${who} as paid`,
+        );
+      } else {
+        toast.success("Entry added to your ledger");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save this entry.");
     } finally {
@@ -166,7 +181,8 @@ function Entry() {
                 </p>
               ) : (
                 <p className="mt-4 text-xs text-slate-500">
-                  Images or PDF · Up to 5 images, one entry each · Nothing saves without your confirmation
+                  Images or PDF · Up to 5 images, one entry each · Nothing saves without your
+                  confirmation
                 </p>
               )}
             </div>
@@ -269,7 +285,11 @@ function Entry() {
         </aside>
       </div>
 
-      <DocScanDialog open={scanOpen} onOpenChange={setScanOpen} onSaved={(t, ids) => addTx(t, ids)} />
+      <DocScanDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        onSaved={(t, ids) => addTx(t, ids)}
+      />
     </Page>
   );
 }
