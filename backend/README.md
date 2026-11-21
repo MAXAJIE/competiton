@@ -65,12 +65,13 @@ guest.
 account never disagree about what "runway" or "overdue" means. If you change
 one, change the other.
 
-Settlement is **not** mirrored: it lives only on the server
-(`app/settlement.py`), because the decision needs the stored ledger and must be
-the same for a manual entry and an OCR confirm. The browser does not re-implement
-it — `POST /api/transactions` and the OCR confirm gate return `settled_ar`, the
-list of invoices the payment closed, and `store.addTx()` flips exactly those ids
-to `paid`. Server decides, UI displays.
+Settlement is authoritative on the server (`app/settlement.py`), because the
+decision needs the stored ledger and must be the same for a manual entry and an
+OCR confirm. `POST /api/transactions` and the OCR confirm gate return
+`settled_ar`, the list of invoices the payment closed, and `store.addTx()`
+flips exactly those ids to `paid`. For guest mode — which never calls the
+server — `src/lib/settlement.ts` mirrors the same rules so the demo behaves
+identically. Server decides for accounts; the UI displays (or, offline, mirrors).
 
 ### Google sign-in setup (Supabase dashboard)
 
@@ -234,8 +235,12 @@ counted twice: once as a receivable and once as cash.
 
 `settlement.settleable(tx, payment)` returns the rows to close:
 
-* Only a **paid `income`** row settles anything — a pending income row is a
-  promise, not money.
+* Only a paid **movement** settles anything: `income` closes receivables,
+  `expense` closes payables. A pending row is a promise, not money.
+* The entry form treats an AR/AP row saved as **Paid** as the matching money
+  movement (`asPayment` / `src/lib/settlement.ts`), so the open item closes and
+  cash is recorded once — the ledger never stores a receivable that was born
+  paid.
 * Customer names match after normalising case, punctuation, spacing and company
   suffixes (`Oak & Pine` matches `Oak & Pine Co.`); a shorter name may match as
   a prefix once it is at least 6 characters (`PREFIX_MIN`), so `A` matches

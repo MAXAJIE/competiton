@@ -153,7 +153,8 @@ export function DocScanDialog({
     setBusy(true);
     try {
       const saved: SavedTransaction = await confirmOcr(current.document_id, t);
-      const closed = onSaved({ ...t, id: saved.id ?? t.id }, saved.settled_ar?.map(r => r.id));
+      const { settled_ar, ...savedRow } = saved;
+      const closed = onSaved({ ...t, ...savedRow, id: saved.id ?? t.id }, settled_ar?.map(r => r.id));
       if (closed.length > 0) {
         const who = [...new Set(closed.map(r => r.vendor_or_customer))].join(", ");
         toast.success(`Saved, and marked ${closed.length} invoice${closed.length > 1 ? "s" : ""} from ${who} as paid`);

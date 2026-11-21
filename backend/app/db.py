@@ -43,11 +43,12 @@ def list_transactions(user_id: str) -> list[dict]:
 
 
 def _settle_receivables(user_id: str, payment: Transaction) -> list[dict]:
-    """Close the receivables a recorded payment clears (app/settlement.py).
+    """Close the open invoices/bills a recorded payment clears (app/settlement.py).
 
     The schema has no settlement-timestamp column, so this flips status to
-    'paid' on the matching invoice rows and leaves their original date intact;
-    the income row the user just recorded is the record of when money arrived.
+    'paid' on the matching rows and leaves their original date intact; the
+    income/expense row the user just recorded is the record of when money
+    arrived or left.
     """
     rows = [transaction_from_row(r) for r in list_transactions(user_id)]
     to_close = settlement.settleable(rows, payment)

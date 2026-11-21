@@ -13,6 +13,16 @@ def income(vendor, amount, status="paid", date="2026-11-14"):
                        transaction_date=date, status=status)
 
 
+def bill(vendor, amount, due, status="overdue", date="2026-09-01"):
+    return Transaction(type="ap", category="Supplier Bill", vendor_or_customer=vendor,
+                       amount=amount, transaction_date=date, due_date=due, status=status)
+
+
+def spend(vendor, amount, status="paid", date="2026-11-14"):
+    return Transaction(type="expense", category="Work & Business", vendor_or_customer=vendor,
+                       amount=amount, transaction_date=date, status=status)
+
+
 OPEN = [
     ar("Mesa Retail", 6400, "2026-09-15"),
     ar("Linden Studio", 3200, "2026-10-01"),
@@ -55,9 +65,25 @@ def test_pending_income_settles_nothing():
 
 
 def test_expense_rows_never_settle_receivables():
-    spend = Transaction(type="expense", vendor_or_customer="Mesa Retail", amount=6400,
-                        transaction_date="2026-11-14", status="paid")
-    assert settlement.settleable(OPEN, spend) == []
+    spend_row = Transaction(type="expense", vendor_or_customer="Mesa Retail", amount=6400,
+                            transaction_date="2026-11-14", status="paid")
+    assert settlement.settleable(OPEN, spend_row) == []
+
+
+def test_paid_expense_closes_the_matching_payable():
+    rows = [bill("Paper Mill Ltd", 2800, "2026-10-30")]
+    closed = settlement.settleable(rows, spend("Paper Mill", 2800))
+    assert [r.vendor_or_customer for r in closed] == ["Paper Mill Ltd"]
+
+
+def test_paid_expense_leaves_a_half_paid_bill_open():
+    rows = [bill("Paper Mill Ltd", 2800, "2026-10-30")]
+    assert settlement.settleable(rows, spend("Paper Mill", 1400)) == []
+
+
+def test_income_never_closes_a_payable():
+    rows = [bill("Paper Mill Ltd", 2800, "2026-10-30")]
+    assert settlement.settleable(rows, income("Paper Mill", 2800)) == []
 
 
 def test_single_payment_can_clear_several_invoices():

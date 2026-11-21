@@ -8,8 +8,9 @@ receipt, or in the guest demo.
 
 Rules (all deliberate, all regression-tested in tests/test_settlement.py):
 
-* Only a paid 'income' row can settle anything. A pending income row is a
-  promise, not money received.
+* Only a paid movement can settle anything: a paid 'income' row closes
+  receivables, a paid 'expense' row closes payables. A pending row is a
+  promise, not money received or paid.
 * A candidate is an 'ar' row still open ('pending' or 'overdue') whose
   customer name matches after normalisation: case, punctuation, spacing and
   company suffixes are ignored, and a shorter name is accepted as a prefix of a
@@ -75,13 +76,24 @@ def open_receivables(tx: Iterable[Transaction]) -> list[Transaction]:
     return [t for t in tx if t.type == "ar" and t.status != "paid"]
 
 
-def settleable(tx: Iterable[Transaction], payment: Transaction) -> list[Transaction]:
-    """The receivable rows a single recorded payment should close.
+def open_payables(tx: Iterable[Transaction]) -> list[Transaction]:
+    return [t for t in tx if t.type == "ap" and t.status != "paid"]
 
-    Empty list when the row is not money received, when no invoice matches, or
-    when the payment is too small to cover the oldest matching invoice.
+
+def settleable(tx: Iterable[Transaction], payment: Transaction) -> list[Transaction]:
+    """The open invoice/bill rows a single recorded payment should close.
+
+    Empty list when the row is not money that moved, when nothing matches, or
+    when the payment is too small to cover the oldest matching item. Money in
+    settles receivables; money out settles payables.
     """
-    if payment.type != "income" or payment.status != "paid":
+    if payment.status != "paid":
+        return []
+    if payment.type == "income":
+        item_type = "ar"
+    elif payment.type == "expense":
+        item_type = "ap"
+    else:
         return []
     try:
         remaining = float(payment.amount)
@@ -90,9 +102,10 @@ def settleable(tx: Iterable[Transaction], payment: Transaction) -> list[Transact
     if remaining <= 0:
         return []
 
-    candidates = [r for r in open_receivables(tx)
-                  if same_party(r.vendor_or_customer, payment.vendor_or_customer)]
-    # Oldest due first: the invoice that has been outstanding longest is the one
+    candidates = [r for r in tx
+                  if r.type == item_type and r.status != "paid"
+                  and same_party(r.vendor_or_customer, payment.vendor_or_customer)]
+    # Oldest due first: the item that has been outstanding longest is the one
     # a payment is understood to clear. Rows without a due date sort last.
     candidates.sort(key=lambda r: (r.due_date is None, str(r.due_date or ""),
                                    str(r.transaction_date)))

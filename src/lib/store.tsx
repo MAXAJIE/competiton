@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { RiskSettings, Transaction } from "./types";
 import { defaultRisk, makeSeed } from "./demo-data";
 import { fetchTransactions, fetchMarketSnapshot } from "./api";
+import { settleable } from "./settlement";
 import { supabase } from "./supabase";
 
 type Mode = "guest" | "user" | null;
@@ -54,11 +55,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (mode === "guest" && tx.length === 0) setTx(makeSeed());
   }, [mode, tx.length]);
 
-    // A payment can settle one or more open receivables (backend settlement.py is
+  // A payment can settle one or more open receivables (backend settlement.py is
   // the authority; the ids it returns are flipped here so the UI matches).
+  // `undefined` means no server call happened — guest mode — so run the mirrored
+  // rule locally. An empty array means the server decided nothing settled.
   const addTx = (t: Transaction, settledIds?: string[]): Transaction[] => {
-    const ids = new Set(settledIds ?? []);
-    const closed = ids.size ? tx.filter(r => r.id && ids.has(r.id)) : [];
+    const ids = new Set(settledIds ?? settleable(tx, t).map((r) => r.id));
+    const closed = tx.filter(r => r.id && ids.has(r.id));
     const row = t.created_at ? t : { ...t, created_at: new Date().toISOString() };
     setTx(prev => [
       ...prev.map(r => (r.id && ids.has(r.id) ? { ...r, status: "paid" as const } : r)),
